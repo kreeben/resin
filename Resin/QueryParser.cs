@@ -5,9 +5,9 @@ namespace Resin
 {
     public class QueryParser
     {
-        private readonly Analyzer _analyzer;
+        private readonly IAnalyzer _analyzer;
 
-        public QueryParser(Analyzer analyzer)
+        public QueryParser(IAnalyzer analyzer)
         {
             _analyzer = analyzer;
         }

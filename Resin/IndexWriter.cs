@@ -8,13 +8,13 @@ namespace Resin
     public class IndexWriter : IDisposable
     {
         private readonly string _directory;
-        private readonly Analyzer _analyzer;
+        private readonly IAnalyzer _analyzer;
         private readonly IDictionary<string, int> _fieldIndex; 
         private readonly IDictionary<int, FieldFile> _fieldFiles;
         private readonly string _fieldIndexFileName;
         private readonly DocumentFile _docFile;
 
-        public IndexWriter(string directory, Analyzer analyzer)
+        public IndexWriter(string directory, IAnalyzer analyzer)
         {
             _directory = directory;
             _analyzer = analyzer;

@@ -51,6 +51,7 @@
     <Compile Include="Document.cs" />
     <Compile Include="FieldReader.cs" />
     <Compile Include="DocumentFile.cs" />
+    <Compile Include="IAnalyzer.cs" />
     <Compile Include="Scanner.cs" />
     <Compile Include="IndexWriter.cs" />
     <Compile Include="FieldFile.cs" />
