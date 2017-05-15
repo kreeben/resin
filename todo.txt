@@ -1,3 +1,2 @@
 range
-numbers
-dates
+null node instead of EndOfWord flag

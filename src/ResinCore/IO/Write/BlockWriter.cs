@@ -19,6 +19,9 @@ namespace Resin.IO.Write
         public BlockInfo Write(T block)
         {
             var bytes = Serialize(block);
+
+            if (bytes.Length == 0) throw new InvalidTimeZoneException();
+
             var info = new BlockInfo(_position, bytes.Length);
 
             _stream.Write(bytes, 0, bytes.Length);

@@ -14,21 +14,22 @@ namespace Tests
         [TestMethod]
         public void Can_search_compressed_index()
         {
-            var dir = Path.Combine(Dir, "SearcherTests.Can_search_compressed_index");
+            var dir = Path.Combine(CreateDir(), "SearcherTests.Can_search_compressed_index");
 
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
-            var docs = new List<Field>
-            {
-                new Field(0, "_id", "0"), new Field(0, "title", "Rambo First Blood"),
-                new Field(1, "_id", "1"), new Field(1, "title", "rambo 2"),
-                new Field(2, "_id", "2"), new Field(2, "title", "rocky 2"),
-                new Field(3, "_id", "3"), new Field(3, "title", "the raiders of the lost ark"),
-                new Field(4, "_id", "4"), new Field(4, "title", "the rain man"),
-                new Field(5, "_id", "5"), new Field(5, "title", "the good, the bad and the ugly")
-            }.GroupBy(f => f.DocumentId).Select(g => new Document(g.Key, g.ToList()));
+            var docs = new List<dynamic>
+{
+                new {_id = "0", title = "Rambo First Blood" },
+                new {_id = "1", title = "rambo 2" },
+                new {_id = "2", title = "rocky 2" },
+                new {_id = "3", title = "the raiders of the lost ark" },
+                new {_id = "4", title = "the rain man" },
+                new {_id = "5", title = "the good, the bad and the ugly" }
+            }.ToDocuments();
 
-            var writer = new DocumentUpsertOperation(dir, new Analyzer(), compression: Compression.GZip, primaryKey: "_id", documents: docs);
+            var writer = new DocumentsUpsertOperation(
+                dir, new Analyzer(), compression: Compression.GZip, primaryKey: "_id", documents: docs);
             long indexName = writer.Commit();
 
             using (var searcher = new Searcher(dir))
@@ -61,21 +62,22 @@ namespace Tests
         [TestMethod]
         public void Can_search_exact()
         {
-            var dir = Path.Combine(Dir, "SearcherTests.Can_search_exact");
+            var dir = Path.Combine(CreateDir(), "SearcherTests.Can_search_exact");
 
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
-            var docs = new List<Field>
-            {
-                new Field(0, "_id", "0"), new Field(0, "title", "Rambo First Blood"),
-                new Field(1, "_id", "1"), new Field(1, "title", "rambo 2"),
-                new Field(2, "_id", "2"), new Field(2, "title", "rocky 2"),
-                new Field(3, "_id", "3"), new Field(3, "title", "the raiders of the lost ark"),
-                new Field(4, "_id", "4"), new Field(4, "title", "the rain man"),
-                new Field(5, "_id", "5"), new Field(5, "title", "the good, the bad and the ugly")
-            }.GroupBy(f => f.DocumentId).Select(g => new Document(g.Key, g.ToList()));
+            var docs = new List<dynamic>
+{
+                new {_id = "0", title = "Rambo First Blood" },
+                new {_id = "1", title = "rambo 2" },
+                new {_id = "2", title = "rocky 2" },
+                new {_id = "3", title = "the raiders of the lost ark" },
+                new {_id = "4", title = "the rain man" },
+                new {_id = "5", title = "the good, the bad and the ugly" }
+            }.ToDocuments();
 
-            var writer = new DocumentUpsertOperation(dir, new Analyzer(), compression: Compression.NoCompression, primaryKey: "_id", documents: docs);
+            var writer = new DocumentsUpsertOperation(
+                dir, new Analyzer(), compression: Compression.NoCompression, primaryKey: "_id", documents: docs);
             long indexName = writer.Commit();
 
             using (var searcher = new Searcher(dir))
@@ -89,7 +91,7 @@ namespace Tests
                 Assert.IsTrue(result.Docs.Any(d => d.Document.Id == 1));
 
                 Assert.AreEqual(
-                    "Rambo First Blood", 
+                    "Rambo First Blood",
                     result.Docs.First(d => d.Document.Id == 0).Document.Fields["title"].Value);
             }
 

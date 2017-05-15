@@ -2,7 +2,7 @@ using System;
 
 namespace Resin.Querying
 {
-    public class QueryTerm
+    public class SubQuery : IEquatable<SubQuery>
     {
         private int _edits;
 
@@ -44,7 +44,7 @@ namespace Resin.Querying
             }
         }
 
-        public QueryTerm(string field, string value)
+        public SubQuery(string field, string value)
         {
             Field = field;
             Value = value;
@@ -60,6 +60,29 @@ namespace Resin.Querying
             var fldPrefix = And ? "+" : Not ? "-" : string.Empty;
             var tokenSuffix = Prefix ? "*" : Fuzzy ? "~" : string.Empty;
             return string.Format("{0}{1}:{2}{3}", fldPrefix, Field, Value, tokenSuffix);
+        }
+
+        public bool Equals(SubQuery other)
+        {
+            if (other == null) return false;
+
+            return other.Field == Field && other.Value == Value;
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 23 + Field.GetHashCode();
+                hash = hash * 23 + Value.GetHashCode();
+                return hash;
+            }
+        }
+
+        public override bool Equals(object obj)
+        {
+            return Equals(obj as SubQuery);
         }
     }
 }

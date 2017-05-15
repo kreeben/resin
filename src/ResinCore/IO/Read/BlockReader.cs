@@ -27,6 +27,8 @@ namespace Resin.IO.Read
 
         private T Get(BlockInfo info)
         {
+            if (info.Length == 0) throw new ArgumentOutOfRangeException("info", "length is zero");
+
             var distance = info.Position - _position;
 
             if (distance > 0)

@@ -18,22 +18,22 @@ namespace Tests
             {
                 new Document(0, new List<Field>
                 {
-                    new Field(0, "title", "rambo"),
-                    new Field(0, "_id", "0")
+                    new Field("title", "rambo"),
+                    new Field("_id", "0")
                 }),
                 new Document(1, new List<Field>
                 {
-                    new Field(1, "title", "rocky"),
-                    new Field(1, "_id", "1")
+                    new Field("title", "rocky"),
+                    new Field("_id", "1")
                 }),
                 new Document(2, new List<Field>
                 {
-                    new Field(2, "title", "rocky 2"),
-                    new Field(2, "_id", "2")
+                    new Field("title", "rocky 2"),
+                    new Field("_id", "2")
                 })
             };
 
-            var fileName = Path.Combine(Dir, "DocumentReaderTests.Can_read");
+            var fileName = Path.Combine(CreateDir(), "DocumentReaderTests.Can_read");
             var blocks = new Dictionary<int, BlockInfo>();
 
             using (var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write))

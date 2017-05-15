@@ -1,23 +1,48 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Resin.IO;
+using Resin.Sys;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Tests
 {
+    [TestClass()]
     public class Setup
     {
-        private string _dir;
+        private const string root = @"c:\temp\resin_tests\";
 
-        public string Dir
+        protected static string CreateDir()
         {
-            get
+            var dir = root + Guid.NewGuid().ToString();
+            Directory.CreateDirectory(dir);
+            return dir;
+        }
+
+        [AssemblyInitialize()]
+        public static void AssemblyInit(TestContext context)
+        {
+            foreach(var dir in Directory.GetDirectories(root))
             {
-                if (_dir == null)
+                Directory.Delete(dir, true);
+            }
+        }
+    }
+
+    public static class DocumentHelper
+    {
+        public static IEnumerable<Document> ToDocuments(this IEnumerable<dynamic> dynamicDocuments)
+        {
+            foreach (var dyn in dynamicDocuments)
+            {
+                var fields = new List<Field>();
+
+                foreach (var field in Util.ToDictionary(dyn))
                 {
-                    _dir = @"c:\temp\resin_tests\" + Guid.NewGuid().ToString();
-                    Directory.CreateDirectory(_dir);
+                    fields.Add(new Field(field.Key, field.Value));
                 }
-                return _dir;
+
+                yield return new Document(fields);
             }
         }
     }

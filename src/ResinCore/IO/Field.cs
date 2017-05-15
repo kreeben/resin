@@ -11,9 +11,8 @@ namespace Resin.IO
         public string Key { get; private set; }
         public bool Store { get; private set; }
         public bool Analyze { get; private set; }
-        public int DocumentId { get; private set; }
 
-        public Field(int documentId, string key, object value, bool store = true, bool analyze = true)
+        public Field(string key, object value, bool store = true, bool analyze = true)
         {
             if (key == null) throw new ArgumentNullException("key");
             if (value == null) throw new ArgumentNullException("value");
@@ -21,7 +20,6 @@ namespace Resin.IO
             Key = key;
             Store = store;
             Analyze = analyze;
-            DocumentId = documentId;
 
             if (value is DateTime)
             {

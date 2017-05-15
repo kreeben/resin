@@ -6,7 +6,7 @@ namespace Resin.IO
 {
     public class Document
     {
-        public int Id { get; private set; }
+        public int Id { get; set; }
 
         public UInt64 Hash { get; set; }
 
@@ -14,17 +14,16 @@ namespace Resin.IO
 
         public IDictionary<string, Field> Fields { get { return _fields; } }
 
-        public Document(int documentId, IList<Field> fields)
+        public Document(int documentId, IList<Field> fields):this(fields)
+        {
+            Id = documentId;
+        }
+
+        public Document(IList<Field> fields)
         {
             if (fields == null) throw new ArgumentNullException("fields");
 
             _fields = fields.ToDictionary(x=>x.Key);
-            Id = documentId;
-        }
-
-        public void Add(string key, object value, bool store = true, bool analyze = true)
-        {
-            _fields[key] = new Field(Id, key, value, store, analyze);
         }
     }
 }

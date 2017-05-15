@@ -21,7 +21,8 @@ namespace Resin
         private readonly IxInfo _ix;
         private readonly IScoringScheme _scorerFactory;
         private readonly int _documentCount;
-        private IDistanceResolver _distanceResolver;
+        private readonly IDistanceResolver _distanceResolver;
+        private readonly IDictionary<SubQuery, IList<DocumentScore>> _scoreCache;
 
         public IxInfo Ix { get { return _ix; } }
 
@@ -32,25 +33,35 @@ namespace Resin
             _scorerFactory = scorerFactory;
             _distanceResolver = distanceResolver ?? new Levenshtein();
             _documentCount = documentCount == -1 ? ix.DocumentCount : documentCount;
+            _scoreCache = new Dictionary<SubQuery, IList<DocumentScore>>();
         }
 
         public IList<DocumentScore> Collect(QueryContext query)
         {
-            var queries = query.ToList();
-
-            Scan(queries);
-
             var scoreTime = new Stopwatch();
             scoreTime.Start();
 
-            Score(queries);
+            foreach (var subQuery in query.ToList())
+            {
+                IList<DocumentScore> scores;
 
-            Log.DebugFormat("scored query {0} in {1}", query, scoreTime.Elapsed);
+                if (!_scoreCache.TryGetValue(subQuery, out scores))
+                {
+                    GetTerms(subQuery);
+                    Score(subQuery);
+
+                    _scoreCache.Add(subQuery, subQuery.Scored.ToList());
+                }
+                else
+                {
+                    subQuery.Scored = _scoreCache[subQuery];
+                }
+            }
 
             var reduceTime = new Stopwatch();
             reduceTime.Start();
 
-            var reduced = query.Calculate().ToList();
+            var reduced = query.Reduce().ToList();
 
             Log.DebugFormat("reduced query {0} producing {1} scores in {2}", query, reduced.Count, scoreTime.Elapsed);
 
@@ -59,15 +70,15 @@ namespace Resin
 
         private void Scan(IEnumerable<QueryContext> queries)
         {
-            //Parallel.ForEach(queries, DoScan);
+            //Parallel.ForEach(queries, GetTerms);
 
             foreach (var q in queries)
             {
-                DoScan(q);
+                GetTerms(q);
             }
         }
 
-        private void DoScan(QueryContext query)
+        private void GetTerms(QueryContext query)
         {
             var time = new Stopwatch();
             time.Start();
@@ -139,17 +150,19 @@ namespace Resin
 
         private void Score(IEnumerable<QueryContext> queries)
         {
-            Parallel.ForEach(queries, query =>
+            Parallel.ForEach(queries, Score);
+        }
+
+        private void Score(QueryContext query)
+        {
+            if (query.Postings == null)
             {
-                if (query.Postings == null)
-                {
-                    query.Scored = new List<DocumentScore>();
-                }
-                else
-                {
-                    query.Scored = DoScore(query.Postings.OrderBy(p => p.DocumentId).ToList());
-                }
-            });
+                query.Scored = new List<DocumentScore>();
+            }
+            else
+            {
+                query.Scored = DoScore(query.Postings.OrderBy(p => p.DocumentId).ToList());
+            }
         }
 
         private IEnumerable<DocumentScore> DoScore(IList<DocumentPosting> postings)

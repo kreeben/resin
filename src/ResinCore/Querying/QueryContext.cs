@@ -5,7 +5,7 @@ using Resin.IO;
 
 namespace Resin.Querying
 {
-    public class QueryContext : QueryTerm
+    public class QueryContext : SubQuery
     {
         public IEnumerable<Term> Terms { get; set; }
         public IEnumerable<DocumentPosting> Postings { get; set; }
@@ -34,7 +34,7 @@ namespace Resin.Querying
             }
         } 
 
-        public IEnumerable<DocumentScore> Calculate()
+        public IEnumerable<DocumentScore> Reduce()
         {
             var first = Scored.ToList();
 
@@ -42,7 +42,7 @@ namespace Resin.Querying
             {
                 foreach (var child in _queries)
                 {
-                    var other = child.Calculate().ToList();
+                    var other = child.Reduce().ToList();
 
                     if (child.And)
                     {

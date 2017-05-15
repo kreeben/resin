@@ -34,7 +34,7 @@ namespace Resin.Cli
             _autoGeneratePk = string.IsNullOrWhiteSpace(primaryKey);
         }
 
-        protected IList<Field> Parse(int id, string document)
+        protected IList<Field> Parse(string document)
         {
             var parts = document.Split(new[] { '\t' }, System.StringSplitOptions.RemoveEmptyEntries);
 
@@ -42,8 +42,8 @@ namespace Resin.Cli
 
             return new Field[] 
             {
-                new Field(id, "doctitle", parts[0]),
-                new Field(id, "body", parts[2])
+                new Field("doctitle", parts[0]),
+                new Field("body", parts[2])
             };
         }
 
@@ -67,14 +67,11 @@ namespace Resin.Cli
         protected virtual IEnumerable<Document> ReadInternal()
         {
             string line;
-            var count = 0;
-
             while ((line = Reader.ReadLine()) != null)
             {
                 var doc = line.Substring(0, line.Length - 1);
-                var id = count++;
-                var fields = Parse(id, doc);
-                yield return new Document(id, fields);
+                var fields = Parse(doc);
+                yield return new Document(fields);
             }
             Console.WriteLine("");
         }

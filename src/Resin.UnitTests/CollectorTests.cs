@@ -15,21 +15,21 @@ namespace Tests
         [TestMethod]
         public void Can_collect_by_id()
         {
-            var dir = Path.Combine(Dir, "Can_collect_by_id");
+            var dir = Path.Combine(CreateDir(), "Can_collect_by_id");
 
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
-            var docs = new List<Field>
+            var docs = new List<dynamic>
             {
-                new Field(0, "_id", "abc0123"), new Field(0, "title", "rambo first blood"),
-                new Field(1, "_id", "1"), new Field(1, "title", "rambo 2"),
-                new Field(2, "_id", "2"), new Field(2, "title", "rocky 2"),
-                new Field(3, "_id", "3"), new Field(3, "title", "the raiders of the lost ark"),
-                new Field(4, "_id", "four"), new Field(4, "title", "the rain man"),
-                new Field(5, "_id", "5five"), new Field(5, "title", "the good, the bad and the ugly")
-            }.GroupBy(f=>f.DocumentId).Select(g=>new Document(g.Key, g.ToList())).OrderBy(d=>d.Id);
+                new {_id = "abc0123", title = "rambo first blood" },
+                new {_id = "1", title = "rambo 2" },
+                new {_id = "2", title = "rocky 2" },
+                new {_id = "3", title = "the raiders of the lost ark" },
+                new {_id = "four", title = "the rain man" },
+                new {_id = "5five", title = "the good, the bad and the ugly" }
+            }.ToDocuments();
 
-            var writer = new DocumentUpsertOperation(dir, new Analyzer(), compression: Compression.Lz, primaryKey: "_id", documents: docs);
+            var writer = new DocumentsUpsertOperation(dir, new Analyzer(), compression: Compression.Lz, primaryKey: "_id", documents: docs);
             long indexName = writer.Commit();
 
             using (var collector = new Collector(dir, IxInfo.Load(Path.Combine(dir, indexName + ".ix")), new Tfidf()))
@@ -52,21 +52,21 @@ namespace Tests
         [TestMethod]
         public void Can_collect_near_phrase()
         {
-            var dir = Path.Combine(Dir, "Can_collect_near_phrase_joined_by_and");
+            var dir = Path.Combine(CreateDir(), "Can_collect_near_phrase_joined_by_and");
 
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
-            var docs = new List<Field>
+            var docs = new List<dynamic>
             {
-                new Field(0, "_id", "0"), new Field(0, "title", "rambo first blood"),
-                new Field(1, "_id", "1"), new Field(1, "title", "rambo 2"),
-                new Field(2, "_id", "2"), new Field(2, "title", "rocky 2"),
-                new Field(3, "_id", "3"), new Field(3, "title", "the raid"),
-                new Field(4, "_id", "4"), new Field(4, "title", "the rain man"),
-                new Field(5, "_id", "5"), new Field(5, "title", "the good, the bad and the ugly")
-            }.GroupBy(f => f.DocumentId).Select(g => new Document(g.Key, g.ToList()));
+                new {_id = "0", title = "rambo first blood" },
+                new {_id = "1", title = "rambo 2" },
+                new {_id = "2", title = "rocky 2" },
+                new {_id = "3", title = "the raid" },
+                new {_id = "4", title = "the rain man" },
+                new {_id = "5", title = "the good, the bad and the ugly" }
+            }.ToDocuments();
 
-            var writer = new DocumentUpsertOperation(dir, new Analyzer(), compression: Compression.Lz, primaryKey: "_id", documents: docs);
+            var writer = new DocumentsUpsertOperation(dir, new Analyzer(), compression: Compression.Lz, primaryKey: "_id", documents: docs);
             long indexName = writer.Commit();
 
             var query = new QueryParser(new Analyzer()).Parse("+title:rain man");
@@ -93,21 +93,21 @@ namespace Tests
         [TestMethod]
         public void Can_collect_exact_phrase_joined_by_and()
         {
-            var dir = Path.Combine(Dir, "Can_collect_exact_phrase_joined_by_and");
+            var dir = Path.Combine(CreateDir(), "Can_collect_exact_phrase_joined_by_and");
 
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
-            var docs = new List<Field>
+            var docs = new List<dynamic>
             {
-                new Field(0, "_id", "0"), new Field(0, "title", "rambo first blood"),
-                new Field(1, "_id", "1"), new Field(1, "title", "rambo 2"),
-                new Field(2, "_id", "2"), new Field(2, "title", "rocky 2"),
-                new Field(3, "_id", "3"), new Field(3, "title", "raiders of the lost ark"),
-                new Field(4, "_id", "4"), new Field(4, "title", "the rain man"),
-                new Field(5, "_id", "5"), new Field(5, "title", "the good, the bad and the ugly")
-            }.GroupBy(f => f.DocumentId).Select(g => new Document(g.Key, g.ToList()));
+                new {_id = "0", title = "rambo first blood" },
+                new {_id = "1", title = "rambo 2" },
+                new {_id = "2", title = "rocky 2" },
+                new {_id = "3", title = "raiders of the lost ark" },
+                new {_id = "4", title = "the rain man" },
+                new {_id = "5", title = "the good, the bad and the ugly" }
+            }.ToDocuments();
 
-            var writer = new DocumentUpsertOperation(dir, new Analyzer(), compression: Compression.Lz, primaryKey: "_id", documents: docs);
+            var writer = new DocumentsUpsertOperation(dir, new Analyzer(), compression: Compression.Lz, primaryKey: "_id", documents: docs);
             long indexName = writer.Commit();
 
             var query = new QueryParser(new Analyzer()).Parse("+title:the");
@@ -136,21 +136,21 @@ namespace Tests
         [TestMethod]
         public void Can_collect_exact_phrase_joined_by_or()
         {
-            var dir = Path.Combine(Dir, "Can_collect_exact_phrase_joined_by_or");
+            var dir = Path.Combine(CreateDir(), "Can_collect_exact_phrase_joined_by_or");
 
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
-            var docs = new List<Field>
+            var docs = new List<dynamic>
             {
-                new Field(0, "_id", "0"), new Field(0, "title", "rambo first blood"),
-                new Field(1, "_id", "1"), new Field(1, "title", "rambo 2"),
-                new Field(2, "_id", "2"), new Field(2, "title", "rocky 2"),
-                new Field(3, "_id", "3"), new Field(3, "title", "raiders of the lost ark"),
-                new Field(4, "_id", "4"), new Field(4, "title", "the rain man"),
-                new Field(5, "_id", "5"), new Field(5, "title", "the good, the bad and the ugly")
-            }.GroupBy(f => f.DocumentId).Select(g => new Document(g.Key, g.ToList()));
+                new {_id = "0", title = "rambo first blood" },
+                new {_id = "1", title = "rambo 2" },
+                new {_id = "2", title = "rocky 2" },
+                new {_id = "3", title = "raiders of the lost ark" },
+                new {_id = "4", title = "the rain man" },
+                new {_id = "5", title = "the good, the bad and the ugly" }
+            }.ToDocuments();
 
-            var writer = new DocumentUpsertOperation(dir, new Analyzer(), compression: Compression.Lz, primaryKey: "_id", documents: docs);
+            var writer = new DocumentsUpsertOperation(dir, new Analyzer(), compression: Compression.Lz, primaryKey: "_id", documents: docs);
             long indexName = writer.Commit();
 
             var query = new QueryParser(new Analyzer()).Parse("+title:rocky");
@@ -190,21 +190,21 @@ namespace Tests
         [TestMethod]
         public void Can_collect_exact_phrase_joined_by_not()
         {
-            var dir = Path.Combine(Dir, "Can_collect_exact_phrase_joined_by_not");
+            var dir = Path.Combine(CreateDir(), "Can_collect_exact_phrase_joined_by_not");
 
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
-            var docs = new List<Field>
+            var docs = new List<dynamic>
             {
-                new Field(0, "_id", "0"), new Field(0, "title", "rambo first blood"),
-                new Field(1, "_id", "1"), new Field(1, "title", "rambo 2"),
-                new Field(2, "_id", "2"), new Field(2, "title", "rocky 2"),
-                new Field(3, "_id", "3"), new Field(3, "title", "raiders of the lost ark"),
-                new Field(4, "_id", "4"), new Field(4, "title", "the rain man"),
-                new Field(5, "_id", "5"), new Field(5, "title", "the good, the bad and the ugly")
-            }.GroupBy(f => f.DocumentId).Select(g => new Document(g.Key, g.ToList()));
+                new {_id = "0", title = "rambo first blood" },
+                new {_id = "1", title = "rambo 2" },
+                new {_id = "2", title = "rocky 2" },
+                new {_id = "3", title = "raiders of the lost ark" },
+                new {_id = "4", title = "the rain man" },
+                new {_id = "5", title = "the good, the bad and the ugly" }
+            }.ToDocuments();
 
-            var writer = new DocumentUpsertOperation(dir, new Analyzer(), compression: Compression.Lz, primaryKey: "_id", documents: docs);
+            var writer = new DocumentsUpsertOperation(dir, new Analyzer(), compression: Compression.Lz, primaryKey: "_id", documents: docs);
             long indexName = writer.Commit();
 
             var query = new QueryParser(new Analyzer()).Parse("+title:the");
@@ -234,21 +234,21 @@ namespace Tests
         [TestMethod]
         public void Can_collect_exact()
         {
-            var dir = Path.Combine(Dir, "CollectorTests.Can_collect_exact");
+            var dir = Path.Combine(CreateDir(), "CollectorTests.Can_collect_exact");
 
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
-            var docs = new List<Field>
+            var docs = new List<dynamic>
             {
-                new Field(0, "_id", "0"), new Field(0, "title", "rambo first blood"),
-                new Field(1, "_id", "1"), new Field(1, "title", "rambo 2"),
-                new Field(2, "_id", "2"), new Field(2, "title", "rocky 2"),
-                new Field(3, "_id", "3"), new Field(3, "title", "raiders of the lost ark"),
-                new Field(4, "_id", "4"), new Field(4, "title", "the rain man"),
-                new Field(5, "_id", "5"), new Field(5, "title", "the good, the bad and the ugly")
-            }.GroupBy(f => f.DocumentId).Select(g => new Document(g.Key, g.ToList()));
+                new {_id = "0", title = "rambo first blood" },
+                new {_id = "1", title = "rambo 2" },
+                new {_id = "2", title = "rocky 2" },
+                new {_id = "3", title = "raiders of the lost ark" },
+                new {_id = "4", title = "the rain man" },
+                new {_id = "5", title = "the good, the bad and the ugly" }
+            }.ToDocuments();
 
-            var writer = new DocumentUpsertOperation(dir, new Analyzer(), compression: Compression.Lz, primaryKey: "_id", documents: docs);
+            var writer = new DocumentsUpsertOperation(dir, new Analyzer(), compression: Compression.Lz, primaryKey: "_id", documents: docs);
             long indexName = writer.Commit();
 
             using (var collector = new Collector(dir, IxInfo.Load(Path.Combine(dir, indexName + ".ix")), new Tfidf()))
@@ -274,20 +274,20 @@ namespace Tests
         [TestMethod]
         public void Can_collect_prefixed()
         {
-            var dir = Path.Combine(Dir, "Can_collect_prefixed");
+            var dir = Path.Combine(CreateDir(), "Can_collect_prefixed");
 
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
-            var docs = new List<Field>
+            var docs = new List<dynamic>
             {
-                new Field(0, "_id", "0"), new Field(0, "title", "rambo"),
-                new Field(1, "_id", "1"), new Field(1, "title", "rambo 2"),
-                new Field(2, "_id", "2"), new Field(2, "title", "rocky 2"),
-                new Field(3, "_id", "3"), new Field(3, "title", "raiders of the lost ark"),
-                new Field(4, "_id", "4"), new Field(4, "title", "rain man")
-            }.GroupBy(f => f.DocumentId).Select(g => new Document(g.Key, g.ToList()));
+                new {_id = "0", title = "rambo" },
+                new {_id = "1", title = "rambo 2" },
+                new {_id = "2", title = "rocky 2" },
+                new {_id = "3", title = "raiders of the lost ark" },
+                new {_id = "4", title = "rain man" }
+            }.ToDocuments();
 
-            var writer = new DocumentUpsertOperation(dir, new Analyzer(), compression: Compression.Lz, primaryKey: "_id", documents: docs);
+            var writer = new DocumentsUpsertOperation(dir, new Analyzer(), compression: Compression.Lz, primaryKey: "_id", documents: docs);
             long indexName = writer.Commit();
 
             using (var collector = new Collector(dir, IxInfo.Load(Path.Combine(dir, indexName + ".ix")), new Tfidf()))
@@ -305,20 +305,20 @@ namespace Tests
         [TestMethod]
         public void Can_collect_near()
         {
-            var dir = Path.Combine(Dir, "Can_collect_near");
+            var dir = Path.Combine(CreateDir(), "Can_collect_near");
 
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
-            var docs = new List<Field>
+            var docs = new List<dynamic>
             {
-                new Field(0, "_id", "0"), new Field(0, "title", "rambo"),
-                new Field(1, "_id", "1"), new Field(1, "title", "rambo 2"),
-                new Field(2, "_id", "2"), new Field(2, "title", "rocky 2"),
-                new Field(3, "_id", "3"), new Field(3, "title", "raiders of the lost ark"),
-                new Field(4, "_id", "4"), new Field(4, "title", "tomb raider")
-            }.GroupBy(f => f.DocumentId).Select(g => new Document(g.Key, g.ToList()));
+                new {_id = "0", title = "rambo" },
+                new {_id = "1", title = "rambo 2" },
+                new {_id = "2", title = "rocky 2" },
+                new {_id = "3", title = "raiders of the lost ark" },
+                new {_id = "4", title = "tomb raider" }
+            }.ToDocuments();
 
-            var writer = new DocumentUpsertOperation(dir, new Analyzer(), compression: Compression.Lz, primaryKey: "_id", documents: docs);
+            var writer = new DocumentsUpsertOperation(dir, new Analyzer(), compression: Compression.Lz, primaryKey: "_id", documents: docs);
             long indexName = writer.Commit();
 
             using (var collector = new Collector(dir, IxInfo.Load(Path.Combine(dir, indexName + ".ix")), new Tfidf()))

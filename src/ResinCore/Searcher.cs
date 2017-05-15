@@ -125,7 +125,7 @@ namespace Resin
                 docAdrs = docAddressReader.Get(adrs).ToList();
             }
 
-            var docFileName = Path.Combine(_directory, ix.VersionId + ".rsin");
+            var docFileName = Path.Combine(_directory, ix.VersionId + ".rdoc");
 
             using (var docReader = new DocumentReader(
                 new FileStream(docFileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096*4, FileOptions.SequentialScan),
