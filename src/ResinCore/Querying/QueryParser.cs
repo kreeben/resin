@@ -20,6 +20,7 @@ namespace Resin.Querying
         public QueryContext Parse(string query)
         {
             if (string.IsNullOrWhiteSpace(query)) throw new ArgumentException("query");
+            if (query.StartsWith("NOT", StringComparison.OrdinalIgnoreCase)) return null;
 
             // http://stackoverflow.com/questions/521146/c-sharp-split-string-but-keep-split-chars-separators
 

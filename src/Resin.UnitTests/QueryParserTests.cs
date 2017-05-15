@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Resin.Analysis;
 using Resin.Querying;
 
@@ -93,6 +94,14 @@ namespace Tests
             var q = new QueryParser(new Analyzer(), 0.5f).Parse("title:was up~ subtitle:in da house");
 
             Assert.AreEqual("+title:was~ title:up~ subtitle:in subtitle:da subtitle:house", q.ToString());
+        }
+
+        [TestMethod]
+        public void Should_prohibit_not_as_first_word()
+        {
+            var q = new QueryParser(new Analyzer()).Parse("NOT title:rambo");
+
+            Assert.AreEqual(null, q);
         }
     }
 }
