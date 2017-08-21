@@ -34,6 +34,7 @@ namespace Resin.Querying
         public IList<QueryContext> Parse(string query)
         {
             if (string.IsNullOrWhiteSpace(query)) throw new ArgumentException("query");
+            if (query.StartsWith("NOT", StringComparison.OrdinalIgnoreCase)) return null;
 
             if (query[0] == ' ' || query[0] == '-') throw new ArgumentException("first query must be inclusive (and)");
 

@@ -143,5 +143,13 @@ namespace Tests
 
             Assert.AreEqual("+title:was up~ subtitle:in da house", q.ToQueryString());
         }
+
+        [TestMethod]
+        public void Should_prohibit_not_as_first_word()
+        {
+            var q = new QueryParser(new Analyzer()).Parse("NOT title:rambo");
+
+            Assert.AreEqual(null, q);
+        }
     }
 }
