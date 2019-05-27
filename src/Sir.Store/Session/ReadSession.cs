@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Collections.Concurrent;
-using System.Threading.Tasks;
 
 namespace Sir.Store
 {
@@ -20,19 +17,11 @@ namespace Sir.Store
         private readonly ValueReader _keyReader;
         private readonly ValueReader _valReader;
         private readonly IConfigurationProvider _config;
-        private readonly string _ixFileExtension;
-        private readonly string _ixpFileExtension;
-        private readonly string _vecFileExtension;
-        private readonly string _vecixpFileExtension;
 
         public ReadSession(string collectionName,
             ulong collectionId,
             SessionFactory sessionFactory, 
-            IConfigurationProvider config,
-            string ixFileExtension = "ix",
-            string ixpFileExtension = "ixp",
-            string vecFileExtension = "vec",
-            string vecixpFileExtension = "vixp") 
+            IConfigurationProvider config) 
             : base(collectionName, collectionId, sessionFactory)
         {
             ValueStream = sessionFactory.CreateReadStream(Path.Combine(sessionFactory.Dir, string.Format("{0}.val", CollectionId)));
@@ -49,17 +38,13 @@ namespace Sir.Store
             _keyReader = new ValueReader(KeyStream);
             _valReader = new ValueReader(ValueStream);
             _config = config;
-            _ixFileExtension = ixFileExtension;
-            _ixpFileExtension = ixpFileExtension;
-            _vecFileExtension = vecFileExtension;
-            _vecixpFileExtension = vecixpFileExtension;
         }
 
         public ReadResult Read(Query query)
         {
             if (SessionFactory.CollectionExists(query.Collection))
             {
-                var result = Execute(query);
+                var result = MapReduce(query);
 
                 if (result != null)
                 {
@@ -78,7 +63,7 @@ namespace Sir.Store
         {
             if (SessionFactory.CollectionExists(query.Collection))
             {
-                var result = Execute(query);
+                var result = MapReduce(query);
 
                 if (result == null)
                 {
@@ -93,7 +78,11 @@ namespace Sir.Store
             return new long[0];
         }
 
-        private ScoredResult Execute(Query query)
+        /// <summary>
+        /// Find each query term's corresponding index node and postings list and perform "AND", "OR" or "NOT" set operations on them.
+        /// </summary>
+        /// <param name="query"></param>
+        private ScoredResult MapReduce(Query query)
         {
             Map(query);
 
@@ -103,7 +92,7 @@ namespace Sir.Store
             {
                 var result = new PostingsReader(postingsStream).Reduce(query.ToList(), query.Skip, query.Take);
 
-                this.Log("reduction of {0} produced {1} docs and took {2}", query, result.Documents.Count, timer.Elapsed);
+                this.Log("reducing {0} into {1} docs took {2}", query, result.Documents.Count, timer.Elapsed);
 
                 return result;
             }
@@ -115,10 +104,12 @@ namespace Sir.Store
         /// <param name="query">An un-mapped query</param>
         public void Map(Query query)
         {
+            var timer = Stopwatch.StartNew();
+
             var clauses = query.ToList();
 
-            Parallel.ForEach(clauses, q =>
-            //foreach (var q in clauses)
+            //Parallel.ForEach(clauses, q =>
+            foreach (var q in clauses)
             {
                 var cursor = q;
 
@@ -161,21 +152,19 @@ namespace Sir.Store
 
                     cursor = cursor.Then;
                 }
-            });
+            }//);
+
+            this.Log("mapping {0} took {1}", query, timer.Elapsed);
         }
 
         public NodeReader CreateIndexReader(long keyId)
         {
-            var ixFileName = Path.Combine(SessionFactory.Dir, string.Format("{0}.{1}.{2}", CollectionId, keyId, _ixFileExtension));
+            var ixFileName = Path.Combine(SessionFactory.Dir, string.Format("{0}.{1}.ix", CollectionId, keyId));
 
             if (!File.Exists(ixFileName))
                 return null;
 
-            var ixpFileName = Path.Combine(SessionFactory.Dir, string.Format("{0}.{1}.{2}", CollectionId, keyId, _ixpFileExtension));
-            var vecFileName = Path.Combine(SessionFactory.Dir, string.Format("{0}.{1}.{2}", CollectionId, keyId, _vecFileExtension));
-            var vixpFileName = Path.Combine(SessionFactory.Dir, string.Format("{0}.{1}.{2}", CollectionId, keyId, _vecixpFileExtension));
-
-            return new NodeReader(ixFileName, ixpFileName, vecFileName, vixpFileName, SessionFactory, _config);
+            return new NodeReader(CollectionId, keyId, SessionFactory, _config);
         }
 
         public NodeReader CreateIndexReader(ulong keyHash)
@@ -229,9 +218,9 @@ namespace Sir.Store
         {
             var result = new List<IDictionary<string, object>>();
 
-            foreach (var d in docs)
+            foreach (var docId in docs)
             {
-                var docInfo = _docIx.Read(d);
+                var docInfo = _docIx.Read(docId);
 
                 if (docInfo.offset < 0)
                 {
@@ -252,9 +241,7 @@ namespace Sir.Store
                     doc[key.ToString()] = val;
                 }
 
-                var docId = doc.ContainsKey("_original") ? long.Parse(doc["_original"].ToString()) : d;
-
-                doc["___docid"] = d;
+                doc["___docid"] = docId;
                 doc["___score"] = 1f;
 
                 result.Add(doc);

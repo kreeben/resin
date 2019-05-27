@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 
 namespace Sir.Store
 {
@@ -16,26 +15,26 @@ namespace Sir.Store
         private readonly SessionFactory _sessionFactory;
         private readonly IConfigurationProvider _config;
         private readonly string _ixpFileName;
-        private readonly string _vixpFileName;
         private readonly string _ixMapName;
         private readonly string _ixFileName;
         private readonly string _vecFileName;
         private long _optimizedOffset;
 
         public NodeReader(
-            string ixFileName,
-            string ixpFileName,
-            string vecFileName,
-            string vecixpFileName,
+            ulong collectionId,
+            long keyId,
             SessionFactory sessionFactory,
             IConfigurationProvider config)
         {
+            var ixFileName = Path.Combine(sessionFactory.Dir, string.Format("{0}.{1}.ix", collectionId, keyId));
+            var ixpFileName = Path.Combine(sessionFactory.Dir, string.Format("{0}.{1}.ixp", collectionId, keyId));
+            var vecFileName = Path.Combine(sessionFactory.Dir, string.Format("{0}.{1}.vec", collectionId, keyId));
+
             _vecFileName = vecFileName;
             _ixFileName = ixFileName;
             _sessionFactory = sessionFactory;
             _config = config;
             _ixpFileName = ixpFileName;
-            _vixpFileName = vecixpFileName;
             _ixMapName = _ixFileName.Replace(":", "").Replace("\\", "_");
         }
 
@@ -132,8 +131,8 @@ namespace Sir.Store
             var hits = new ConcurrentBag<Hit>();
             var ixbufferSize = int.Parse(_config.Get("index_read_buffer_size") ?? "4096");
 
-            //foreach(var page in pages)
-            Parallel.ForEach(pages, page =>
+            foreach(var page in pages)
+            //Parallel.ForEach(pages, page =>
             {
                 using (var indexStream = new BufferedStream(_sessionFactory.CreateReadStream(_ixFileName), ixbufferSize))
                 using (var vectorStream = _sessionFactory.CreateReadStream(_vecFileName))
@@ -148,7 +147,7 @@ namespace Sir.Store
 
                     hits.Add(hit);
                 }
-            });
+            }//);
 
             this.Log($"scan took {time.Elapsed}");
 

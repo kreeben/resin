@@ -292,19 +292,14 @@ namespace Sir
         public static SortedList<long, int> ToVector(this string word, int offset, int length)
         {
             var vec = new SortedList<long, int>();
+            var span = word.AsSpan(offset, length);
 
-            foreach (var c in word.AsSpan(offset, length))
+            for (int i = 0; i < span.Length; i++)
             {
-                var codePoint = (int)c;
+                var codePoint = (int)span[i];
 
-                if (vec.ContainsKey(codePoint))
-                {
-                    if (vec[codePoint] < int.MaxValue) vec[codePoint] += 1;
-                }
-                else
-                {
-                    vec[codePoint] = 1;
-                }
+                if (!vec.TryAdd(codePoint, 1))
+                    vec[codePoint] += 1;
             }
 
             return vec;
@@ -350,11 +345,16 @@ namespace Sir
 
         public static bool ContainsMany(this string text, char c)
         {
-            var vector = text.ToVector(0, text.Length);
+            var found = false;
 
-            if (vector[c] > 1)
+            foreach(var ch in text.ToCharArray())
             {
-                return true;
+                if (c.Equals(ch))
+                {
+                    if (found)
+                        return true;
+                    found = true;
+                }
             }
 
             return false;
