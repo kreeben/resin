@@ -28,7 +28,7 @@ namespace Sir.HttpServer
             // register plugin startup and teardown handlers
 
 #if DEBUG
-            assemblyPath = Path.Combine(assemblyPath, "bin\\Debug\\netcoreapp2.1");
+            assemblyPath = Path.Combine(assemblyPath, "bin", "Debug", "netcoreapp2.1");
 #endif
 
             var files = Directory.GetFiles(assemblyPath, "*.plugin.dll");
