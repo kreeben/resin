@@ -1,6 +1,6 @@
 # &#9084; Resin Extensible Search Engine
 
-Resin is a document database that wants to be a search engine so it's been paired with a search index that happens to represent a vector space, a quite powerful concept if you think about it, any vector space, really, as long as it's a (Sir) IModel, which I still feel will be quite powerful to most, but to others, IModel will get in the way (See "Contribute").
+Resin is a document database that wants to be a search engine so it's been paired with a search index that happens to represent a vector space( a quite powerful concept if you think about it) any vector space, really, as long as it's a (Sir) IModel, which I still feel will be quite powerful to most, but to others, IModel will get in the way (See "Contribute").
 
 ## Spaces
 
@@ -14,7 +14,7 @@ want to build searchable spaces, e.g. (Sir.VectorSpace) GraphBuilder and PathFin
 
 ## In- and out-of-proc
 
-There is both an in-proc, NHibernate-like API in that there are sessions, a factory, and the notion of a unit of work, as well as __JSON-friendly HTTP API that can be extended to support XML or any other document format__, if you are one to fully utilize Asp.Net Core 3 MVC's content negotiating capabilities.
+There is both an in-proc, NHibernate-like API in that there are sessions, a factory, and the notion of a unit of work, as well as __JSON-friendly HTTP API that can be extended to support XML or any other document format__, if you are one to fully utilize Asp.Net Core 3 MVC's content negotiating capabilities.fghj
 
 ## Write, map, materialize and page
 
@@ -56,6 +56,6 @@ IdenticalAngle and FoldAngle are properties of IModel.
 - [ ] v2.2 - text-to-image
 - [ ] v3.0 - AGI
 
-## Contribute
+### Contribute
 
 If IModel sometimes gets in your way, as I anticipate it might, then please undertand it is only an interface written by some random guy, thus not written in stone. PR's are most welcome.
