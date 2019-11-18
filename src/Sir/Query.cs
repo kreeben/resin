@@ -23,7 +23,9 @@ namespace Sir
 
         public int GetDivider()
         {
-            return GetTermCount() / GetCollectionCount();
+            var terms = GetTermCount();
+            var collections = GetCollectionCount();
+            return terms / collections;
         }
 
         public int GetTermCount()
@@ -50,27 +52,30 @@ namespace Sir
         {
             var dic = new HashSet<ulong>();
 
-            foreach(var term in Terms)
+            GetCollectionCount(dic);
+
+            return dic.Count;
+        }
+
+        public void GetCollectionCount(HashSet<ulong> dic)
+        {
+            foreach (var term in Terms)
             {
                 dic.Add(term.CollectionId);
             }
 
-            var count = dic.Count;
-
             if (And != null)
             {
-                count += And.GetCollectionCount();
+                And.GetCollectionCount(dic);
             }
             if (Or != null)
             {
-                count += Or.GetCollectionCount();
+                Or.GetCollectionCount(dic);
             }
             if (Not != null)
             {
-                count += Not.GetCollectionCount();
+                Not.GetCollectionCount(dic);
             }
-
-            return count;
         }
     }
 

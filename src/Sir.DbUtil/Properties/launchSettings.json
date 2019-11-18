@@ -2,7 +2,7 @@
   "profiles": {
     "Sir.DbUtil": {
       "commandName": "Project",
-      "commandLineArgs": "write C:\\\\Users\\\\marlag\\\\Documents\\\\enwiki-20191104-cirrussearch-content.json.gz debug 0 10000 1000"
+      "commandLineArgs": "write_cc C:\\Users\\marlag\\Downloads\\CC-MAIN-20191013195541-20191013222541-00000.warc.wat cc_wat"
     }
   }
 }

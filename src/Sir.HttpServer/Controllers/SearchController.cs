@@ -13,11 +13,11 @@ namespace Sir.HttpServer.Controllers
         public SearchController(
             PluginsCollection plugins, 
             IConfigurationProvider config, 
-            IStringModel tokenizer,
+            IStringModel model,
             ISessionFactory sessionFactory) : base(config, sessionFactory)
         {
             _plugins = plugins;
-            _model = tokenizer;
+            _model = model;
         }
 
         [HttpGet("/search/")]

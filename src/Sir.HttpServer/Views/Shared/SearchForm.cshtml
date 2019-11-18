@@ -3,7 +3,12 @@
     var query = Context.Request.Query["q"].ToString();
     var knownFields = Context.Request.Query["field"].ToArray();
     var titleSelected = knownFields.Contains("title");
-    var bodySelected = knownFields.Contains("body");
+    var descriptionSelected = knownFields.Contains("description");
+    var schemeSelected = knownFields.Contains("scheme");
+    var hostSelected = knownFields.Contains("host");
+    var pathSelected = knownFields.Contains("path");
+    var querySelected = knownFields.Contains("query");
+    var urlSelected = knownFields.Contains("url");
 }
 @using (Html.BeginRouteForm("default", new { controller = "Search" }, FormMethod.Get))
 {
@@ -12,8 +17,13 @@
     </p>
     <fieldset class="search-fields">
         <legend>Search fields</legend>
-        <input type="checkbox" name="field" value="title" id="title" @(titleSelected ? "checked" : "") /><label for="title">title</label>
-        <input type="checkbox" name="field" value="body" id="body" @(bodySelected ? "checked" : "") /><label for="body">body</label>
+        <input type="checkbox" name="field" id="title" value="title" @(titleSelected ? "checked" : "") /><label for="title">title</label>
+        <input type="checkbox" name="field" id="description" value="description" @(descriptionSelected ? "checked" : "") /><label for="description">description</label>
+        <input type="checkbox" name="field" id="scheme" value="scheme" @(schemeSelected ? "checked" : "") /><label for="scheme">scheme</label>
+        <input type="checkbox" name="field" id="host" value="host" @(hostSelected ? "checked" : "") /><label for="host">host</label>
+        <input type="checkbox" name="field" id="path" value="path" @(pathSelected ? "checked" : "") /><label for="path">path</label>
+        <input type="checkbox" name="field" id="query" value="query" @(querySelected ? "checked" : "") /><label for="query">query</label>
+        <input type="checkbox" name="field" id="url" value="url" @(urlSelected ? "checked" : "") /><label for="url">url</label>
     </fieldset>
     <input type="text" id="q" name="q" class="q" placeholder="Ask me anything." value="@query" />
     <div class="buttons">

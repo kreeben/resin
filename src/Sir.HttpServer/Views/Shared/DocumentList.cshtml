@@ -1,5 +1,5 @@
 ﻿@model IEnumerable<Sir.HttpServer.Controllers.SearchResultModel>
-@{ 
+@{
     var displayQ = ViewData["qf"] ?? ViewData["q"];
 }
 
@@ -12,29 +12,29 @@
 <div>
     <ol>
         @foreach (var item in docs)
-            {
-                var url = item.Document.ContainsKey("_url") ? item.Document["_url"].ToString() : item.Document.ContainsKey("__url") ? item.Document["__url"].ToString() : "www.unknownurl.com";
-                var prefix = url.StartsWith("http") ? string.Empty : "https://";
-                var uri = new Uri(prefix + url);
-                var host = uri.Host.ToString().Replace("www.", string.Empty);
-                var title = item.Document.ContainsKey("title") ? item.Document["title"].ToString() : "Unknown title";
-                var created = (long)item.Document["_created"];
-                var lang = (string)item.Document["_language"];
+        {
+            var url = item.Document["url"].ToString();
+            var prefix = url.StartsWith("http") ? string.Empty : "https://";
+            var uri = new Uri(prefix + url);
+            var host = uri.Host.ToString();
+            var title = item.Document.ContainsKey("title") ? item.Document["title"].ToString() : "Unknown title";
+            var created = (long)item.Document["_created"];
+            var score = (double)item.Document["___score"]; 
             <li>
                 <div>
                     <div class="document-header">
-                    <a href="/upvote/?url=@System.Web.HttpUtility.UrlEncode(uri.ToString())&q=@ViewData["q"]&collection=@ViewBag.Collection">
-                        <div class="upvote" title="upvote">&#9650;</div> 
-                    </a>
-                    <span><a class="result-link" href="@uri.ToString()">@title</a></span>
+                        <a href="/upvote/?url=@System.Web.HttpUtility.UrlEncode(uri.ToString())&q=@ViewData["q"]&collection=@ViewBag.Collection">
+                            <div class="upvote" title="upvote">&#9650;</div>
+                        </a>
+                        <span><a class="result-link" href="@uri.ToString()">@title</a></span>
+                    </div>
+                    <div class="document-body">
+                        <span style="font-weight:bold;color:black;opacity:0.45;font-size:9pt;">@host</span><br />
+                        <span class="medium-text">Score: @score.ToString("N2")%</span><br />
+                        <span class="medium-text">Indexed @DateTime.FromBinary(created)</span>
+                    </div>
                 </div>
-                <div class="document-body">
-                    <span style="font-weight:bold;color:black;opacity:0.45;font-size:9pt;">@lang @host</span><br />
-                    <span class="medium-text">Score: @(((double)item.Document["___score"]).ToString("N2"))%</span><br />
-                    <span class="medium-text">Indexed @DateTime.FromBinary(created)</span>
-                </div>
-            </div>
-        </li>
+            </li>
         }
     </ol>
 </div>
