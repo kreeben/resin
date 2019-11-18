@@ -12,9 +12,6 @@
 }
 @using (Html.BeginRouteForm("default", new { controller = "Search" }, FormMethod.Get))
 {
-    <p>
-        <input type="text" id="collection" name="collection" class="collection" value="@ViewBag.Collection" title="Enter the names of one or more collections here, separated by commas." />
-    </p>
     <fieldset class="search-fields">
         <legend>Search fields</legend>
         <input type="checkbox" name="field" id="title" value="title" @(titleSelected ? "checked" : "") /><label for="title">title</label>
@@ -32,4 +29,5 @@
     <div style="clear:both;"></div>
     <input type="hidden" value="0" name="skip" id="skip" />
     <input type="hidden" value="100" name="take" id="take" />
+    <input type="hidden" value="cc_wat" name="collection" id="collection" />
 }

@@ -175,6 +175,8 @@ div.buttons{
     border: none;
     border-right: 1px solid silver;
     border-bottom: 1px solid silver;
+    border-top: 1px solid #f0f0f0;
+    border-left: 1px solid #f0f0f0;
     width: 420px;
     margin-bottom: 10px;
 }
