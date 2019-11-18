@@ -173,10 +173,10 @@ div.buttons{
 .search-fields {
     font-size: 10px;
     border: none;
-    border-right: 1px solid silver;
-    border-bottom: 1px solid silver;
-    border-top: 1px solid #f0f0f0;
-    border-left: 1px solid #f0f0f0;
+    border-right: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+    border-top: 1px solid #fafafa;
+    border-left: 1px solid #fafafa;
     width: 420px;
     margin-bottom: 10px;
 }

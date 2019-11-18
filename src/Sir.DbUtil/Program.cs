@@ -43,11 +43,11 @@ namespace Sir.DbUtil
 
                 Console.WriteLine("submit took {0}", fullTime.Elapsed);
             }
-            else if (command == "write")
+            else if (command == "write_wp")
             {
                 var fullTime = Stopwatch.StartNew();
 
-                Write(args, model, loggerFactory);
+                WriteWP(args, model, loggerFactory);
 
                 Console.WriteLine("write operation took {0}", fullTime.Elapsed);
             }
@@ -67,6 +67,10 @@ namespace Sir.DbUtil
             {
                 WriteCC(args, model, loggerFactory);
             }
+            else if (command == "process_cc")
+            {
+                ProcessCC(args, model, loggerFactory);
+            }
             else if (command == "truncate")
             {
                 Truncate(args, model, loggerFactory);
@@ -79,11 +83,17 @@ namespace Sir.DbUtil
             Console.WriteLine($"executed {command}");
         }
 
+        private static void ProcessCC(string[] args, BocModel model, ILoggerFactory loggerFactory)
+        {
+            
+        }
+
         private static void WriteCC(string[] args, IStringModel model, ILoggerFactory log)
         {
+            const long take = 100;
             var fileName = args[1];
             var collection = args[2];
-            var documents = ReadCC(fileName, long.MaxValue, "cc_wat");
+            var documents = ReadCC(fileName, take, "cc_wat");
             var collectionId = collection.ToHash();
             const int reportSize = 1000;
             var tt = Stopwatch.StartNew();
@@ -127,6 +137,7 @@ namespace Sir.DbUtil
             {
                 var line = reader.ReadLine();
                 var count = 0;
+                string warcFileName = null;
 
                 while (line != null)
                 {
@@ -192,17 +203,24 @@ namespace Sir.DbUtil
 
                             yield return new Dictionary<string, object>
                                 {
-                                    {"title", title },
-                                    {"description", description },
-                                    {"scheme", url.Scheme },
-                                    {"host", url.Host },
-                                    {"path", url.AbsolutePath },
-                                    {"query", url.Query },
-                                    {"url", url.ToString() }
+                                    { "title", title },
+                                    { "description", description },
+                                    { "scheme", url.Scheme },
+                                    { "host", url.Host },
+                                    { "path", url.AbsolutePath },
+                                    { "query", url.Query },
+                                    { "url", url.ToString() },
+                                    { "WARC-Filename", warcFileName}
                                 };
 
                             count++;
                         }
+                    }
+                    else if (line.StartsWith("WARC-Filename"))
+                    {
+                        var parts = line.Split("WARC-Filename: ");
+
+                        warcFileName = parts[1];
                     }
 
                     line = reader.ReadLine();
@@ -247,7 +265,7 @@ namespace Sir.DbUtil
             }
         }
 
-        private static void Write(string[] args, IStringModel model, ILoggerFactory log)
+        private static void WriteWP(string[] args, IStringModel model, ILoggerFactory log)
         {
             var fileName = args[1];
             var dir = args[2];
@@ -258,7 +276,7 @@ namespace Sir.DbUtil
             const int reportSize = 1000;
             var collectionId = collection.ToHash();
             var batchNo = 0;
-            var payload = ReadFile(fileName, skip, take)
+            var payload = ReadWP(fileName, skip, take)
                 .Select(x => new Dictionary<string, object>
                         {
                                 { "_language", x["language"].ToString() },
@@ -269,8 +287,6 @@ namespace Sir.DbUtil
 
             using (var sessionFactory = new SessionFactory(new IniConfiguration("sir.ini"), model, log))
             {
-                sessionFactory.Truncate(collectionId);
-
                 foreach (var page in payload.Batch(pageSize))
                 {
                     using (var writeSession = sessionFactory.CreateWriteSession(collectionId, model))
@@ -322,7 +338,7 @@ namespace Sir.DbUtil
             var batchNo = 0;
             using (var httpClient = new HttpClient())
             {
-                var payload = ReadFile(fileName, 0, count)
+                var payload = ReadWP(fileName, 0, count)
                                         .Select(x => new Dictionary<string, object>
                                                 {
                                 { "_language", x["language"].ToString() },
@@ -379,7 +395,7 @@ namespace Sir.DbUtil
             }
         }
 
-        private static IEnumerable<IDictionary> ReadFile(string fileName, int skip, int take)
+        private static IEnumerable<IDictionary> ReadWP(string fileName, int skip, int take)
         {
             if (Path.GetExtension(fileName).EndsWith("gz"))
             {
