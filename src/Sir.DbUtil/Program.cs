@@ -85,7 +85,9 @@ namespace Sir.DbUtil
 
         private static void ProcessCC(string[] args, BocModel model, ILoggerFactory loggerFactory)
         {
-            
+            var ccName = args[1];
+
+
         }
 
         private static void WriteCC(string[] args, IStringModel model, ILoggerFactory log)
