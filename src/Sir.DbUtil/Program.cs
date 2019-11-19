@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Sir.Core;
@@ -65,13 +66,9 @@ namespace Sir.DbUtil
             {
                 Slice(args);
             }
-            else if (command == "write_cc")
-            {
-                WriteCC(args[1], args[2], model, loggerFactory, logger);
-            }
             else if (command == "download_cc")
             {
-                DownloadCC(args, model, loggerFactory, logger);
+                DownloadAndIndexCC(args, model, loggerFactory, logger);
             }
             else if (command == "truncate")
             {
@@ -85,36 +82,38 @@ namespace Sir.DbUtil
             logger.LogInformation($"executed {command}");
         }
 
-        private static void DownloadCC(string[] args, BocModel model, ILoggerFactory logger, ILogger log)
+        private static void DownloadAndIndexCC(string[] args, BocModel model, ILoggerFactory logger, ILogger log)
         {
             var ccName = args[1];
             var workingDir = args[2];
             var collection = args[3];
             var fileName = $"{ccName}/wat.paths.gz";
-            var localPath = Path.Combine(workingDir, fileName);
+            var localFileName = Path.Combine(workingDir, fileName);
 
-            if (!File.Exists(localPath))
+            if (!File.Exists(localFileName))
             {
                 var remotePath = $"https://commoncrawl.s3.amazonaws.com/crawl-data/{fileName}";
 
                 log.LogInformation($"downloading {remotePath}");
 
-                if (!Directory.Exists(Path.GetDirectoryName(localPath)))
+                if (!Directory.Exists(Path.GetDirectoryName(localFileName)))
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(localPath));
+                    Directory.CreateDirectory(Path.GetDirectoryName(localFileName));
                 }
 
                 using (var client = new WebClient())
                 {
-                    client.DownloadFile(remotePath, localPath);
+                    client.DownloadFile(remotePath, localFileName);
                 }
 
-                log.LogInformation($"downloaded {localPath}");
+                log.LogInformation($"downloaded {localFileName}");
             }
 
-            log.LogInformation($"processing {localPath}");
+            log.LogInformation($"processing {localFileName}");
 
-            foreach (var watFileName in ReadAllLinesGromGz(localPath))
+            Task writeTask = null;
+
+            foreach (var watFileName in ReadAllLinesGromGz(localFileName))
             {
                 var local = Path.Combine(workingDir, watFileName);
 
@@ -133,26 +132,36 @@ namespace Sir.DbUtil
                     {
                         client.DownloadFile(remotePath, local);
                     }
-
-                    log.LogInformation($"downloaded {local}");
-
-                    log.LogInformation($"processing {local}");
-
-                    WriteCC(local, collection, model, logger, log);
                 }
-                else
+
+                log.LogInformation($"processing {local}");
+
+                var warcFileName = watFileName.Replace(".wat", ".gz");
+
+                if (writeTask != null)
                 {
-                    log.LogInformation($"skipped {local}");
+                    log.LogInformation($"synchronizing write");
+
+                    writeTask.Wait();
                 }
+
+                writeTask = Task.Run(
+                    () => WriteCC(local, collection, model, logger, log, warcFileName));
             }
         }
 
-        private static void WriteCC(string fileName, string collection, IStringModel model, ILoggerFactory log, ILogger logger)
+        private static void WriteCC(
+            string fileName, 
+            string collection, 
+            IStringModel model, 
+            ILoggerFactory log, 
+            ILogger logger,
+            string warcFileName)
         {
-            var documents = ReadCC(fileName);
+            var documents = ReadCC(fileName, warcFileName);
             var collectionId = collection.ToHash();
             const int reportSize = 1000;
-            var tt = Stopwatch.StartNew();
+            var time = Stopwatch.StartNew();
             var batchNo = 0;
 
             using (var sessionFactory = new SessionFactory(new IniConfiguration("sir.ini"), model, log))
@@ -162,7 +171,7 @@ namespace Sir.DbUtil
                     using(var queue = new ProducerConsumerQueue<IList<IDictionary<string, object>>>(1,
                         (batch) =>
                         {
-                            var time = Stopwatch.StartNew();
+                            var batchTime = Stopwatch.StartNew();
 
                             foreach (var document in batch)
                             {
@@ -170,12 +179,12 @@ namespace Sir.DbUtil
                             }
 
                             var info = writeSession.GetIndexInfo();
-                            var t = time.Elapsed.TotalMilliseconds;
+                            var t = batchTime.Elapsed.TotalMilliseconds;
                             var docsPerSecond = (int)(reportSize / t * 1000);
                             var debug = string.Join('\n', info.Info.Select(x => x.ToString()));
 
                             logger.LogInformation(
-                                $"batch {batchNo++} took {time.ElapsedMilliseconds} ms. {docsPerSecond} docs/s");
+                                $"batch {batchNo++} took {batchTime.ElapsedMilliseconds} ms. {docsPerSecond} docs/s");
 
                             logger.LogInformation($"\t{debug}");
                         }))
@@ -188,10 +197,10 @@ namespace Sir.DbUtil
                 }
             }
 
-            logger.LogInformation($"indexing {fileName} took {tt.Elapsed}");
+            logger.LogInformation($"indexed {fileName} in {time.Elapsed}");
         }
 
-        private static IEnumerable<IDictionary<string, object>> ReadCC(string fileName)
+        private static IEnumerable<IDictionary<string, object>> ReadCC(string fileName, string warcFileName)
         {
             using (var fs = File.OpenRead(fileName))
             using (var zip = new GZipStream(fs, CompressionMode.Decompress))
@@ -266,7 +275,8 @@ namespace Sir.DbUtil
                                     { "host", url.Host },
                                     { "path", url.AbsolutePath },
                                     { "query", url.Query },
-                                    { "url", url.ToString() }
+                                    { "url", url.ToString() },
+                                    { "filename", warcFileName}
                                 };
                         }
                     }
