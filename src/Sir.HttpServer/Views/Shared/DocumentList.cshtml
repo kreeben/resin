@@ -19,7 +19,9 @@
             var host = uri.Host.ToString();
             var title = item.Document.ContainsKey("title") ? item.Document["title"].ToString() : "Unknown title";
             var score = (double)item.Document["___score"];
-            //var ccUrl = (string)item.Document["WARC-Filename"];
+            var ccUrl = (string)item.Document["filename"];
+            var warcDisplayName = ccUrl.Split('/').Last();
+
             <li>
                 <div>
                     <div class="document-header">
@@ -31,7 +33,7 @@
                     <div class="document-body">
                         <span style="font-weight:bold;color:black;opacity:0.45;font-size:9pt;">@host</span><br />
                         <span class="medium-text">Score: @score.ToString("N2")%</span><br />
-                        @*<span class="medium-text">WARC-Filename: <a href="@ccUrl">@ccUrl</a></span>*@
+                        <span class="medium-text">WARC-Filename: <a href="https://commoncrawl.s3.amazonaws.com/@ccUrl">@warcDisplayName</a></span>
                     </div>
                 </div>
             </li>

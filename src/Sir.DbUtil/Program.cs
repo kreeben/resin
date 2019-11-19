@@ -136,7 +136,7 @@ namespace Sir.DbUtil
 
                 log.LogInformation($"processing {local}");
 
-                var warcFileName = watFileName.Replace(".wat", ".gz");
+                var warcFileName = watFileName.Replace(".wat", "");
 
                 if (writeTask != null)
                 {

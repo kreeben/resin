@@ -73,7 +73,7 @@ h2.logo {
 }
 
 #slogan {
-    margin-left: 3px;
+    margin-left: 20px;
     color: orangered;
     font-size: 11px;
     font-weight: bold;
@@ -81,6 +81,7 @@ h2.logo {
 
 .medium-text {
     font-size: 10pt;
+    width: 90%;
 }
 
 footer {
