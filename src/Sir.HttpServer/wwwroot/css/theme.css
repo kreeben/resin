@@ -81,6 +81,7 @@ h2.logo {
 footer {
     font-size: 10pt;
     margin-top: 25px;
+    margin-left:10px;
 }
 
 footer span {
@@ -166,10 +167,10 @@ div.buttons{
 .search-fields {
     font-size: 10px;
     border: none;
-    border-right: 1px solid #f0f0f0;
-    border-bottom: 1px solid #f0f0f0;
-    border-top: 1px solid #fafafa;
-    border-left: 1px solid #fafafa;
+    /*border-right: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;*/
+    /*border-top: 1px solid #fafafa;
+    border-left: 1px solid #fafafa;*/
     width: 90%;
     margin-bottom: 15px;
 }
