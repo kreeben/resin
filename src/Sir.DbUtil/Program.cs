@@ -9,6 +9,7 @@ using System.Net.Http;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Sir.Core;
 using Sir.Document;
 using Sir.Search;
 
@@ -28,7 +29,7 @@ namespace Sir.DbUtil
                     .AddEventLog();
             });
 
-            var logger = loggerFactory.CreateLogger<Program>();
+            var logger = loggerFactory.CreateLogger("dbutil");
 
             logger.LogInformation($"processing command: {string.Join(" ", args)}");
 
@@ -41,7 +42,7 @@ namespace Sir.DbUtil
 
                 Submit(args);
 
-                Console.WriteLine("submit took {0}", fullTime.Elapsed);
+                logger.LogInformation("submit took {0}", fullTime.Elapsed);
             }
             else if (command == "write_wp")
             {
@@ -49,7 +50,7 @@ namespace Sir.DbUtil
 
                 WriteWP(args, model, loggerFactory);
 
-                Console.WriteLine("write operation took {0}", fullTime.Elapsed);
+                logger.LogInformation("write operation took {0}", fullTime.Elapsed);
             }
             else if (command == "validate")
             {
@@ -57,7 +58,7 @@ namespace Sir.DbUtil
 
                 Validate(args, model, loggerFactory);
 
-                Console.WriteLine("validate took {0}", time.Elapsed);
+                logger.LogInformation("validate took {0}", time.Elapsed);
             }
             else if ((command == "slice"))
             {
@@ -65,7 +66,7 @@ namespace Sir.DbUtil
             }
             else if (command == "write_cc")
             {
-                WriteCC(args, model, loggerFactory);
+                WriteCC(args, model, loggerFactory, logger);
             }
             else if (command == "process_cc")
             {
@@ -77,10 +78,10 @@ namespace Sir.DbUtil
             }
             else
             {
-                Console.WriteLine("unknown command: {0}", command);
+                logger.LogInformation("unknown command: {0}", command);
             }
 
-            Console.WriteLine($"executed {command}");
+            logger.LogInformation($"executed {command}");
         }
 
         private static void ProcessCC(string[] args, BocModel model, ILoggerFactory loggerFactory)
@@ -90,56 +91,60 @@ namespace Sir.DbUtil
 
         }
 
-        private static void WriteCC(string[] args, IStringModel model, ILoggerFactory log)
+        private static void WriteCC(string[] args, IStringModel model, ILoggerFactory log, ILogger logger)
         {
-            const long take = 100;
             var fileName = args[1];
             var collection = args[2];
-            var documents = ReadCC(fileName, take, "cc_wat");
+            var take = args.Length == 3 ? long.MaxValue : long.Parse(args[3]);
+            var documents = ReadCC(fileName, take);
             var collectionId = collection.ToHash();
             const int reportSize = 1000;
             var tt = Stopwatch.StartNew();
+            var batchNo = 0;
 
             using (var sessionFactory = new SessionFactory(new IniConfiguration("sir.ini"), model, log))
             {
                 using (var writeSession = sessionFactory.CreateWriteSession(collectionId, model))
                 {
-                    var batchNo = 0;
+                    using(var queue = new ProducerConsumerQueue<IList<IDictionary<string, object>>>(1,
+                        (batch) =>
+                        {
+                            var time = Stopwatch.StartNew();
 
-                    foreach (var batch in documents.Batch(reportSize))
+                            foreach (var document in batch)
+                            {
+                                writeSession.Write(document);
+                            }
+
+                            var info = writeSession.GetIndexInfo();
+                            var t = time.Elapsed.TotalMilliseconds;
+                            var docsPerSecond = (int)(reportSize / t * 1000);
+                            var debug = string.Join('\n', info.Info.Select(x => x.ToString()));
+
+                            logger.LogInformation(
+                                $"batch {batchNo++} took {time.ElapsedMilliseconds} ms. {docsPerSecond} docs/s");
+
+                            logger.LogInformation($"\t{debug}");
+                        }))
                     {
-                        var time = Stopwatch.StartNew();
-
-                        foreach (var document in batch)
+                        foreach (var batch in documents.Batch(reportSize))
                         {
-                            writeSession.Write(document);
+                            queue.Enqueue(batch.ToList());
                         }
-
-                        var info = writeSession.GetIndexInfo();
-
-                        foreach (var stat in info.Info)
-                        {
-                            if (stat.Weight > 500)
-                                Console.WriteLine(stat);
-                        }
-
-                        Console.WriteLine(
-                            $"batch {batchNo++} took {time.ElapsedMilliseconds} ms. queue len {info.QueueLength}");
                     }
                 }
             }
 
-            Console.Write($"write took {tt.Elapsed}");
+            logger.LogInformation($"write took {tt.Elapsed}");
         }
 
-        private static IEnumerable<IDictionary<string, object>> ReadCC(string fileName, long take, string collection)
+        private static IEnumerable<IDictionary<string, object>> ReadCC(string fileName, long take)
         {
             using (var fs = File.OpenRead(fileName))
             using (var reader = new StreamReader(fs, Encoding.UTF8))
             {
                 var line = reader.ReadLine();
                 var count = 0;
-                string warcFileName = null;
 
                 while (line != null)
                 {
@@ -211,18 +216,11 @@ namespace Sir.DbUtil
                                     { "host", url.Host },
                                     { "path", url.AbsolutePath },
                                     { "query", url.Query },
-                                    { "url", url.ToString() },
-                                    { "WARC-Filename", warcFileName}
+                                    { "url", url.ToString() }
                                 };
 
                             count++;
                         }
-                    }
-                    else if (line.StartsWith("WARC-Filename"))
-                    {
-                        var parts = line.Split("WARC-Filename: ");
-
-                        warcFileName = parts[1];
                     }
 
                     line = reader.ReadLine();

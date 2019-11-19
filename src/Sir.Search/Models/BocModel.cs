@@ -33,7 +33,7 @@ namespace Sir.Search
                             embeddings.Add(
                                 new IndexedVector(
                                     embedding, 
-                                    source.Slice(offset, len).ToArray(), 
+                                    null, 
                                     VectorWidth));
 
                             embedding = new SortedList<int, float>();
