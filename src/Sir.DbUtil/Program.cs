@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using Microsoft.Extensions.Logging;
@@ -66,11 +67,11 @@ namespace Sir.DbUtil
             }
             else if (command == "write_cc")
             {
-                WriteCC(args, model, loggerFactory, logger);
+                WriteCC(args[1], args[2], model, loggerFactory, logger);
             }
-            else if (command == "process_cc")
+            else if (command == "download_cc")
             {
-                ProcessCC(args, model, loggerFactory);
+                DownloadCC(args, model, loggerFactory, logger);
             }
             else if (command == "truncate")
             {
@@ -84,19 +85,71 @@ namespace Sir.DbUtil
             logger.LogInformation($"executed {command}");
         }
 
-        private static void ProcessCC(string[] args, BocModel model, ILoggerFactory loggerFactory)
+        private static void DownloadCC(string[] args, BocModel model, ILoggerFactory logger, ILogger log)
         {
             var ccName = args[1];
+            var workingDir = args[2];
+            var collection = args[3];
+            var fileName = $"{ccName}/wat.paths.gz";
+            var localPath = Path.Combine(workingDir, fileName);
 
+            if (!File.Exists(localPath))
+            {
+                var remotePath = $"https://commoncrawl.s3.amazonaws.com/crawl-data/{fileName}";
 
+                log.LogInformation($"downloading {remotePath}");
+
+                if (!Directory.Exists(Path.GetDirectoryName(localPath)))
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(localPath));
+                }
+
+                using (var client = new WebClient())
+                {
+                    client.DownloadFile(remotePath, localPath);
+                }
+
+                log.LogInformation($"downloaded {localPath}");
+            }
+
+            log.LogInformation($"processing {localPath}");
+
+            foreach (var watFileName in ReadAllLinesGromGz(localPath))
+            {
+                var local = Path.Combine(workingDir, watFileName);
+
+                if (!File.Exists(local))
+                {
+                    var remotePath = $"https://commoncrawl.s3.amazonaws.com/{watFileName}";
+
+                    log.LogInformation($"downloading {remotePath}");
+
+                    if (!Directory.Exists(Path.GetDirectoryName(local)))
+                    {
+                        Directory.CreateDirectory(Path.GetDirectoryName(local));
+                    }
+
+                    using (var client = new WebClient())
+                    {
+                        client.DownloadFile(remotePath, local);
+                    }
+
+                    log.LogInformation($"downloaded {local}");
+
+                    log.LogInformation($"processing {local}");
+
+                    WriteCC(local, collection, model, logger, log);
+                }
+                else
+                {
+                    log.LogInformation($"skipped {local}");
+                }
+            }
         }
 
-        private static void WriteCC(string[] args, IStringModel model, ILoggerFactory log, ILogger logger)
+        private static void WriteCC(string fileName, string collection, IStringModel model, ILoggerFactory log, ILogger logger)
         {
-            var fileName = args[1];
-            var collection = args[2];
-            var take = args.Length == 3 ? long.MaxValue : long.Parse(args[3]);
-            var documents = ReadCC(fileName, take);
+            var documents = ReadCC(fileName);
             var collectionId = collection.ToHash();
             const int reportSize = 1000;
             var tt = Stopwatch.StartNew();
@@ -135,22 +188,19 @@ namespace Sir.DbUtil
                 }
             }
 
-            logger.LogInformation($"write took {tt.Elapsed}");
+            logger.LogInformation($"indexing {fileName} took {tt.Elapsed}");
         }
 
-        private static IEnumerable<IDictionary<string, object>> ReadCC(string fileName, long take)
+        private static IEnumerable<IDictionary<string, object>> ReadCC(string fileName)
         {
             using (var fs = File.OpenRead(fileName))
-            using (var reader = new StreamReader(fs, Encoding.UTF8))
+            using (var zip = new GZipStream(fs, CompressionMode.Decompress))
+            using (var reader = new StreamReader(zip, Encoding.UTF8))
             {
                 var line = reader.ReadLine();
-                var count = 0;
 
                 while (line != null)
                 {
-                    if (count == take)
-                        break;
-
                     if (line.StartsWith('{'))
                     {
                         var doc = JsonConvert.DeserializeObject<Dictionary<string, object>>(
@@ -165,7 +215,7 @@ namespace Sir.DbUtil
                         {
                             var payloadMetaData = (Dictionary<string, object>)envelope["Payload-Metadata"];
                             var response = (Dictionary<string, object>)payloadMetaData["HTTP-Response-Metadata"];
-                            var url = new Uri((string)header["WARC-Target-URI"]);
+                            var url = new Uri(Uri.UnescapeDataString((string)header["WARC-Target-URI"]));
                             string title = null;
                             string description = null;
 
@@ -218,8 +268,6 @@ namespace Sir.DbUtil
                                     { "query", url.Query },
                                     { "url", url.ToString() }
                                 };
-
-                            count++;
                         }
                     }
 
@@ -389,6 +437,23 @@ namespace Sir.DbUtil
                         yield return doc;
                         took++;
                     }
+
+                    line = reader.ReadLine();
+                }
+            }
+        }
+
+        private static IEnumerable<string> ReadAllLinesGromGz(string fileName)
+        {
+            using (var stream = File.OpenRead(fileName))
+            using (var zip = new GZipStream(stream, CompressionMode.Decompress))
+            using (var reader = new StreamReader(zip))
+            {
+                var line = reader.ReadLine();
+
+                while (!string.IsNullOrWhiteSpace(line))
+                {
+                    yield return line;
 
                     line = reader.ReadLine();
                 }
