@@ -68,15 +68,9 @@ div.upvote {
 h2.logo {
     margin-top: 0px;
     margin-bottom: 10px;
+    margin-left: 10px;
     letter-spacing: 0.01em;
     text-shadow: gray 1px 1px;
-}
-
-#slogan {
-    margin-left: 18px;
-    color: orangered;
-    font-size: 11px;
-    font-weight: bold;
 }
 
 .medium-text {
@@ -176,8 +170,8 @@ div.buttons{
     border-bottom: 1px solid #f0f0f0;
     border-top: 1px solid #fafafa;
     border-left: 1px solid #fafafa;
-    width: 50%;
-    margin-bottom: 10px;
+    width: 90%;
+    margin-bottom: 15px;
 }
 
 input[type="text"].collection {
