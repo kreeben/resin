@@ -70,7 +70,8 @@ h2.logo {
     margin-bottom: 10px;
     margin-left: 10px;
     letter-spacing: 0.01em;
-    text-shadow: gray 1px 1px;
+    text-shadow: silver 1px 1px;
+    font-size: 14pt;
 }
 
 .medium-text {
@@ -79,7 +80,7 @@ h2.logo {
 }
 
 footer {
-    font-size: 10pt;
+    font-size: 8pt;
     margin-top: 25px;
     margin-left:10px;
 }
@@ -165,7 +166,7 @@ div.buttons{
 }
 
 .search-fields {
-    font-size: 10px;
+    font-size: 8pt;
     border: none;
     /*border-right: 1px solid #f0f0f0;
     border-bottom: 1px solid #f0f0f0;*/
@@ -173,6 +174,7 @@ div.buttons{
     border-left: 1px solid #fafafa;*/
     width: 90%;
     margin-bottom: 15px;
+    padding-top: 10px;
 }
 
 input[type="text"].collection {

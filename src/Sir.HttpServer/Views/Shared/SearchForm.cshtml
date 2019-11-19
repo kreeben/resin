@@ -14,7 +14,7 @@
 @using (Html.BeginRouteForm("default", new { controller = "Search" }, FormMethod.Get))
 {
     <fieldset class="search-fields">
-        <legend>Search meta-data from <a href="https://commoncrawl.org/2019/10/october-2019-crawl-archive-now-available/">Common Crawl's October 2019 crawl </a> (extracted from <a href="https://commoncrawl.org/the-data/get-started/#WAT-Format">WAT files</a>)</legend>
+        <legend>Search meta-data from <a href="https://commoncrawl.org/2019/10/october-2019-crawl-archive-now-available/">Common Crawl's October 2019 crawl</a>.</legend>
         <input type="checkbox" name="field" id="title" value="title" @(titleSelected ? "checked" : "") /><label for="title">title</label>
         <input type="checkbox" name="field" id="description" value="description" @(descriptionSelected ? "checked" : "") /><label for="description">description</label>
         <input type="checkbox" name="field" id="filename" value="filename" @(fileNameSelected ? "checked" : "") /><label for="filename">filename</label>
