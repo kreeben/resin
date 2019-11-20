@@ -31,9 +31,10 @@
                         <span><a class="result-link" href="@uri.ToString()">@title</a></span>
                     </div>
                     <div class="document-body">
-                        <span style="font-weight:bold;color:black;opacity:0.45;font-size:9pt;">@host</span><br />
+                        <span class="medium-text">@host</span><br />
                         <span class="medium-text">Score: @score.ToString("N2")%</span><br />
-                        <span class="medium-text">WARC-Filename: <a href="https://commoncrawl.s3.amazonaws.com/@ccUrl">@warcDisplayName</a></span>
+                        <span class="medium-text">@warcDisplayName:</span>
+                        <span class="medium-text"><a class="warc-link" href="https://commoncrawl.s3.amazonaws.com/@ccUrl">download</a> or <a class="warc-link" href="#">crawl</a></span>
                     </div>
                 </div>
             </li>

@@ -14,7 +14,7 @@
 @using (Html.BeginRouteForm("default", new { controller = "Search" }, FormMethod.Get))
 {
     <fieldset class="search-fields">
-        <legend>Search meta-data from <a href="https://commoncrawl.org/2019/10/october-2019-crawl-archive-now-available/">Common Crawl's October 2019 crawl</a>.</legend>
+        <legend>Search <a href="https://commoncrawl.org/the-data/get-started/#WAT-Format">WAT</a> meta-data from <a href="https://commoncrawl.org/2019/10/october-2019-crawl-archive-now-available/">Common Crawl</a> to find web pages and their corresponding <a href="https://commoncrawl.org/the-data/get-started/#WARC-Format">WARC</a> file.</legend>
         <input type="checkbox" name="field" id="title" value="title" @(titleSelected ? "checked" : "") /><label for="title">title</label>
         <input type="checkbox" name="field" id="description" value="description" @(descriptionSelected ? "checked" : "") /><label for="description">description</label>
         <input type="checkbox" name="field" id="filename" value="filename" @(fileNameSelected ? "checked" : "") /><label for="filename">filename</label>
@@ -24,9 +24,13 @@
         <input type="checkbox" name="field" id="path" value="path" @(pathSelected ? "checked" : "") /><label for="path">path</label>
         <input type="checkbox" name="field" id="query" value="query" @(querySelected ? "checked" : "") /><label for="query">query</label>
     </fieldset>
-    <input type="text" id="q" name="q" class="q" placeholder="Ask me anything." value="@query" />
-    <div class="buttons">
-        <button type="submit" value="OR" name="OR" id="or" title="OR">Go <sup>OR</sup></button><button type="submit" value="AND" name="AND" id="and" title="AND">Go <sup>AND</sup></button>
+    <div class="input-wrapper">
+        <div class="q">
+            <input type="text" id="q" name="q" class="q" placeholder="Ask me anything." value="@query" />
+        </div>
+        <div class="buttons">
+            <button type="submit" value="OR" name="OR" id="or" title="OR">Go <sup>OR</sup></button><button type="submit" value="AND" name="AND" id="and" title="AND">Go <sup>AND</sup></button>
+        </div>
     </div>
     <div style="clear:both;"></div>
     <input type="hidden" value="0" name="skip" id="skip" />

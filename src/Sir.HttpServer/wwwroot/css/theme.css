@@ -1,6 +1,6 @@
 ﻿body {
     padding: 0px 0px 0px 0px;
-    margin: 10px 10px 10px 10px;
+    margin: 10px 0px 0px 5px;
     font-family: sans-serif;
     font-size: medium;
 }
@@ -18,15 +18,19 @@ sup, sub {
     font-weight:600;
 }
 
-a:visited {
-    color: orangered;
-}
-
 a.result-link {
     color: mediumblue;
 }
 
 a.result-link:visited {
+    color: purple;
+}
+
+a.warc-link {
+    color: gray;
+}
+
+a.warc-link:visited {
     color: purple;
 }
 
@@ -36,16 +40,14 @@ label{
 
 a {
     text-decoration: none;
-    color: gray;
+    color: orangered;
 }
 
 a:visited h1 {
-    color: orangered;
 }
 
 a h1 {
     text-decoration: none;
-    color: orangered;
 }
 
 h3 {
@@ -58,6 +60,11 @@ p {
     margin-bottom: 15px;
 }
 
+ol {
+    padding: 5px 5px 5px 25px;
+    margin: 0px 0px 0px 0px;
+}
+
 div.upvote {
     font-size: 0.75em;
     margin-bottom: 3px;
@@ -65,24 +72,8 @@ div.upvote {
     float: left;
 }
 
-h2.logo {
-    margin-top: 0px;
-    margin-bottom: 10px;
-    margin-left: 10px;
-    letter-spacing: 0.01em;
-    text-shadow: silver 1px 1px;
-    font-size: 14pt;
-}
-
 .medium-text {
     font-size: 10pt;
-    width: 90%;
-}
-
-footer {
-    font-size: 8pt;
-    margin-top: 25px;
-    margin-left:10px;
 }
 
 footer span {
@@ -105,15 +96,30 @@ footer p {
 }
 
 input[type="text"].q {
-    float: left;
-    width: 55%;
+    width: 100%;
     padding-left: 5px;
-    margin-left: 2px;
+}
+input[type="checkbox"]{
+    vertical-align: sub;
 }
 
-input[type="text"].submit {
-    float:left;
-    width: 55%;
+div.q {
+    float: left;
+    width: 72%;
+    height: 25px;
+}
+
+div.buttons {
+    float: left;
+    width: 28%;
+    text-align: right;
+    height: 25px;
+}
+
+div.buttons button {
+    width: 50%;
+    padding: 0px 0px 0px 0px;
+    margin: 0px 0px 0px 0px;
 }
 
 button, input[type="submit"] {
@@ -125,16 +131,6 @@ input[type="text"] {
     height: 19px;
 }
 
-textarea.qf {
-    float:left;
-    width: 55%;
-    height: 100px;
-}
-
-div.queryparser {
-    vertical-align: top;
-}
-
 .advanced {
     color: orangered;
     font-size: 0.7em;
@@ -142,39 +138,42 @@ div.queryparser {
     margin-left: 2px;
 }
 
-input[type="text"].newCollection{
-    width: 55%;
-    float:left;
-}
-
-div.newCollection{
-    padding-top: 20px;
-    padding-bottom: 10px;
-}
-
 h3.querystats{
     color:gray;
+    margin-left: 5px;
 }
 
 span.querystats {
     color: black;
 }
 
-div.buttons{
-    float:left;
-    width: 40%;
+h2.logo {
+    margin-top: 0px;
+    margin-bottom: 15px;
+    margin-left: 5px;
+    letter-spacing: 0.01em;
+    text-shadow: silver 1px 1px;
+    font-size: 16pt;
 }
 
 .search-fields {
-    font-size: 8pt;
+    font-size: 9pt;
     border: none;
-    /*border-right: 1px solid #f0f0f0;
-    border-bottom: 1px solid #f0f0f0;*/
-    /*border-top: 1px solid #fafafa;
-    border-left: 1px solid #fafafa;*/
     width: 90%;
-    margin-bottom: 15px;
-    padding-top: 10px;
+    margin-left: 5px;
+    margin-right: 0px;
+    margin-top: 0px;
+    margin-bottom: 20px;
+    padding-left: 0px;
+    padding-right: 0px;
+    padding-top: 15px;
+    padding-bottom: 0px;
+}
+
+footer {
+    font-size: 9pt;
+    margin-top: 25px;
+    margin-left: 10px;
 }
 
 input[type="text"].collection {
@@ -183,4 +182,9 @@ input[type="text"].collection {
     font-size: xx-large;
     font-weight: 700;
     border:none;
+}
+
+.input-wrapper {
+    height: 25px;
+    width: 98%;
 }
