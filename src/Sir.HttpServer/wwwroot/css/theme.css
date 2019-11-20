@@ -168,10 +168,10 @@ h2.logo {
     font-size: 9pt;
     border: none;
     width: 90%;
-    margin-left: 10px;
+    margin-left: 7px;
     margin-right: 0px;
     margin-top: 0px;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     padding-left: 0px;
     padding-right: 0px;
     padding-top: 15px;
@@ -180,7 +180,7 @@ h2.logo {
 
 footer {
     font-size: 9pt;
-    margin-top: 25px;
+    margin-top: 20px;
     margin-left: 10px;
     margin-bottom: 30px;
 }
