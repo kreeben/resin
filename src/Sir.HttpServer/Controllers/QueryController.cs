@@ -29,7 +29,12 @@ namespace Sir.HttpServer.Controllers
 
             if (reader == null)
             {
-                throw new NotSupportedException(); // Media type not supported
+                reader = _plugins.Get<IHttpReader>("application/json");
+
+                if (reader == null)
+                {
+                    throw new NotSupportedException(); // Media type not supported
+                }
             }
 
             var timer = Stopwatch.StartNew();
