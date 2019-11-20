@@ -1,26 +1,27 @@
 ﻿@model IEnumerable<Sir.HttpServer.Controllers.SearchResultModel>
 @{
     var displayQ = ViewData["qf"] ?? ViewData["q"];
-}
 
-@{
     IList<Sir.HttpServer.Controllers.SearchResultModel> docs = Model == null ?
         new Sir.HttpServer.Controllers.SearchResultModel[0].ToList() : Model.ToList();
+
+    var jsonDownloadLink = $"{Context.Request.Path.Value.ToLower().Replace("/search", "/query")}{Context.Request.QueryString}";
+
 }
 <h3 class="querystats">@docs.Count results of @ViewData["total"] for <span class="querystats">@displayQ</span> in @ViewData["time_ms"] ms</h3>
-
+<div class="download-json-result"><a href="@jsonDownloadLink">Download result as JSON</a></div>
 <div>
     <ol>
         @foreach (var item in docs)
-        {
-            var url = item.Document["url"].ToString();
-            var prefix = url.StartsWith("http") ? string.Empty : "https://";
-            var uri = new Uri(prefix + url);
-            var host = uri.Host.ToString();
-            var title = item.Document.ContainsKey("title") ? item.Document["title"].ToString() : "Unknown title";
-            var score = (double)item.Document["___score"];
-            var ccUrl = (string)item.Document["filename"];
-            var warcDisplayName = ccUrl.Split('/').Last();
+            {
+                var url = item.Document["url"].ToString();
+                var prefix = url.StartsWith("http") ? string.Empty : "https://";
+                var uri = new Uri(prefix + url);
+                var host = uri.Host.ToString();
+                var title = item.Document.ContainsKey("title") ? item.Document["title"].ToString() : "Unknown title";
+                var score = (double)item.Document["___score"];
+                var ccUrl = (string)item.Document["filename"];
+                var warcDisplayName = ccUrl.Split('/').Last();
 
             <li>
                 <div>

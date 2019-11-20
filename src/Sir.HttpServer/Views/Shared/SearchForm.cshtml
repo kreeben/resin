@@ -10,6 +10,10 @@
     var querySelected = knownFields.Contains("query");
     var urlSelected = knownFields.Contains("url");
     var fileNameSelected = knownFields.Contains("filename");
+
+    // set default checks
+    titleSelected = descriptionSelected = !(!schemeSelected && !hostSelected && !pathSelected && !querySelected && !urlSelected && fileNameSelected);
+
 }
 @using (Html.BeginRouteForm("default", new { controller = "Search" }, FormMethod.Get))
 {
