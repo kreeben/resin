@@ -87,54 +87,54 @@ namespace Sir.DbUtil
             var ccName = args[1];
             var workingDir = args[2];
             var collection = args[3];
-            var fileName = $"{ccName}/wat.paths.gz";
-            var localFileName = Path.Combine(workingDir, fileName);
+            var pathsFileName = $"{ccName}/wat.paths.gz";
+            var localPathsFileName = Path.Combine(workingDir, pathsFileName);
 
-            if (!File.Exists(localFileName))
+            if (!File.Exists(localPathsFileName))
             {
-                var remotePath = $"https://commoncrawl.s3.amazonaws.com/crawl-data/{fileName}";
+                var url = $"https://commoncrawl.s3.amazonaws.com/crawl-data/{pathsFileName}";
 
-                log.LogInformation($"downloading {remotePath}");
+                log.LogInformation($"downloading {url}");
 
-                if (!Directory.Exists(Path.GetDirectoryName(localFileName)))
+                if (!Directory.Exists(Path.GetDirectoryName(localPathsFileName)))
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(localFileName));
+                    Directory.CreateDirectory(Path.GetDirectoryName(localPathsFileName));
                 }
 
                 using (var client = new WebClient())
                 {
-                    client.DownloadFile(remotePath, localFileName);
+                    client.DownloadFile(url, localPathsFileName);
                 }
 
-                log.LogInformation($"downloaded {localFileName}");
+                log.LogInformation($"downloaded {localPathsFileName}");
             }
 
-            log.LogInformation($"processing {localFileName}");
+            log.LogInformation($"processing {localPathsFileName}");
 
             Task writeTask = null;
 
-            foreach (var watFileName in ReadAllLinesGromGz(localFileName))
+            foreach (var watFileName in ReadAllLinesGromGz(localPathsFileName))
             {
-                var local = Path.Combine(workingDir, watFileName);
+                var localWatFileName = Path.Combine(workingDir, watFileName);
 
-                if (!File.Exists(local))
+                if (!File.Exists(localWatFileName))
                 {
-                    var remotePath = $"https://commoncrawl.s3.amazonaws.com/{watFileName}";
+                    var url = $"https://commoncrawl.s3.amazonaws.com/{watFileName}";
 
-                    log.LogInformation($"downloading {remotePath}");
+                    log.LogInformation($"downloading {url}");
 
-                    if (!Directory.Exists(Path.GetDirectoryName(local)))
+                    if (!Directory.Exists(Path.GetDirectoryName(localWatFileName)))
                     {
-                        Directory.CreateDirectory(Path.GetDirectoryName(local));
+                        Directory.CreateDirectory(Path.GetDirectoryName(localWatFileName));
                     }
 
                     using (var client = new WebClient())
                     {
-                        client.DownloadFile(remotePath, local);
+                        client.DownloadFile(url, localWatFileName);
                     }
-                }
 
-                log.LogInformation($"processing {local}");
+                    log.LogInformation($"downloaded {localWatFileName}");
+                }
 
                 var warcFileName = watFileName.Replace(".wat", "").Replace("/wat", "/warc");
 
@@ -145,8 +145,10 @@ namespace Sir.DbUtil
                     writeTask.Wait();
                 }
 
+                log.LogInformation($"processing {localWatFileName}");
+
                 writeTask = Task.Run(
-                    () => WriteCC(local, collection, model, logger, log, warcFileName));
+                    () => WriteCC(localWatFileName, collection, model, logger, log, warcFileName));
             }
         }
 
