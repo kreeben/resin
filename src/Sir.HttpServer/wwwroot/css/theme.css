@@ -145,6 +145,7 @@ input[type="text"] {
 h3.querystats{
     color:gray;
     margin-left: 5px;
+    font-size: 13pt;
 }
 
 span.querystats {
@@ -198,4 +199,9 @@ input[type="text"].collection {
     margin-left:10px;
     margin-bottom: 10px;
     font-size: 10pt;
+    color: gray;
+}
+
+.download-json-result a{
+    color: gray;
 }
