@@ -6,10 +6,10 @@
         new Sir.HttpServer.Controllers.SearchResultModel[0].ToList() : Model.ToList();
 
     var jsonDownloadLink = $"{Context.Request.Path.Value.ToLower().Replace("/search", "/query")}{Context.Request.QueryString}";
-
+    var crawlLink = $"{Context.Request.Path.Value.ToLower().Replace("/search", "/crawl")}{Context.Request.QueryString}";
 }
 <h3 class="querystats">@docs.Count results of @ViewData["total"] for <span class="querystats">@displayQ</span> in @ViewData["time_ms"] ms</h3>
-<div class="download-json-result"><a href="@jsonDownloadLink">Download result set as JSON</a></div>
+<div class="download-json-result">Download result as <a href="@jsonDownloadLink" title="Use a HTTP client to GET result as Content-Type application/json">JSON</a> or <a href="@crawlLink" title="Crawl all WARC files from the result set">crawl</a> the referenced WARC files.</div>
 <div>
     <ol>
         @foreach (var item in docs)
@@ -31,8 +31,7 @@
                     <div class="document-body">
                         <span class="medium-text">@host</span><br />
                         <span class="medium-text">Score: @score.ToString("N2")%</span><br />
-                        <span class="medium-text">@warcDisplayName:</span>
-                        <span class="medium-text"><a class="warc-link" href="https://commoncrawl.s3.amazonaws.com/@ccUrl">download</a> or <a class="warc-link" href="#">crawl</a></span>
+                        <span class="medium-text"><a class="result-link" href="https://commoncrawl.s3.amazonaws.com/@ccUrl">@warcDisplayName</a> (<a class="warc-link" href="#">crawl</a>)</span>
                     </div>
                 </div>
             </li>

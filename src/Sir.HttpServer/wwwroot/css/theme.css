@@ -28,7 +28,7 @@ a.result-link:visited {
 }
 
 a.warc-link {
-    color: gray;
+    color: orangered;
 }
 
 a.warc-link:visited {
@@ -36,8 +36,8 @@ a.warc-link:visited {
 }
 
 label{
-    font-size: 9pt;
-    color: gray;
+    font-size: 10pt;
+    color: black;
 }
 
 a {
@@ -205,7 +205,7 @@ input[type="text"].collection {
     color: gray;
 }
 
-.download-json-result a{
-    font-size: 9pt;
-    color: gray;
+.blog-wrapper{
+    font-size: 10pt;
+    margin-left: 15px;
 }

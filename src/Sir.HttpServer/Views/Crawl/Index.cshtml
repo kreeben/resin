@@ -1,0 +1,23 @@
+﻿@{
+    Layout = "~/Views/_Layout.cshtml";
+}
+    <form action="/crawl/" method="post">
+        <div class="blog-wrapper">
+            <h2>So, you want to crawl the crawl.</h2>
+            <p>Choose between three different ways to crawl your result:</p>
+            <p>
+                <label><input type="radio" name="job" value="fci" /> <strong>Fetch and index all WARC files</strong> referenced in your result.</label>
+            </p>
+            <p>
+                <label><input type="radio" name="job" value="ei" /> <strong>Extract from WARC files and index</strong> those resources referenced in your result.</label>
+            </p>
+            <p>
+                <label><input type="radio" name="job" value="eri" /> <strong>Crawl and index</strong> those resources referenced in your result.</label>
+            </p>
+            <p><input type="text" placeholder="Enter a name for your index" name="collection" /><input type="submit" /></p>
+            <p>*) You will reference the name of your index (or "collection") when reading, writing and querying. </p>
+            <p><strong>E.g. Read with a browser:</strong> HTTP GET text/html <strong>[host]/search?collection=[Your_Collection]</strong></p>
+            <p><strong>E.g. Read with a HTTP client:</strong> HTTP GET application/json <strong>[host]/query?collection=[Your_Collection]</strong></p>
+            <p><strong>E.g. Write with a HTTP client:</strong> HTTP POST application/json <strong>[host]/write?collection=[Your_Collection]</strong></p>
+        </div>
+    </form>
