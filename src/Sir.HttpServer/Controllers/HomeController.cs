@@ -16,5 +16,35 @@ namespace Sir.HttpServer.Controllers
         {
             return View();
         }
+
+        [Route("/about")]
+        public ActionResult About()
+        {
+            return View();
+        }
+
+        [Route("/faq")]
+        public ActionResult Faq()
+        {
+            return View();
+        }
+
+        [Route("/donate")]
+        public ActionResult Donate()
+        {
+            return View();
+        }
+
+        [Route("/toc")]
+        public ActionResult Toc()
+        {
+            return View();
+        }
+
+        [Route("/contact")]
+        public ActionResult Contact()
+        {
+            return View();
+        }
     }
 }
