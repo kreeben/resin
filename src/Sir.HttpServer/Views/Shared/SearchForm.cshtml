@@ -24,14 +24,14 @@
                 <span>Search <a href="https://commoncrawl.org/the-data/get-started/#WARC-Format">WARC</a> file resources</span>;
             }
         </legend>
-        <input type="checkbox" name="field" id="title" value="title" @(titleSelected ? "checked" : "") /><label for="title">title</label>
-        <input type="checkbox" name="field" id="description" value="description" @(descriptionSelected ? "checked" : "") /><label for="description">description</label>
-        <input type="checkbox" name="field" id="filename" value="filename" @(fileNameSelected ? "checked" : "") /><label for="filename">filename</label>
-        <input type="checkbox" name="field" id="url" value="url" @(urlSelected ? "checked" : "") /><label for="url">url</label>
-        <input type="checkbox" name="field" id="scheme" value="scheme" @(schemeSelected ? "checked" : "") /><label for="scheme">scheme</label>
-        <input type="checkbox" name="field" id="host" value="host" @(hostSelected ? "checked" : "") /><label for="host">host</label>
-        <input type="checkbox" name="field" id="path" value="path" @(pathSelected ? "checked" : "") /><label for="path">path</label>
-        <input type="checkbox" name="field" id="query" value="query" @(querySelected ? "checked" : "") /><label for="query">query</label>
+        <label><input type="checkbox" name="field" id="title" value="title" @(titleSelected ? "checked" : "") />title</label>
+        <label><input type="checkbox" name="field" id="description" value="description" @(descriptionSelected ? "checked" : "") />description</label>
+        <label><input type="checkbox" name="field" id="filename" value="filename" @(fileNameSelected ? "checked" : "") />filename</label>
+        <label><input type="checkbox" name="field" id="url" value="url" @(urlSelected ? "checked" : "") />url</label>
+        <label><input type="checkbox" name="field" id="scheme" value="scheme" @(schemeSelected ? "checked" : "") />scheme</label>
+        <label><input type="checkbox" name="field" id="host" value="host" @(hostSelected ? "checked" : "") />host</label>
+        <label><input type="checkbox" name="field" id="path" value="path" @(pathSelected ? "checked" : "") />path</label>
+        <label><input type="checkbox" name="field" id="query" value="query" @(querySelected ? "checked" : "") />query</label>
     </fieldset>
     <div class="input-wrapper">
         <div class="q">
