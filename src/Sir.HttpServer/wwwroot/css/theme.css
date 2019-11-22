@@ -116,19 +116,6 @@ input[type="checkbox"]{
     vertical-align: sub;
 }
 
-div.q {
-    float: left;
-    width: 70%;
-    height: 25px;
-}
-
-div.buttons {
-    float: left;
-    width: 30%;
-    text-align: right;
-    height: 25px;
-}
-
 div.buttons button {
     width: 50%;
     padding: 0px 0px 0px 0px;
@@ -193,7 +180,34 @@ input[type="text"].collection {
 
 .input-wrapper {
     height: 25px;
-    width: 100%;
+    width: 80%;
+}
+
+div.q {
+    float: left;
+    width: 80%;
+    height: 25px;
+}
+
+div.buttons {
+    float: left;
+    width: 20%;
+    text-align: right;
+    height: 25px;
+}
+
+@media only screen and (max-width: 600px) {
+    .input-wrapper {
+        height: 25px;
+        width: 100%;
+    }
+    div.q {
+        width: 70%;
+    }
+
+    div.buttons {
+        width: 30%;
+    }
 }
 
 .download-json-result{
