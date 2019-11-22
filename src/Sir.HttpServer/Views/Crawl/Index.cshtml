@@ -7,7 +7,7 @@
     <form action="/crawl/" method="post">
         <div class="blog-wrapper">
             <a href="@searchLink">&#8592; Back to result</a>
-            <h2>We offer four ways for you to crawl your result:</h2>
+            <h2>Here are four ways to crawl your result:</h2>
             <p>
                 <label><input type="radio" name="job" value="fi" /> <strong>Fetch WARC files and index</strong> their content.</label>
             </p>
@@ -21,13 +21,14 @@
                 <label><input type="radio" name="job" value="wcir" /> <strong>Recurringly web crawl and index</strong> those resources referenced in your result.</label>
             </p>
             <p>
-                With any of our offers, when the crawling job has completed we will host a searchable document collection 
-                with the data that was collected during the crawl. 
-                You will be able to access this data using a web browser or a HTTP client.
+                <strong>Always included:</strong> When the crawling job has completed we will have created a 
+                searchable document collection from the data that was collected during the crawl. 
+                We will host this document collection. You will be able to query it using a web browser, 
+                join it with other collections and, with a proper HTTP client, query, append to or download it.
             </p>
             <p>
                 Name your collection carefully.
-                You will need to reference your collection by name when reading, querying and writing.
+                You will need to reference your collection by name anytime you query or write.
             </p>
             <p><input type="text" placeholder="Name your collection" name="collection" /><input type="submit" /></p>
         </div>
