@@ -18,6 +18,10 @@ sup, sub {
     font-weight:600;
 }
 
+.result-list{
+    margin-right: 5px;
+}
+
 a.result-link {
     font-size: 10pt;
     color: mediumblue;
@@ -63,7 +67,7 @@ p {
 }
 
 ol {
-    padding: 5px 5px 5px 32px;
+    padding: 5px 5px 5px 30px;
     margin: 0px 0px 0px 0px;
 }
 
@@ -140,7 +144,7 @@ input[type="text"] {
 
 h3.querystats{
     color:gray;
-    margin-left: 15px;
+    margin-left: 10px;
     font-size: 13pt;
 }
 
@@ -160,7 +164,7 @@ h2.logo {
     font-size: 9pt;
     border: none;
     width: 90%;
-    margin-left: 13px;
+    margin-left: 10px;
     margin-right: 0px;
     margin-top: 0px;
     margin-bottom: 15px;
@@ -207,7 +211,7 @@ div.buttons {
 }
 
 .download-json-result{
-    margin-left:18px;
+    margin-left:13px;
     margin-bottom: 10px;
     font-size: 10pt;
     color: black;

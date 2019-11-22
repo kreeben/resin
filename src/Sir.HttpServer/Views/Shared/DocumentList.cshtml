@@ -10,7 +10,7 @@
 }
 <h3 class="querystats">@docs.Count results of @ViewData["total"] for <span class="querystats">@displayQ</span> in @ViewData["time_ms"] ms</h3>
 <div class="download-json-result">Download result as <a href="@jsonDownloadLink" title="Use a HTTP client to GET result as Content-Type application/json">JSON</a> or <a href="@crawlLink" title="Crawl all WARC files from the result set">crawl</a> the referenced WARC files.</div>
-<div>
+<div class="result-list">
     <ol>
         @foreach (var item in docs)
             {
