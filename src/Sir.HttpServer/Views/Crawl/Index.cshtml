@@ -6,7 +6,7 @@
 }
     <form action="/crawl/" method="post">
         <div class="blog-wrapper">
-            <h2>So, you want to crawl the crawl.</h2>
+            <h2>You want to crawl the crawl?</h2>
             <p>Choose between three different ways to crawl <a href="@searchLink">your result</a>:</p>
             <p>
                 <label><input type="radio" name="job" value="fci" /> <strong>Fetch WARC files and index</strong> their content.</label>
@@ -17,10 +17,10 @@
             <p>
                 <label><input type="radio" name="job" value="eri" /> <strong>Crawl and index</strong> those resources referenced in your result.</label>
             </p>
-            <p><input type="text" placeholder="Enter a name for your index" name="collection" /><input type="submit" /></p>
+            <p><input type="text" placeholder="Name your collection" name="collection" /><input type="submit" /></p>
             <p>We will create a searchable document collection from the crawled data. You will reference this name when reading, writing and querying. 
             You'll be able to read your data:</p>
-            <p><strong>With a browser:</strong> HTTP GET text/html <strong>crawlcrawler.com/?collection=[Your_Collection]</strong></p>
-            <p><strong>With any HTTP client:</strong> HTTP GET application/json <strong>crawlcrawler.com/query?collection=[Your_Collection]&q=[Your_Query]&field=title&field=description</strong></p>
+            <p><h3>With a browser</h3> HTTP GET text/html<br /> <strong>crawlcrawler.com/?collection=[Your_Collection]</strong></p>
+            <p><h3>With any HTTP client</h3> HTTP GET application/json <br /><strong>crawlcrawler.com/query?collection=[Your_Collection]&q=[Your_Query]&field=title&field=description</strong></p>
         </div>
     </form>
