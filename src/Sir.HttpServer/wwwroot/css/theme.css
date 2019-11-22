@@ -75,16 +75,6 @@ li{
     font-size: 10pt;
 }
 
-div.upvote {
-    font-size: 0.75em;
-    margin-bottom: 3px;
-    margin-right: 4px;
-    float: left;
-}
-
-.medium-text {
-    font-size: 9pt;
-}
 
 footer {
     font-size: 9pt;
@@ -104,6 +94,23 @@ footer a {
 
 footer p {
     margin-top: 20px;
+}
+
+.pre {
+    background-color: #d4d4d4;
+    padding: 5px 5px 5px 5px;
+    margin-top: 5px;
+}
+
+div.upvote {
+    font-size: 0.75em;
+    margin-bottom: 3px;
+    margin-right: 4px;
+    float: left;
+}
+
+.medium-text {
+    font-size: 9pt;
 }
 
 .document-body {

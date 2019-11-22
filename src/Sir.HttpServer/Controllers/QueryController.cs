@@ -20,7 +20,6 @@ namespace Sir.HttpServer.Controllers
         }
 
         [HttpGet]
-        [HttpPut]
         [HttpPost]
         public IActionResult Get()
         {
