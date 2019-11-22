@@ -89,7 +89,7 @@ div.upvote {
 footer {
     font-size: 9pt;
     margin-top: 20px;
-    margin-left: 15px;
+    margin-left: 10px;
     margin-bottom: 30px;
 }
 
@@ -189,24 +189,64 @@ input[type="text"].collection {
 
 div.q {
     float: left;
-    width: 85%;
+    width: 90%;
     height: 25px;
 }
 
 div.buttons {
     float: left;
-    width: 15%;
+    width: 10%;
     text-align: right;
     height: 25px;
 }
 
-@media only screen and (max-width: 635px) {
+@media only screen and (max-width: 935px) {
+    div.q {
+        width: 73%;
+    }
+
+    div.buttons {
+        width: 27%;
+    }
+}
+
+@media only screen and (max-width: 335px) {
     div.q {
         width: 70%;
     }
 
     div.buttons {
         width: 30%;
+    }
+}
+
+@media only screen and (max-width: 315px) {
+    div.q {
+        width: 60%;
+    }
+
+    div.buttons {
+        width: 40%;
+    }
+}
+
+@media only screen and (max-width: 235px) {
+    div.q {
+        width: 50%;
+    }
+
+    div.buttons {
+        width: 50%;
+    }
+}
+
+@media only screen and (max-width: 195px) {
+    div.q {
+        width: 40%;
+    }
+
+    div.buttons {
+        width: 60%;
     }
 }
 
