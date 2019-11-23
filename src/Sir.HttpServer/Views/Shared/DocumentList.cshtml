@@ -9,10 +9,12 @@
     var crawlLink = $"{Context.Request.Path.Value.ToLower().Replace("/search", "/crawl")}{Context.Request.QueryString}";
 }
 <h3 class="querystats">@docs.Count results of @ViewData["total"] for <span class="querystats">@displayQ</span> in @ViewData["time_ms"] ms</h3>
-<div class="download-json-result">Download result as <a href="@jsonDownloadLink" title="Use a HTTP client to GET result as Content-Type application/json">JSON</a> or <a href="@crawlLink">crawl</a>.</div>
-<div class="result-list">
-    <ol>
-        @foreach (var item in docs)
+@if (docs.Count > 0)
+{
+    <div class="download-json-result">Download result as <a href="@jsonDownloadLink" title="Use a HTTP client to GET result as Content-Type application/json">JSON</a> or <a href="@crawlLink">crawl</a>.</div>
+    <div class="result-list">
+        <ol>
+            @foreach (var item in docs)
             {
                 var url = item.Document["url"].ToString();
                 var prefix = url.StartsWith("http") ? string.Empty : "https://";
@@ -23,18 +25,19 @@
                 var ccUrl = (string)item.Document["filename"];
                 var warcDisplayName = ccUrl.Split('/').Last();
 
-            <li>
-                <div>
-                    <div class="document-header">
-                        <span><a class="result-link" href="@uri.ToString()">@title</a></span>
+                <li>
+                    <div>
+                        <div class="document-header">
+                            <span><a class="result-link" href="@uri.ToString()">@title</a></span>
+                        </div>
+                        <div class="document-body">
+                            <span class="medium-text">@host</span><br />
+                            <span class="medium-text">Score: @score.ToString("N2")%</span><br />
+                            <span class="medium-text"><a class="warc-link" href="https://commoncrawl.s3.amazonaws.com/@ccUrl">@warcDisplayName</a></span>
+                        </div>
                     </div>
-                    <div class="document-body">
-                        <span class="medium-text">@host</span><br />
-                        <span class="medium-text">Score: @score.ToString("N2")%</span><br />
-                        <span class="medium-text"><a class="warc-link" href="https://commoncrawl.s3.amazonaws.com/@ccUrl">@warcDisplayName</a></span>
-                    </div>
-                </div>
-            </li>
-        }
-    </ol>
-</div>
+                </li>
+            }
+        </ol>
+    </div>
+}

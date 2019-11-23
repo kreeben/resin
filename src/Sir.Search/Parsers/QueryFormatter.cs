@@ -15,7 +15,7 @@ namespace Sir.Search
 
         public string Format(HttpRequest request, IStringModel tokenizer)
         {
-            var parser = new HttpQueryParser(_sessionFactory, tokenizer);
+            var parser = new HttpQueryParser(new QueryParser(_sessionFactory, tokenizer));
             var query = parser.ParseRequest(request);
             var dictionary = new Dictionary<string, object>();
             

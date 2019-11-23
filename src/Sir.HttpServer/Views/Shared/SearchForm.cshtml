@@ -21,19 +21,26 @@
             {
                 <span>Search <a href="https://commoncrawl.org/the-data/get-started/#WAT-Format">WAT</a> meta-data from <a href="https://commoncrawl.org/">Common Crawl's</a> <a href="https://commoncrawl.org/2019/10/october-2019-crawl-archive-now-available/">crawl</a> to find web pages and their corresponding <a href="https://commoncrawl.org/the-data/get-started/#WARC-Format">WARC</a>.</span>;
             }
-            else
+            else if (col == "cc_warc")
             {
                 <span>Search <a href="https://commoncrawl.org/the-data/get-started/#WARC-Format">WARC</a> file resources</span>;
+            }
+            else
+            {
+                <span>Search @col</span>;
             }
         </legend>
         <label><input type="checkbox" name="field" id="title" value="title" @(titleSelected ? "checked" : "") />title</label>
         <label><input type="checkbox" name="field" id="description" value="description" @(descriptionSelected ? "checked" : "") />description</label>
-        <label><input type="checkbox" name="field" id="filename" value="filename" @(fileNameSelected ? "checked" : "") />filename</label>
-        <label><input type="checkbox" name="field" id="url" value="url" @(urlSelected ? "checked" : "") />url</label>
-        <label><input type="checkbox" name="field" id="scheme" value="scheme" @(schemeSelected ? "checked" : "") />scheme</label>
-        <label><input type="checkbox" name="field" id="host" value="host" @(hostSelected ? "checked" : "") />host</label>
-        <label><input type="checkbox" name="field" id="path" value="path" @(pathSelected ? "checked" : "") />path</label>
-        <label><input type="checkbox" name="field" id="query" value="query" @(querySelected ? "checked" : "") />query</label>
+        @if (col == "cc_wat" || col == "cc_warc")
+        {
+            <label><input type="checkbox" name="field" id="filename" value="filename" @(fileNameSelected ? "checked" : "") />filename</label>
+            <label><input type="checkbox" name="field" id="url" value="url" @(urlSelected ? "checked" : "") />url</label>
+            <label><input type="checkbox" name="field" id="scheme" value="scheme" @(schemeSelected ? "checked" : "") />scheme</label>
+            <label><input type="checkbox" name="field" id="host" value="host" @(hostSelected ? "checked" : "") />host</label>
+            <label><input type="checkbox" name="field" id="path" value="path" @(pathSelected ? "checked" : "") />path</label>
+            <label><input type="checkbox" name="field" id="query" value="query" @(querySelected ? "checked" : "") />query</label>
+        }
     </fieldset>
     <div class="input-wrapper">
         <div class="q">

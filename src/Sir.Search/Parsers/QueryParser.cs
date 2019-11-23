@@ -139,6 +139,13 @@ namespace Sir.Search
 
                 foreach (var collection in collections)
                 {
+                    var terms = ParseTerms(collection, key, value, and, or, not);
+
+                    if (terms.Count == 0)
+                    {
+                        continue;
+                    }
+
                     var q = new Query(ParseTerms(collection, key, value, and, or, not), and, or, not);
 
                     if (r == null)

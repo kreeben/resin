@@ -18,7 +18,7 @@ namespace Sir.Search
                 model, 
                 loggerFactory);
 
-            var httpParser = new HttpQueryParser(sessionFactory, model);
+            var httpParser = new HttpQueryParser(new QueryParser(sessionFactory, model));
 
             services.AddSingleton(typeof(IStringModel), model);
             services.AddSingleton(typeof(ISessionFactory), sessionFactory);

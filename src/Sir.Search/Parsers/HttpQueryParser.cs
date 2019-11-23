@@ -14,12 +14,10 @@ namespace Sir.Search
     public class HttpQueryParser
     {
         private readonly QueryParser _parser;
-        private readonly SessionFactory _sessionFactory;
 
-        public HttpQueryParser(SessionFactory sessionFactory, IStringModel model)
+        public HttpQueryParser(QueryParser parser)
         {
-            _parser = new QueryParser(sessionFactory, model);
-            _sessionFactory = sessionFactory;
+            _parser = parser;
         }
 
         public Query ParseRequest(HttpRequest request)

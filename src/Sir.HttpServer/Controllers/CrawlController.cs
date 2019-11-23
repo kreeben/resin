@@ -22,6 +22,33 @@ namespace Sir.HttpServer.Controllers
         [HttpPost]
         public IActionResult Post(string[] collection, string[] field, string q, string target, string job)
         {
+            bool isValid = true;
+            ViewBag.JobValidationError = null;
+            ViewBag.TargetCollectionValidationError = null;
+
+            if (string.IsNullOrWhiteSpace(job))
+            {
+                ViewBag.JobValidationError = "Please select a job to execute.";
+                isValid = false;
+            }
+
+            if (string.IsNullOrWhiteSpace(target))
+            {
+                ViewBag.TargetCollectionValidationError = "Please enter a name for your collection.";
+                isValid = false;
+            }
+
+            if (!isValid)
+            {
+                ViewBag.Collection = collection;
+                ViewBag.Field = field;
+                ViewBag.Q = q;
+                ViewBag.Target = target;
+                ViewBag.Job = job;
+
+                return View("Index");
+            }
+
             var jobType = job.ToLower();
 
             return View(jobType);
