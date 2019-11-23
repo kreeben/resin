@@ -35,7 +35,9 @@ namespace Sir.Search
                     .SelectMany(x=>x.Split(',', StringSplitOptions.RemoveEmptyEntries))
                     .ToArray();
                 var naturalLanguage = request.Query["q"].ToString();
-                string[] fields = request.Query["field"].ToArray();
+                string[] fields = request.Query["field"].ToArray()
+                    .SelectMany(x => x.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    .ToArray();
                 bool and = request.Query.ContainsKey("AND");
                 bool or = !and && request.Query.ContainsKey("OR");
 

@@ -4,7 +4,7 @@
 @{ 
     var searchLink = $"{Context.Request.Path.Value.ToLower().Replace("/crawl", "/search")}{Context.Request.QueryString}";
 }
-    <form action="/crawl/" method="post">
+    <form action="/crawl/@Context.Request.QueryString" method="post">
         <div class="blog-wrapper">
             <a href="@searchLink">&#8592; Back to result</a>
             <h2>Crawl your result</h2>
@@ -18,18 +18,21 @@
                 <label><input type="radio" name="job" value="wci" /> <strong>Web crawl and index</strong> those resources referenced in your result.</label>
             </p>
             <p>
-                <label><input type="radio" name="job" value="wcir" /> <strong>Recurringly web crawl and index</strong> those resources referenced in your result.</label>
+                <label><input type="radio" name="job" value="rwci" /> <strong>Recurringly web crawl and index</strong> those resources referenced in your result.</label>
             </p>
             <p>
-                <strong>Always included:</strong> When the crawling job has completed we will have created a 
-                searchable document collection from the data that was collected during the crawl. 
-                We will host this document collection. You will be able to query it using a web browser, 
+                <strong>Always included:</strong> When the crawling job has completed we will have created a
+                searchable document collection from the data that was collected during the crawl.
+                We will host this document collection. You will be able to query it using a web browser,
                 join it with other collections and, with a proper HTTP client, query, append to or download it.
             </p>
             <p>
                 Name your collection carefully.
-                You will need to reference your collection by name anytime you query or write.
+                You will need to reference your collection by name anytime you wish to query it.
             </p>
-            <p><input type="text" placeholder="Name your collection" name="collection" /><input type="submit" /></p>
+            <p><input type="text" placeholder="Name your collection" name="target" /><input type="submit" /></p>
+            <input type="hidden" id="q" value="@Context.Request.Query["q"].ToString()" />
+            <input type="hidden" id="field" value="@Context.Request.Query["field"].ToString()" />
+            <input type="hidden" id="collection" value="@Context.Request.Query["collection"].ToString()" />
         </div>
     </form>

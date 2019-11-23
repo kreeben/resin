@@ -20,9 +20,13 @@ namespace Sir.HttpServer.Controllers
         }
 
         [HttpPost]
-        public IActionResult Post()
+        public IActionResult Post(string[] collection, string[] field, string q, string target, string job)
         {
-            return View();
+            var jobType = job.ToLower();
+
+            return View(jobType);
+
+            
         }
     }
 }

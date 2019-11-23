@@ -1,7 +1,9 @@
 ﻿@{
     var col = Context.Request.Query.ContainsKey("collection") ? Context.Request.Query["collection"].ToString() : "cc_wat";
     var query = Context.Request.Query["q"].ToString();
-    var knownFields = Context.Request.Query["field"].ToArray();
+    var knownFields = Context.Request.Query["field"].ToArray()
+                    .SelectMany(x => x.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    .ToArray();
     var titleSelected = knownFields.Contains("title");
     var descriptionSelected = knownFields.Contains("description");
     var schemeSelected = knownFields.Contains("scheme");
