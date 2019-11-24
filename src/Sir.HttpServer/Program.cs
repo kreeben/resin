@@ -20,8 +20,12 @@ namespace Sir.HttpServer
             .ConfigureLogging(logging =>
             {
                 logging.ClearProviders();
-                //logging.AddConsole();
                 logging.AddDebug();
+
+                if (!Directory.Exists("AppData"))
+                    Directory.CreateDirectory("AppData");
+
+                logging.AddFile("AppData/log-{Date}.txt");
             })
             .ConfigureWebHostDefaults(webBuilder =>
             {

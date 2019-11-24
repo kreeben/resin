@@ -41,7 +41,10 @@ namespace Sir.HttpServer
             }
         }
 
-        public void Configure(IApplicationBuilder app, IHostApplicationLifetime applicationLifetime, IWebHostEnvironment env)
+        public void Configure(
+            IApplicationBuilder app, 
+            IHostApplicationLifetime applicationLifetime, 
+            IWebHostEnvironment env)
         {
             app.UseMiddleware<ErrorLoggingMiddleware>();
 
