@@ -17,56 +17,6 @@
             <p>
                 Your searchable collection, once we've finished processing it, is <a href="@searchLink">here</a>.
             </p>
-            <h3>Read/write instructions</h3>
-            <p>
-                <h4>Read with browser</h4> 
-                HTTP GET text/html<br /> 
-                <span>crawlcrawler.com/?collection=@collection</span>
-            </p>
-            <p>
-                <h4>Read with any HTTP client</h4> 
-                HTTP GET application/json <br />
-                <span>crawlcrawler.com/query?collection=@collection&q=[Your_Query]&field=title&field=description</span>
-            </p>
-            <p>
-                <h4>Write (append to) with any HTTP client</h4> 
-                HTTP POST application/json (list of JSON documents)<br />
-                <span>crawlcrawler.com/write?collection=@collection</span>
-            </p>
-            <h4>Advanced querying</h4>
-            HTTP POST application/json<br />
-            <span>crawlcrawler.com/query?collection=@collection</span>
-            <div class="pre">
-                <pre>
-{
-	"and":
-	{
-		"collection": "film,music",
-		"title": "rocky eye of the tiger",
-		"or":
-		{
-			"title": "rambo",
-			"or": 
-			{
-				"title": "cobra"
-				"or":
-				{
-					"cast": "antonio banderas"
-				}			
-			}	
-		},
-		"and":
-		{
-			"year": 1980,
-			"operator": "gt"
-		},
-		"not":
-		{
-			"title": "first blood"
-		}
-	}
-}
-                </pre>
-            </div>
+            @{await Html.RenderPartialAsync("Instructions");}
         </div>
     </form>

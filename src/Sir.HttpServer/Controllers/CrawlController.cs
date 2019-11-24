@@ -52,8 +52,6 @@ namespace Sir.HttpServer.Controllers
             var jobType = job.ToLower();
 
             return View(jobType);
-
-            
         }
     }
 }
