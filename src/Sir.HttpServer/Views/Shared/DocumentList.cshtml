@@ -23,7 +23,6 @@
                 var title = item.Document.ContainsKey("title") ? item.Document["title"].ToString() : "Unknown title";
                 var score = (double)item.Document["___score"];
                 var ccUrl = (string)item.Document["filename"];
-                var warcDisplayName = ccUrl.Split('/').Last();
 
                 <li>
                     <div>
@@ -33,7 +32,7 @@
                         <div class="document-body">
                             <span class="medium-text">@host</span><br />
                             <span class="medium-text">Score: @score.ToString("N2")%</span><br />
-                            <span class="medium-text"><a class="warc-link" href="https://commoncrawl.s3.amazonaws.com/@ccUrl">@warcDisplayName</a></span>
+                            <span class="medium-text"><a class="warc-link" href="https://commoncrawl.s3.amazonaws.com/@ccUrl">Download WET</a></span>
                         </div>
                     </div>
                 </li>

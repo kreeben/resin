@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Sir.HttpServer.Features;
 using System;
 using System.IO;
 using System.Linq;
@@ -11,6 +12,7 @@ namespace Sir.HttpServer
         public static void RegisterComponents(
             IServiceCollection services, PluginsCollection plugins, IServiceProvider container)
         {
+            services.AddSingleton(typeof(CrawlQueue));
         }
 
         public static IServiceProvider Configure(IServiceCollection services)

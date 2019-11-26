@@ -18,11 +18,15 @@ namespace Sir.Search
                 model, 
                 loggerFactory);
 
-            var httpParser = new HttpQueryParser(new QueryParser(sessionFactory, model));
+            var qp = new QueryParser(sessionFactory, model);
+
+
+            var httpParser = new HttpQueryParser(qp);
 
             services.AddSingleton(typeof(IStringModel), model);
             services.AddSingleton(typeof(ISessionFactory), sessionFactory);
             services.AddSingleton(typeof(SessionFactory), sessionFactory);
+            services.AddSingleton(typeof(QueryParser), qp);
             services.AddSingleton(typeof(HttpQueryParser), httpParser);
             services.AddSingleton(typeof(IHttpWriter), new HttpWriter(sessionFactory));
             services.AddSingleton(typeof(IHttpReader), new HttpReader(

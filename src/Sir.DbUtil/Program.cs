@@ -66,9 +66,9 @@ namespace Sir.DbUtil
             {
                 Slice(args);
             }
-            else if (command == "download_cc")
+            else if (command == "download_wat")
             {
-                DownloadAndIndexCC(args, model, loggerFactory, logger);
+                DownloadAndIndexWat(args, model, loggerFactory, logger);
             }
             else if (command == "truncate")
             {
@@ -82,7 +82,7 @@ namespace Sir.DbUtil
             logger.LogInformation($"executed {command}");
         }
 
-        private static void DownloadAndIndexCC(string[] args, BocModel model, ILoggerFactory logger, ILogger log)
+        private static void DownloadAndIndexWat(string[] args, BocModel model, ILoggerFactory logger, ILogger log)
         {
             var ccName = args[1];
             var workingDir = args[2];
@@ -136,7 +136,7 @@ namespace Sir.DbUtil
                     log.LogInformation($"downloaded {localWatFileName}");
                 }
 
-                var warcFileName = watFileName.Replace(".wat", "").Replace("/wat", "/warc");
+                var wetFileName = watFileName.Replace(".wat", "").Replace("/wat", "/wet");
 
                 if (writeTask != null)
                 {
@@ -148,19 +148,19 @@ namespace Sir.DbUtil
                 log.LogInformation($"processing {localWatFileName}");
 
                 writeTask = Task.Run(
-                    () => WriteCC(localWatFileName, collection, model, logger, log, warcFileName));
+                    () => WriteWatSegment(localWatFileName, collection, model, logger, log, wetFileName));
             }
         }
 
-        private static void WriteCC(
+        private static void WriteWatSegment(
             string fileName, 
             string collection, 
             IStringModel model, 
             ILoggerFactory log, 
             ILogger logger,
-            string warcFileName)
+            string wetFileName)
         {
-            var documents = ReadCC(fileName, warcFileName);
+            var documents = ReadCC(fileName, wetFileName);
             var collectionId = collection.ToHash();
             const int reportSize = 1000;
             var time = Stopwatch.StartNew();
@@ -202,7 +202,7 @@ namespace Sir.DbUtil
             logger.LogInformation($"indexed {fileName} in {time.Elapsed}");
         }
 
-        private static IEnumerable<IDictionary<string, object>> ReadCC(string fileName, string warcFileName)
+        private static IEnumerable<IDictionary<string, object>> ReadCC(string fileName, string wetFileName)
         {
             using (var fs = File.OpenRead(fileName))
             using (var zip = new GZipStream(fs, CompressionMode.Decompress))
@@ -278,7 +278,7 @@ namespace Sir.DbUtil
                                     { "path", url.AbsolutePath },
                                     { "query", url.Query },
                                     { "url", url.ToString() },
-                                    { "filename", warcFileName}
+                                    { "filename", wetFileName}
                                 };
                         }
                     }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Sir.HttpServer.Features;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,8 +10,14 @@ namespace Sir.HttpServer.Controllers
     [Route("crawl")]
     public class CrawlController : UIController
     {
-        public CrawlController(IConfigurationProvider config, ISessionFactory sessionFactory) : base(config, sessionFactory)
+        private readonly CrawlQueue _crawlQueue;
+
+        public CrawlController(
+            IConfigurationProvider config, 
+            ISessionFactory sessionFactory,
+            CrawlQueue crawlQueue) : base(config, sessionFactory)
         {
+            _crawlQueue = crawlQueue;
         }
 
         [HttpGet]
@@ -50,6 +57,8 @@ namespace Sir.HttpServer.Controllers
             }
 
             var jobType = job.ToLower();
+
+            _crawlQueue.Enqueue(new CrawlJob(collection, field, q, target, job));
 
             return View(jobType);
         }
