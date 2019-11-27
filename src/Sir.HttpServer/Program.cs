@@ -25,7 +25,7 @@ namespace Sir.HttpServer
                 if (!Directory.Exists("AppData"))
                     Directory.CreateDirectory("AppData");
 
-                logging.AddFile("AppData/log-{Date}.txt");
+                //logging.AddFile("AppData/log-{Date}.txt");
             })
             .ConfigureWebHostDefaults(webBuilder =>
             {

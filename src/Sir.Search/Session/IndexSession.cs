@@ -41,15 +41,17 @@ namespace Sir.Search
             _logger = logger;
         }
 
-        public void Put(long docId, long keyId, string value)
+        public void Put(long docId, long keyId, object value)
         {
-            var tokens = Model.Tokenize(value);
-
-            Parallel.ForEach(tokens, token =>
-            //foreach (var token in tokens)
+            if (value is string strValue)
             {
-                Put(docId, keyId, token);
-            });
+                var tokens = Model.Tokenize(strValue);
+
+                foreach (var token in tokens)
+                {
+                    Put(docId, keyId, token);
+                }
+            }
         }
 
         public void Put(long docId, long keyId, IVector vector)
@@ -99,6 +101,8 @@ namespace Sir.Search
             {
                 yield return new GraphInfo(ix.Key, ix.Value);
             }
+
+            yield break;
         }
 
         public void Flush()

@@ -18,7 +18,7 @@ namespace Sir.Search
             var root = new Dictionary<string, object>();
             var cursor = root;
 
-            foreach(var collection in collections)
+            foreach (var collection in collections)
             {
                 var query = new Dictionary<string, object>
                 {
@@ -188,7 +188,9 @@ namespace Sir.Search
 
             if (_sessionFactory.TryGetKeyId(collectionId, key.ToHash(), out keyId))
             {
-                foreach (var term in _model.Tokenize(value))
+                var tokens = _model.Tokenize(value);
+
+                foreach (var term in tokens)
                 {
                     terms.Add(new Term(collectionId, keyId, key, term, and, or, not));
                 }

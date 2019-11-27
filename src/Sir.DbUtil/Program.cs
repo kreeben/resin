@@ -74,6 +74,10 @@ namespace Sir.DbUtil
             {
                 Truncate(args, model, loggerFactory);
             }
+            else if (command == "truncate-index")
+            {
+                TruncateIndex(args, model, loggerFactory);
+            }
             else
             {
                 logger.LogInformation("unknown command: {0}", command);
@@ -82,11 +86,12 @@ namespace Sir.DbUtil
             logger.LogInformation($"executed {command}");
         }
 
-        private static void DownloadAndIndexWat(string[] args, BocModel model, ILoggerFactory logger, ILogger log)
+        private static void DownloadAndIndexWat(string[] args, IStringModel model, ILoggerFactory logger, ILogger log)
         {
             var ccName = args[1];
             var workingDir = args[2];
             var collection = args[3];
+            var take = args.Length == 5 ? int.Parse(args[4]) : 0;
             var pathsFileName = $"{ccName}/wat.paths.gz";
             var localPathsFileName = Path.Combine(workingDir, pathsFileName);
 
@@ -111,10 +116,16 @@ namespace Sir.DbUtil
 
             log.LogInformation($"processing {localPathsFileName}");
 
-            Task writeTask = null;
+            //Task writeTask = null;
+            var took = 0;
 
             foreach (var watFileName in ReadAllLinesGromGz(localPathsFileName))
             {
+                if (take > 0 && took++ == take)
+                {
+                    break;
+                }
+
                 var localWatFileName = Path.Combine(workingDir, watFileName);
 
                 if (!File.Exists(localWatFileName))
@@ -136,19 +147,21 @@ namespace Sir.DbUtil
                     log.LogInformation($"downloaded {localWatFileName}");
                 }
 
-                var wetFileName = watFileName.Replace(".wat", "").Replace("/wat", "/wet");
+                var refFileName = watFileName.Replace(".wat", "").Replace("/wat", "/warc");
 
-                if (writeTask != null)
-                {
-                    log.LogInformation($"synchronizing write");
+                //if (writeTask != null)
+                //{
+                //    log.LogInformation($"synchronizing write");
 
-                    writeTask.Wait();
-                }
+                //    writeTask.Wait();
+                //}
 
                 log.LogInformation($"processing {localWatFileName}");
 
-                writeTask = Task.Run(
-                    () => WriteWatSegment(localWatFileName, collection, model, logger, log, wetFileName));
+                WriteWatSegment(localWatFileName, collection, model, logger, log, refFileName);
+
+                //writeTask = Task.Run(
+                //    () => WriteWatSegment(localWatFileName, collection, model, logger, log, refFileName));
             }
         }
 
@@ -158,51 +171,22 @@ namespace Sir.DbUtil
             IStringModel model, 
             ILoggerFactory log, 
             ILogger logger,
-            string wetFileName)
+            string refFileName)
         {
-            var documents = ReadCC(fileName, wetFileName);
+            var documents = ReadCC(fileName, refFileName);
             var collectionId = collection.ToHash();
-            const int reportSize = 1000;
             var time = Stopwatch.StartNew();
-            var batchNo = 0;
 
             using (var sessionFactory = new SessionFactory(new IniConfiguration("sir.ini"), model, log))
             {
-                using (var writeSession = sessionFactory.CreateWriteSession(collectionId, model))
-                {
-                    using(var queue = new ProducerConsumerQueue<IList<IDictionary<string, object>>>(1,
-                        (batch) =>
-                        {
-                            var batchTime = Stopwatch.StartNew();
-
-                            foreach (var document in batch)
-                            {
-                                writeSession.Write(document);
-                            }
-
-                            var info = writeSession.GetIndexInfo();
-                            var t = batchTime.Elapsed.TotalMilliseconds;
-                            var docsPerSecond = (int)(reportSize / t * 1000);
-                            var debug = string.Join('\n', info.Info.Select(x => x.ToString()));
-
-                            logger.LogInformation(
-                                $"batch {batchNo++} took {batchTime.ElapsedMilliseconds} ms. {docsPerSecond} docs/s");
-
-                            logger.LogInformation($"\t{debug}");
-                        }))
-                    {
-                        foreach (var batch in documents.Batch(reportSize))
-                        {
-                            queue.Enqueue(batch.ToList());
-                        }
-                    }
-                }
+                sessionFactory.WriteAndReportConcurrent(
+                            new Job(collectionId, documents, model), logger);
             }
 
             logger.LogInformation($"indexed {fileName} in {time.Elapsed}");
         }
 
-        private static IEnumerable<IDictionary<string, object>> ReadCC(string fileName, string wetFileName)
+        private static IEnumerable<IDictionary<string, object>> ReadCC(string fileName, string refFileNae)
         {
             using (var fs = File.OpenRead(fileName))
             using (var zip = new GZipStream(fs, CompressionMode.Decompress))
@@ -278,7 +262,7 @@ namespace Sir.DbUtil
                                     { "path", url.AbsolutePath },
                                     { "query", url.Query },
                                     { "url", url.ToString() },
-                                    { "filename", wetFileName}
+                                    { "filename", refFileNae}
                                 };
                         }
                     }
@@ -327,55 +311,55 @@ namespace Sir.DbUtil
 
         private static void WriteWP(string[] args, IStringModel model, ILoggerFactory log)
         {
-            var fileName = args[1];
-            var dir = args[2];
-            var collection = args[3];
-            var skip = int.Parse(args[4]);
-            var take = int.Parse(args[5]);
-            var pageSize = int.Parse(args[6]);
-            const int reportSize = 1000;
-            var collectionId = collection.ToHash();
-            var batchNo = 0;
-            var payload = ReadWP(fileName, skip, take)
-                .Select(x => new Dictionary<string, object>
-                        {
-                                { "_language", x["language"].ToString() },
-                                { "_url", string.Format("www.wikipedia.org/search-redirect.php?family=wikipedia&language={0}&search={1}", x["language"], x["title"]) },
-                                { "title", x["title"] },
-                                { "body", x["text"] }
-                        });
+            //var fileName = args[1];
+            //var dir = args[2];
+            //var collection = args[3];
+            //var skip = int.Parse(args[4]);
+            //var take = int.Parse(args[5]);
+            //var pageSize = int.Parse(args[6]);
+            //const int reportSize = 1000;
+            //var collectionId = collection.ToHash();
+            //var batchNo = 0;
+            //var payload = ReadWP(fileName, skip, take)
+            //    .Select(x => new Dictionary<string, object>
+            //            {
+            //                    { "_language", x["language"].ToString() },
+            //                    { "_url", string.Format("www.wikipedia.org/search-redirect.php?family=wikipedia&language={0}&search={1}", x["language"], x["title"]) },
+            //                    { "title", x["title"] },
+            //                    { "body", x["text"] }
+            //            });
 
-            using (var sessionFactory = new SessionFactory(new IniConfiguration("sir.ini"), model, log))
-            {
-                foreach (var page in payload.Batch(pageSize))
-                {
-                    using (var writeSession = sessionFactory.CreateWriteSession(collectionId, model))
-                    {
-                        foreach (var batch in page.Batch(reportSize))
-                        {
-                            var time = Stopwatch.StartNew();
+            //using (var sessionFactory = new SessionFactory(new IniConfiguration("sir.ini"), model, log))
+            //{
+            //    foreach (var page in payload.Batch(pageSize))
+            //    {
+            //        using (var writeSession = sessionFactory.CreateWriteSession(collectionId, model))
+            //        {
+            //            foreach (var batch in page.Batch(reportSize))
+            //            {
+            //                var time = Stopwatch.StartNew();
 
-                            foreach (var document in page)
-                            {
-                                writeSession.Write(document);
-                            }
+            //                foreach (var document in page)
+            //                {
+            //                    writeSession.Write(document);
+            //                }
 
-                            var info = writeSession.GetIndexInfo();
-                            var t = time.Elapsed.TotalMilliseconds;
-                            var docsPerSecond = (int)(pageSize / t * 1000);
+            //                var info = writeSession.GetIndexInfo();
+            //                var t = time.Elapsed.TotalMilliseconds;
+            //                var docsPerSecond = (int)(pageSize / t * 1000);
 
-                            foreach (var stat in info.Info)
-                            {
-                                if (stat.Weight > 500)
-                                    Console.WriteLine(stat);
-                            }
+            //                foreach (var stat in info.Info)
+            //                {
+            //                    if (stat.Weight > 500)
+            //                        Console.WriteLine(stat);
+            //                }
 
-                            Console.WriteLine(
-                                    $"batch {batchNo++} took {t} ms. {docsPerSecond} docs/s");
-                        }
-                    }
-                }
-            }
+            //                Console.WriteLine(
+            //                        $"batch {batchNo++} took {t} ms. {docsPerSecond} docs/s");
+            //            }
+            //        }
+            //    }
+            //}
         }
 
         private static void Truncate(string[] args, IStringModel model, ILoggerFactory log)
@@ -386,6 +370,17 @@ namespace Sir.DbUtil
             using (var sessionFactory = new SessionFactory(new IniConfiguration("sir.ini"), model, log))
             {
                 sessionFactory.Truncate(collectionId);
+            }
+        }
+
+        private static void TruncateIndex(string[] args, IStringModel model, ILoggerFactory log)
+        {
+            var collection = args[1];
+            var collectionId = collection.ToHash();
+
+            using (var sessionFactory = new SessionFactory(new IniConfiguration("sir.ini"), model, log))
+            {
+                sessionFactory.TruncateIndex(collectionId);
             }
         }
 

@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 using HtmlAgilityPack;
 using Microsoft.Extensions.Logging;
 using Sir.Core;
@@ -21,6 +23,7 @@ namespace Sir.HttpServer.Features
         private readonly IStringModel _model;
         private readonly ILogger _logger;
         private readonly IReadSession _readSession;
+        private readonly HashSet<string> _enquedIds;
 
         public (Uri uri, string title) LastProcessed { get; private set; }
 
@@ -36,24 +39,30 @@ namespace Sir.HttpServer.Features
             _model = model;
             _logger = logger;
             _readSession = sessionFactory.CreateReadSession();
+            _enquedIds = new HashSet<string>();
         }
 
         public void Enqueue(CrawlJob job)
         {
-            _queue.Enqueue(job);
+            if (_enquedIds.Add(job.Id))
+            {
+                _queue.Enqueue(job);
+            }
         }
 
-        private void DoWork(CrawlJob job)
+        private void DoWork(CrawlJob crawlJob)
         {
             try
             {
-                var query = _queryParser.Parse(job.Collection, job.Q, job.Field, and: true, or: false);
+                var query = _queryParser.Parse(crawlJob.Collection, crawlJob.Q, crawlJob.Field, and: true, or: false);
                 var readResult = _readSession.Read(query, 0, int.MaxValue);
                 var wetFiles = new SortedList<string, object>();
 
                 foreach (var doc in readResult.Docs)
                 {
-                    wetFiles.TryAdd((string)doc["filename"], null);
+                    var wetFileName = ((string)doc["filename"]).Replace("/warc", "/wet").Replace(".gz", ".wet.gz");
+
+                    wetFiles.TryAdd(wetFileName, null);
                 }
 
                 using (var client = new WebClient())
@@ -65,9 +74,14 @@ namespace Sir.HttpServer.Features
                             warcId,
                             new string[] { "filename" }, and: true, or: false);
 
-                        var existingWetRecords = _readSession.Read(wetQuery, 0, 1);
+                        ReadResult existingWetRecords = null;
 
-                        if (existingWetRecords.Total == 0)
+                        if (wetQuery != null)
+                        {
+                            existingWetRecords = _readSession.Read(wetQuery, 0, 1);
+                        }
+
+                        if (existingWetRecords == null || existingWetRecords.Total == 0)
                         {
                             var localFileName = Path.Combine(_sessionFactory.Dir, "wet", warcId);
 
@@ -83,11 +97,20 @@ namespace Sir.HttpServer.Features
                                 client.DownloadFile(remoteFileName, localFileName);
                             }
 
-                            using (var writeSession = _sessionFactory.CreateWriteSession("cc_wet".ToHash(), _model))
-                            {
-                                foreach (var doc in ReadWetFile(localFileName))
-                                    writeSession.Write(doc);
-                            }
+                            var time = Stopwatch.StartNew();
+                            var collectionId = "cc_wet".ToHash();
+                            var writeJob = new Job(collectionId, ReadWetFile(localFileName), _model);
+
+                            _sessionFactory.WriteAndReportConcurrent(writeJob, _logger);
+
+                            //_sessionFactory.WriteAndReportConcurrent(
+                            //        new Job(
+                            //            crawlJob.Target.ToHash(),
+                            //            writeJob.Documents,
+                            //            _model),
+                            //        _logger);
+
+                            _logger.LogInformation($"write job took {time.Elapsed}");
 
                             existingWetRecords = _readSession.Read(wetQuery, 0, int.MaxValue);
                         }
@@ -97,17 +120,19 @@ namespace Sir.HttpServer.Features
                             throw new DataMisalignedException();
                         }
 
-                        using (var writeSession = _sessionFactory.CreateWriteSession(job.Target.ToHash(), _model))
+                        using (var writeSession = _sessionFactory.CreateWriteSession(crawlJob.Target.ToHash()))
                         {
                             foreach (var doc in existingWetRecords.Docs)
                                 writeSession.Write(doc);
                         }
                     }
                 }
+
+                _enquedIds.Remove(crawlJob.Id);
             }
             catch (Exception ex)
             {
-                _logger.LogError($"error processing {job} {ex}");
+                _logger.LogError($"error processing {crawlJob} {ex}");
             }
         }
 
@@ -121,37 +146,38 @@ namespace Sir.HttpServer.Features
             var content = new StringBuilder();
             bool isContent = false;
 
-            foreach (var line in ReadAllLinesFromGz(fileName))
+            var lines = ReadAllLinesFromGz(fileName).Skip(15);
+
+            foreach (var line in lines)
             {
+                if (isContent)
+                {
+                    if (line.Length > 0)
+                        content.AppendLine(line);
+                }
+
                 if (line.StartsWith(contentEndLabel))
                 {
                     isContent = false;
 
-                    yield return new Dictionary<string, object>
+                    if (content.Length > 0)
+                    {
+                        yield return new Dictionary<string, object>
                     {
                         { "url", url},
                         { "description", content.ToString() }
                     };
 
-                    content = new StringBuilder();
+                        content = new StringBuilder();
+                    }
                 }
-
-                if (line.StartsWith(uriLabel))
+                else if (line.StartsWith(uriLabel))
                 {
                     url = line.Replace(uriLabel, "");
                 }
                 else if (line.StartsWith(contentLabel))
                 {
                     isContent = true;
-                }
-                else
-                {
-                    isContent = false;
-                }
-
-                if (isContent)
-                {
-                    content.AppendLine(line);
                 }
             }
         }
@@ -329,14 +355,16 @@ namespace Sir.HttpServer.Features
 
     public class CrawlJob : IEquatable<CrawlJob>
     {
+        public string Id { get; }
         public string[] Collection { get; }
         public string[] Field { get; }
         public string Q { get; }
         public string Target { get; }
         public string Job { get; }
 
-        public CrawlJob(string[] collection, string[] field, string q, string target, string job)
+        public CrawlJob(string id, string[] collection, string[] field, string q, string target, string job)
         {
+            Id = id;
             Collection = collection;
             Field = field;
             Q = q;

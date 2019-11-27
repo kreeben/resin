@@ -7,18 +7,17 @@ using System.Runtime.InteropServices;
 
 namespace Sir.Search
 {
-    public class BocModel : IStringModel
+    public class Boc2Model : IStringModel
     {
-        public double IdenticalAngle => 0.99;
+        public double IdenticalAngle => 0.9;
         public double FoldAngle => 0.55d;
-        public int VectorWidth => int.MaxValue;
+        public int VectorWidth => 8;
 
         public IEnumerable<IVector> Tokenize(string text)
         {
             Span<char> source = text.ToLower().ToCharArray();
-            var offset = 0;
-            bool word = false;
             int index = 0;
+            int stepped = 0;
             var embeddings = new List<IVector>();
             var embedding = new SortedList<int, float>();
 
@@ -26,59 +25,56 @@ namespace Sir.Search
             {
                 char c = source[index];
 
-                if (word)
+                if (!char.IsLetterOrDigit(c) || char.IsWhiteSpace(c) || char.IsPunctuation(c) || char.IsSymbol(c))
                 {
-                    if (!char.IsLetterOrDigit(c))
-                    {
-                        var len = index - offset;
+                    continue;
+                }
 
-                        if (len > 0)
+                if (++stepped == VectorWidth)
+                {
+                    var compressed = new SortedList<int, float>();
+                    var isWellFormed = false;
+
+                    foreach (var kv in embedding)
+                    {
+                        if (kv.Value == 1)
                         {
-                            embeddings.Add(
-                                new IndexedVector(
-                                    embedding,
-                                    source.Slice(offset, len).ToArray(),
-                                    VectorWidth));
-
-                            embedding = new SortedList<int, float>();
+                            compressed.Add(kv.Key, kv.Value);
+                            isWellFormed = true;
                         }
+                    }
 
-                        offset = index;
-                        word = false;
-                    }
-                    else
-                    {
-                        embedding.AddOrAppendToComponent(c, 1);
-                    }
-                }
-                else
-                {
-                    if (char.IsLetterOrDigit(c))
-                    {
-                        word = true;
-                        offset = index;
+                    embeddings.Add(new IndexedVector(
+                        isWellFormed ? compressed : embedding,
+                        source.Slice(index, Math.Min(VectorWidth, source.Length - index)).ToArray(),
+                        VectorWidth));
 
-                        embedding.AddOrAppendToComponent(c, 1);
-                    }
-                    else
-                    {
-                        offset++;
-                    }
+                    embedding = new SortedList<int, float>();
+                    stepped = 0;
                 }
+
+                embedding.AddOrAppendToComponent(c, 1);
+
             }
 
-            if (word)
+            if (embedding.Count > 0)
             {
-                var len = index - offset;
+                var compressed = new SortedList<int, float>();
+                var isWellFormed = false;
 
-                if (len > 0)
+                foreach (var kv in embedding)
                 {
-                    embeddings.Add(
-                        new IndexedVector(
-                            embedding,
-                            source.Slice(offset, len).ToArray(),
-                            VectorWidth));
+                    if (kv.Value == 1)
+                    {
+                        compressed.Add(kv.Key, kv.Value);
+                        isWellFormed = true;
+                    }
                 }
+
+                embeddings.Add(new IndexedVector(
+                    isWellFormed ? compressed : embedding,
+                    source.Slice(index - stepped, Math.Min(VectorWidth, source.Length - (index - stepped))).ToArray(),
+                    VectorWidth));
             }
 
             return embeddings;

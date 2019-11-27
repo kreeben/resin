@@ -1,9 +1,6 @@
 ﻿using Sir.Document;
-using Sir.KeyValue;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
 
 namespace Sir.Search
 {
@@ -12,34 +9,18 @@ namespace Sir.Search
     /// </summary>
     public class WriteSession : IDisposable
     {
-        private readonly IndexSession _indexSession;
         private readonly DocumentWriter _streamWriter;
-        private readonly IStringModel _model;
-        private readonly FileStream _lockFile;
 
         public WriteSession(
             ulong collectionId,
-            SessionFactory sessionFactory,
-            DocumentWriter streamWriter,
-            IStringModel model,
-            IndexSession termIndexSession)
+            DocumentWriter streamWriter)
         {
-            _indexSession = termIndexSession;
             _streamWriter = streamWriter;
-            _model = model;
-            _lockFile = sessionFactory.CreateLockFile(collectionId);
         }
 
         public void Dispose()
         {
-            _indexSession.Dispose();
             _streamWriter.Dispose();
-            _lockFile.Dispose();
-        }
-
-        public IndexInfo GetIndexInfo()
-        {
-            return _indexSession.GetIndexInfo();
         }
 
         /// <summary>
@@ -75,12 +56,6 @@ namespace Sir.Search
 
                 // store refs to k/v pair
                 docMap.Add(kvmap);
-
-                // add to index
-                if (dataType == DataType.STRING && key.StartsWith("_") == false)
-                {
-                    _indexSession.Put(docId, kvmap.keyId, (string)val);
-                }
             }
 
             var docMeta = _streamWriter.PutDocumentMap(docMap);

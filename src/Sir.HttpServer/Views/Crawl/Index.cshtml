@@ -20,19 +20,18 @@
                 <label><input type="radio" name="job" value="fi" @Html.Raw((job == "fi") ? "checked" : "") /> <strong>Fetch and index all web page content from referenced WET files</strong>.</label>
             </p>
             <p>
-                <label><input type="radio" name="job" value="ei" @Html.Raw((job == "ei") ? "checked" : "")/> <strong>Extract web page content from WET files and index</strong> those resources referenced in your result.</label>
+                <label><input type="radio" name="job" value="ei" @Html.Raw((job == "ei") ? "checked" : "") /> <strong>Extract web page content from WET files and index</strong> those resources referenced in your result.</label>
             </p>
+            @*<p>
+            <label><input type="radio" disabled="disabled" name="job" value="wci" @Html.Raw((job == "wci") ? "checked" : "") /> <strong>Web crawl and index</strong> those resources referenced in your result. (Coming soon)</label>
+        </p>
+        <p>
+            <label><input type="radio" disabled="disabled" name="job" value="rwci" @Html.Raw((job == "rwci") ? "checked" : "")/> <strong>Recurringly web crawl and index</strong> those resources referenced in your result. (Coming soon)</label>
+        </p>*@
             <p>
-                <label><input type="radio" disabled="disabled" name="job" value="wci" @Html.Raw((job == "wci") ? "checked" : "") /> <strong>Web crawl and index</strong> those resources referenced in your result. (Coming soon)</label>
-            </p>
-            <p>
-                <label><input type="radio" disabled="disabled" name="job" value="rwci" @Html.Raw((job == "rwci") ? "checked" : "")/> <strong>Recurringly web crawl and index</strong> those resources referenced in your result. (Coming soon)</label>
-            </p>
-            <p>
-                When the crawling job has completed we will have created a
-                searchable document collection from the data that was collected during the crawl.
-                We will host this document collection. You will be able to query it using a web browser or HTTP client 
-                and slice, append to or download it.
+                When the crawling job has completed we will have created a searchable document collection..
+                We will host this document collection for your convenience.
+                You will be able to query it using a web browser or HTTP client and slice, append to or download it.
             </p>
             <p>
                 Name your collection carefully.
@@ -46,5 +45,6 @@
             <input type="hidden" id="q" value="@q" />
             <input type="hidden" id="field" value="@field" />
             <input type="hidden" id="collection" value="@collection" />
+            <input type="hidden" id="id" value="@ViewBag.CrawlId" />
         </div>
     </form>

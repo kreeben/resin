@@ -20,12 +20,12 @@ namespace Sir.Search
             _streamReader.Dispose();
         }
 
-        public IEnumerable<IDictionary> ReadDocs(int skip = 0, int take = 0)
+        public IEnumerable<IDictionary<string, object>> ReadDocs(int skip = 0, int take = 0)
         {
-            return ReadDocs().Skip(skip).Take(take);
+            return Read().Skip(skip).Take(take);
         }
 
-        public IEnumerable<IDictionary> ReadDocs()
+        public IEnumerable<IDictionary<string, object>> Read()
         {
             long docId = 1;
             var docCount = _streamReader.DocumentCount();
@@ -34,14 +34,14 @@ namespace Sir.Search
             {
                 var docInfo = _streamReader.GetDocumentAddress(docId);
                 var docMap = _streamReader.GetDocumentMap(docInfo.offset, docInfo.length);
-                var doc = new Dictionary<object, object>();
+                var doc = new Dictionary<string, object>();
 
                 for (int i = 0; i < docMap.Count; i++)
                 {
                     var kvp = docMap[i];
                     var kInfo = _streamReader.GetAddressOfKey(kvp.keyId);
                     var vInfo = _streamReader.GetAddressOfValue(kvp.valId);
-                    var key = _streamReader.GetKey(kInfo.offset, kInfo.len, kInfo.dataType);
+                    var key = (string)_streamReader.GetKey(kInfo.offset, kInfo.len, kInfo.dataType);
                     var val = _streamReader.GetValue(vInfo.offset, vInfo.len, vInfo.dataType);
 
                     doc[key] = val;

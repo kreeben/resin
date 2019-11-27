@@ -23,11 +23,13 @@ namespace Sir.HttpServer.Controllers
         [HttpGet]
         public IActionResult Index()
         {
+            ViewBag.CrawlId = Guid.NewGuid().ToString();
+
             return View();
         }
 
         [HttpPost]
-        public IActionResult Post(string[] collection, string[] field, string q, string target, string job)
+        public IActionResult Post(string id, string[] collection, string[] field, string q, string target, string job)
         {
             bool isValid = true;
             ViewBag.JobValidationError = null;
@@ -58,7 +60,7 @@ namespace Sir.HttpServer.Controllers
 
             var jobType = job.ToLower();
 
-            _crawlQueue.Enqueue(new CrawlJob(collection, field, q, target, job));
+            _crawlQueue.Enqueue(new CrawlJob(id, collection, field, q, target, job));
 
             return View(jobType);
         }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Sir.Core;
 using Sir.Document;
 using Sir.KeyValue;
 using Sir.VectorSpace;
@@ -9,6 +10,8 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Sir.Search
 {
@@ -22,6 +25,7 @@ namespace Sir.Search
         private readonly ConcurrentDictionary<string, MemoryMappedFile> _mmfs;
         private ILogger<SessionFactory> _logger;
         private readonly ILoggerFactory _loggerFactory;
+        private readonly Semaphore _semaphore = new Semaphore(1, 2);
 
         public string Dir { get; }
         public IConfigurationProvider Config { get; }
@@ -115,25 +119,113 @@ namespace Sir.Search
             _pageInfo.Clear();
         }
 
+        public IndexInfo Write(Job job, WriteSession writeSession, IndexSession indexSession)
+        {
+            var payload = new List<IDictionary<string, object>>(job.Documents);
+
+            foreach (var document in payload)
+            {
+                writeSession.Write(document);
+            }
+
+            //Parallel.ForEach(payload, document =>
+            foreach (var document in payload)
+            {
+                var docId = (long)document["___docid"];
+
+                //Parallel.ForEach(document, kv =>
+                foreach (var kv in document)
+                {
+                    if (!kv.Key.StartsWith("_"))
+                    {
+                        var keyId = GetKeyId(job.CollectionId, kv.Key.ToHash());
+
+                        indexSession.Put(docId, keyId, kv.Value);
+                    }
+                }//);
+            }//);
+
+            return indexSession.GetIndexInfo();
+        }
+
+        public void WriteAndReport(Job job, WriteSession writeSession, IndexSession indexSession, ILogger logger, int reportSize)
+        {
+            var time = Stopwatch.StartNew();
+            var info = Write(job, writeSession, indexSession);
+            var t = time.Elapsed.TotalMilliseconds;
+            var docsPerSecond = (int)(reportSize / t * 1000);
+            var debug = string.Join('\n', info.Info.Select(x => x.ToString()));
+
+            logger.LogInformation($"{debug}\n{docsPerSecond} docs/s\n");
+        }
+
+        public void WriteAndReportConcurrent(Job job, ILogger logger, int reportSize = 1000)
+        {
+            _semaphore.WaitOne();
+
+            var batchNo = 0;
+
+            using (var writeSession = CreateWriteSession(job.CollectionId))
+            using (var indexSession = CreateIndexSession(job.CollectionId))
+            {
+                foreach (var batch in job.Documents.Batch(reportSize))
+                {
+                    WriteAndReport(
+                            new Job(job.CollectionId, batch, job.Model),
+                            writeSession,
+                            indexSession,
+                            logger,
+                            reportSize);
+
+                    logger.LogInformation($"processed batch {++batchNo}");
+                }
+            }
+
+            _semaphore.Release();
+        }
+
         public void WriteConcurrent(Job job)
         {
-            using (var writeSession = CreateWriteSession(job.CollectionId, job.Model))
+            _semaphore.WaitOne();
+
+            using (var writeSession = CreateWriteSession(job.CollectionId))
+            using (var indexSession = CreateIndexSession(job.CollectionId))
             {
-                foreach(var document in job.Documents)
-                    writeSession.Write(document);
+                Write(job, writeSession, indexSession);
             }
+
+            _semaphore.Release();
+        }
+
+        public void WriteConcurrent(Job job, IndexSession indexSession)
+        {
+            _semaphore.WaitOne();
+
+            using (var writeSession = CreateWriteSession(job.CollectionId))
+            {
+                Write(job, writeSession, indexSession);
+            }
+
+            _semaphore.Release();
         }
 
         public void WriteConcurrent(IEnumerable<IDictionary<string, object>> documents, IStringModel model)
         {
-            foreach (var group in documents.GroupBy(d => (string)d["___collectionid"]))
+            _semaphore.WaitOne();
+
+            Parallel.ForEach(documents.GroupBy(d => (string)d["___collectionid"]), group =>
+            //foreach (var group in documents.GroupBy(d => (string)d["___collectionid"]))
             {
-                using (var writeSession = CreateWriteSession(group.Key.ToHash(), model))
+                var collectionId = group.Key.ToHash();
+
+                using (var writeSession = CreateWriteSession(collectionId))
+                using (var indexSession = CreateIndexSession(collectionId))
                 {
-                    foreach(var document in group)
-                        writeSession.Write(document);
+                    Write(new Job(collectionId, group, model), writeSession, indexSession);
                 }
-            }
+            });
+
+            _semaphore.Release();
         }
 
         public FileStream CreateLockFile(ulong collectionId)
@@ -255,16 +347,13 @@ namespace Sir.Search
             return new DocumentStreamSession(new DocumentReader(collectionId, this));
         }
 
-        public WriteSession CreateWriteSession(ulong collectionId, IStringModel model)
+        public WriteSession CreateWriteSession(ulong collectionId)
         {
             var documentWriter = new DocumentWriter(collectionId, this);
 
             return new WriteSession(
                 collectionId,
-                this,
-                documentWriter,
-                model,
-                CreateIndexSession(collectionId)
+                documentWriter
             );
         }
 

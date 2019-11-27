@@ -22,17 +22,19 @@
                 var host = uri.Host.ToString();
                 var title = item.Document.ContainsKey("title") ? item.Document["title"].ToString() : "Unknown title";
                 var score = (double)item.Document["___score"];
-                var ccUrl = (string)item.Document["filename"];
-
+                var warcFilename = (string)item.Document["filename"];
+                var wetFileName = warcFilename.Replace("/warc", "/wet").Replace(".gz", ".wet.gz");
                 <li>
                     <div>
                         <div class="document-header">
-                            <span><a class="result-link" href="@uri.ToString()">@title</a></span>
+                            <span><a class="result-link" href="@Html.Raw(uri.ToString())">@Html.Raw(title)</a></span>
                         </div>
                         <div class="document-body">
-                            <span class="medium-text">@host</span><br />
+                            <span class="medium-text">@Html.Raw(host)</span><br />
                             <span class="medium-text">Score: @score.ToString("N2")%</span><br />
-                            <span class="medium-text"><a class="warc-link" href="https://commoncrawl.s3.amazonaws.com/@ccUrl">Download WET</a></span>
+                            <span class="medium-text">
+                            <a class="warc-link" href="https://commoncrawl.s3.amazonaws.com/@Html.Raw(warcFilename)">WARC</a> 
+                            <a class="warc-link" href="https://commoncrawl.s3.amazonaws.com/@Html.Raw(wetFileName)">WET</a></span>
                         </div>
                     </div>
                 </li>

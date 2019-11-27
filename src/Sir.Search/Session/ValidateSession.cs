@@ -32,7 +32,7 @@ namespace Sir.Search
             _readSession = sessionFactory.CreateReadSession();
         }
 
-        public void Validate(IDictionary doc)
+        public void Validate(IDictionary<string, object> doc)
         {
             var docId = (long)doc["___docid"];
             var body = (string)doc["body"];

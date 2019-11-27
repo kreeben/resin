@@ -2,7 +2,7 @@
   "profiles": {
     "Sir.DbUtil": {
       "commandName": "Project",
-      "commandLineArgs": "download_cc CC-MAIN-2019-43 C:\\Users\\marlag\\Downloads\\ cc_wat"
+      "commandLineArgs": "download_wat CC-MAIN-2019-43 C:\\Users\\marlag\\Downloads\\ cc_wat 1"
     }
   }
 }
