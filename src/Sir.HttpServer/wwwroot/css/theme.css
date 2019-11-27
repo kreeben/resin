@@ -160,7 +160,15 @@ span.querystats {
     color: black;
 }
 
-h2.logo {
+.logo1 {
+    margin-top: 0px;
+    margin-bottom: 0px;
+    margin-left: 10px;
+    font-size: 14pt;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+}
+
+.logo2 {
     margin-top: 0px;
     margin-bottom: 15px;
     margin-left: 5px;
