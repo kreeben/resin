@@ -16,10 +16,6 @@ label {
     color: black;
 }
 
-legend{
-    margin-bottom:5px;
-}
-
 a {
     text-decoration: none;
     color: orangered;
@@ -161,7 +157,7 @@ h3.querystats {
 }
 
 .logo1 {
-    margin-top: 0px;
+    margin-top: 7px;
     margin-bottom: 0px;
     margin-left: 6px;
     font-size: 11pt;
@@ -170,7 +166,7 @@ h3.querystats {
 
 .logo2 {
     margin-top: 0px;
-    margin-bottom: 15px;
+    margin-bottom: 6px;
     margin-left: 0px;
     font-size: 18pt;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
@@ -183,7 +179,7 @@ h3.querystats {
     margin-left: 1px;
     margin-right: 0px;
     margin-top: 0px;
-    margin-bottom: 5px;
+    margin-bottom: 0px;
     padding-left: 0px;
     padding-right: 0px;
     padding-top: 15px;
@@ -268,7 +264,7 @@ div.buttons {
 
 .download-json-result{
     margin-left:1px;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     font-size: 9pt;
     color: black;
 }
