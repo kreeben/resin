@@ -101,7 +101,7 @@ namespace Sir.HttpServer.Features
                             var collectionId = "cc_wet".ToHash();
                             var writeJob = new Job(collectionId, ReadWetFile(localFileName), _model);
 
-                            _sessionFactory.WriteConcurrent(writeJob);
+                            _sessionFactory.WriteConcurrent(writeJob, reportSize:1000);
 
                             //_sessionFactory.WriteAndReportConcurrent(
                             //        new Job(

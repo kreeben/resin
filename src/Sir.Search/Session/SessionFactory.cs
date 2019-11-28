@@ -188,7 +188,7 @@ namespace Sir.Search
             _logger.LogInformation($"{debug}\n{docsPerSecond} docs/s\n");
         }
 
-        public void WriteConcurrent(Job job, int reportSize = 1000)
+        public void WriteConcurrent(Job job, int reportSize)
         {
             _semaphore.WaitOne();
 
