@@ -5,17 +5,35 @@
     font-size: medium;
 }
 
+sup, sub {
+    font-size: x-small;
+    color: orangered;
+    font-weight:600;
+}
+
+label {
+    font-size: 10pt;
+    color: black;
+}
+
+legend{
+    margin-bottom:5px;
+}
+
+a {
+    text-decoration: none;
+    color: orangered;
+}
+
+.outer-container{
+    max-width:935px;
+}
+
 .sub {
     font-size: 0.2em;
     color: orangered;
     margin-left: 2px;
     margin-right: 2px;
-}
-
-sup, sub {
-    font-size: x-small;
-    color: orangered;
-    font-weight:600;
 }
 
 .result-list{
@@ -37,16 +55,6 @@ a.warc-link {
 
 a.warc-link:visited {
     color: purple;
-}
-
-label{
-    font-size: 10pt;
-    color: black;
-}
-
-a {
-    text-decoration: none;
-    color: orangered;
 }
 
 a:visited h1 {
@@ -79,7 +87,7 @@ li{
 footer {
     font-size: 9pt;
     margin-top: 20px;
-    margin-left: 10px;
+    margin-left: 5px;
     margin-bottom: 30px;
 }
 
@@ -152,7 +160,7 @@ input[type="text"] {
 
 h3.querystats{
     color:gray;
-    margin-left: 10px;
+    margin-left: 0px;
     font-size: 13pt;
 }
 
@@ -163,19 +171,19 @@ span.querystats {
 .logo1 {
     margin-top: 0px;
     margin-bottom: 0px;
-    margin-left: 11px;
-    font-size: 13pt;
+    margin-left: 9px;
+    font-size: 10pt;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
 }
 
-.logo1 a{
+/*.logo1 a{
     color:silver;
-}
+}*/
 
 .logo2 {
     margin-top: 0px;
-    margin-bottom: 15px;
-    margin-left: 5px;
+    margin-bottom: 17px;
+    margin-left: 0px;
     font-size: 18pt;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
 }
@@ -184,10 +192,10 @@ span.querystats {
     font-size: 9pt;
     border: none;
     width: 90%;
-    margin-left: 10px;
+    margin-left: 0px;
     margin-right: 0px;
     margin-top: 0px;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     padding-left: 0px;
     padding-right: 0px;
     padding-top: 15px;
@@ -271,8 +279,8 @@ div.buttons {
 }
 
 .download-json-result{
-    margin-left:13px;
-    margin-bottom: 10px;
+    margin-left:10px;
+    margin-bottom: 15px;
     font-size: 10pt;
     color: black;
 }
