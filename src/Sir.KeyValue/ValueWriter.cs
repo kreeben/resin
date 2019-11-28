@@ -22,7 +22,7 @@ namespace Sir.KeyValue
 
         public (long offset, int len, byte dataType) Put(object value)
         {
-            Span<byte> buffer;
+            byte[] buffer;
             byte dataType;
 
             if (value is bool)
@@ -73,9 +73,11 @@ namespace Sir.KeyValue
 
             var offset = _stream.Position;
 
-            _stream.Write(buffer);
+            var compressed = QuickLZ.compress(buffer, 1);
 
-            return (offset, buffer.Length, dataType);
+            _stream.Write(compressed);
+
+            return (offset, compressed.Length, dataType);
         }
 
         public void Dispose()

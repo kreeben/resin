@@ -24,16 +24,18 @@ namespace Sir.KeyValue
         public object Get(long offset, int len, byte dataType)
         {
             int read;
-            Span<byte> buf = stackalloc byte[len];
+            var compressed = new byte[len];
 
             _stream.Seek(offset, SeekOrigin.Begin);
             
-            read = _stream.Read(buf);
+            read = _stream.Read(compressed);
 
             if (read != len)
             {
                 throw new InvalidDataException();
             }
+
+            var buf = QuickLZ.decompress(compressed);
 
             var typeId = Convert.ToInt32(dataType);
 
@@ -67,11 +69,11 @@ namespace Sir.KeyValue
             }
             else if (DataType.STRING == typeId)
             {
-                return new string(System.Text.Encoding.Unicode.GetChars(buf.ToArray()));
+                return new string(System.Text.Encoding.Unicode.GetChars(buf));
             }
             else
             {
-                return buf.ToArray();
+                return buf;
             }
         }
     }
