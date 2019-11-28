@@ -22,16 +22,17 @@
             <p>
                 <label><input type="radio" name="job" value="ei" @Html.Raw((job == "ei") ? "checked" : "") /> <strong>Extract web page content from WET files and index</strong> those resources referenced in your result.</label>
             </p>
-            @*<p>
+            <p>
             <label><input type="radio" disabled="disabled" name="job" value="wci" @Html.Raw((job == "wci") ? "checked" : "") /> <strong>Web crawl and index</strong> those resources referenced in your result. (Coming soon)</label>
         </p>
         <p>
             <label><input type="radio" disabled="disabled" name="job" value="rwci" @Html.Raw((job == "rwci") ? "checked" : "")/> <strong>Recurringly web crawl and index</strong> those resources referenced in your result. (Coming soon)</label>
-        </p>*@
+        </p>
             <p>
-                When the crawling job has completed we will have created a searchable document collection..
-                We will host this document collection for your convenience.
-                You will be able to query it using a web browser or HTTP client and slice, append to or download it.
+                When the crawling job has completed we will have created a searchable document collection.
+                We will host this collection for your convenience so that 
+                you will be able to query it using a web browser or HTTP client as well as slice it, 
+                append to it or download it as JSON.
             </p>
             <p>
                 Name your collection carefully.
