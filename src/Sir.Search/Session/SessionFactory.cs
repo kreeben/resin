@@ -87,34 +87,47 @@ namespace Sir.Search
 
         public void Truncate(ulong collectionId)
         {
+            var count = 0;
+
             foreach (var file in Directory.GetFiles(Dir, $"{collectionId}*"))
+            {
                 File.Delete(file);
+                count++;
+            }
 
             _pageInfo.Clear();
 
             _keys.Clear();
 
-            _logger.LogInformation($"truncated {collectionId}");
+            _logger.LogInformation($"truncated collection {collectionId} ({count} files)");
         }
 
         public void TruncateIndex(ulong collectionId)
         {
+            var count = 0;
+
             foreach (var file in Directory.GetFiles(Dir, $"{collectionId}*.ix"))
             {
                 File.Delete(file);
+                count++;
             }
             foreach (var file in Directory.GetFiles(Dir, $"{collectionId}*.ixp"))
             {
                 File.Delete(file);
+                count++;
             }
             foreach (var file in Directory.GetFiles(Dir, $"{collectionId}*.vec"))
             {
                 File.Delete(file);
+                count++;
             }
             foreach (var file in Directory.GetFiles(Dir, $"{collectionId}*.pos"))
             {
                 File.Delete(file);
+                count++;
             }
+
+            _logger.LogInformation($"truncated index {collectionId} ({count} files)");
 
             _pageInfo.Clear();
         }
