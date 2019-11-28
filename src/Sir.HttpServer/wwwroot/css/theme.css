@@ -1,12 +1,12 @@
 ﻿body {
     padding: 0px 0px 0px 0px;
-    margin: 5px 10px 0px 5px;
+    margin: 15px 10px 0px 10px;
     font-family: sans-serif;
     font-size: medium;
 }
 
 h2{
-    margin-top: 0px;
+    margin-top: 5px;
 }
 
 sup, sub {
@@ -155,24 +155,31 @@ input[type="text"] {
 
 h3.querystats {
     margin-left: 1px;
-    margin-top: 20px;
+    margin-top: 15px;
     margin-bottom: 5px;
     font-size: 10pt;
 }
 
 .logo1 {
-    margin-top: 0px;
     margin-bottom: 0px;
-    margin-left: 10px;
+    margin-left: 15px;
     font-size: 11pt;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
 }
 
+.logo1 a{
+    text-shadow: 0px 0px 1px silver;
+}
+
+.logo2 a{
+    text-shadow: 0px 0px 1px silver;
+}
+
 .logo2 {
     margin-top: 0px;
-    margin-bottom: 11px;
+    margin-bottom: 15px;
     margin-left: 0px;
-    font-size: 20pt;
+    font-size: 23pt;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
 }
 
