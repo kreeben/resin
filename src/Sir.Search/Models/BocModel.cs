@@ -86,11 +86,6 @@ namespace Sir.Search
 
         public double CosAngle(IVector vec1, IVector vec2)
         {
-            //var dotProduct = vec1.Value.DotProduct(vec2.Value);
-            //var dotSelf1 = vec1.Value.DotProduct(vec1.Value);
-            //var dotSelf2 = vec2.Value.DotProduct(vec2.Value);
-            //var cosangle = (dotProduct / (Math.Sqrt(dotSelf1) * Math.Sqrt(dotSelf2)));
-
             return vec1.Value.DotProduct(vec2.Value) / (vec1.Value.Norm(2) * vec2.Value.Norm(2));
         }
 
@@ -112,13 +107,7 @@ namespace Sir.Search
 
             var otherVector = CreateVector.SparseOfIndexed(VectorWidth, tuples);
 
-            var dotProduct = vector.Value.DotProduct(otherVector);
-            var dotSelf1 = vector.Value.DotProduct(vector.Value);
-            var dotSelf2 = otherVector.DotProduct(otherVector);
-
-            return (dotProduct / (Math.Sqrt(dotSelf1) * Math.Sqrt(dotSelf2)));
-
-            //return vector.Value.DotProduct(otherVector) / (vector.Value.Norm(2) * otherVector.Norm(2));
+            return vector.Value.DotProduct(otherVector) / (vector.Value.Norm(2) * otherVector.Norm(2));
 
         }
     }

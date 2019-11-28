@@ -12,7 +12,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="log\" />
+    <Compile Remove="log\**" />
+    <Content Remove="log\**" />
+    <EmbeddedResource Remove="log\**" />
+    <None Remove="log\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="wwwroot\blog\" />
   </ItemGroup>
 
