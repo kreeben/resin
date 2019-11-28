@@ -134,6 +134,7 @@ namespace Sir.Search
 
         public IndexInfo Write(Job job, WriteSession writeSession, IndexSession indexSession)
         {
+            var time = Stopwatch.StartNew();
             var payload = new List<IDictionary<string, object>>(job.Documents);
 
             foreach (var document in payload)
@@ -141,12 +142,15 @@ namespace Sir.Search
                 writeSession.Write(document);
             }
 
-            //Parallel.ForEach(payload, document =>
-            foreach (var document in payload)
+            _logger.LogInformation($"writing job ({job.CollectionId}) took {time.Elapsed}");
+
+            time.Restart();
+
+            Parallel.ForEach(payload, document =>
+            //foreach (var document in payload)
             {
                 var docId = (long)document["___docid"];
 
-                //Parallel.ForEach(document, kv =>
                 foreach (var kv in document)
                 {
                     if (!kv.Key.StartsWith("_"))
@@ -155,8 +159,10 @@ namespace Sir.Search
 
                         indexSession.Put(docId, keyId, kv.Value);
                     }
-                }//);
-            }//);
+                }
+            });
+
+            _logger.LogInformation($"indexing job ({job.CollectionId}) took {time.Elapsed}");
 
             return indexSession.GetIndexInfo();
         }

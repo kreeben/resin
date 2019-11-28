@@ -2,7 +2,7 @@
   "profiles": {
     "Sir.StringCompare": {
       "commandName": "Project",
-      "commandLineArgs": "apa"
+      "commandLineArgs": "apa apelsin"
     }
   }
 }
