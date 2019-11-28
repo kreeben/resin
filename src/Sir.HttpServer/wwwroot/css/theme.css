@@ -163,9 +163,13 @@ span.querystats {
 .logo1 {
     margin-top: 0px;
     margin-bottom: 0px;
-    margin-left: 16px;
+    margin-left: 11px;
     font-size: 13pt;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+}
+
+.logo1 a{
+    color:silver;
 }
 
 .logo2 {
