@@ -112,7 +112,14 @@ namespace Sir.Search
 
             var otherVector = CreateVector.SparseOfIndexed(VectorWidth, tuples);
 
-            return vector.Value.DotProduct(otherVector) / (vector.Value.Norm(2) * otherVector.Norm(2));
+            var dotProduct = vector.Value.DotProduct(otherVector);
+            var dotSelf1 = vector.Value.DotProduct(vector.Value);
+            var dotSelf2 = otherVector.DotProduct(otherVector);
+
+            return (dotProduct / (Math.Sqrt(dotSelf1) * Math.Sqrt(dotSelf2)));
+
+            //return vector.Value.DotProduct(otherVector) / (vector.Value.Norm(2) * otherVector.Norm(2));
+
         }
     }
 }

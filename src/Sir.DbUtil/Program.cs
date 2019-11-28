@@ -173,7 +173,7 @@ namespace Sir.DbUtil
             ILogger logger,
             string refFileName)
         {
-            var documents = ReadCC(fileName, refFileName);
+            var documents = ReadCC(fileName, refFileName).Take(100);
             var collectionId = collection.ToHash();
             var time = Stopwatch.StartNew();
 

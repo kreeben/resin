@@ -45,10 +45,16 @@ namespace Sir.Search
             if (value is string strValue)
             {
                 var tokens = Model.Tokenize(strValue);
+                var column = Index.GetOrAdd(keyId, new VectorNode());
 
                 foreach (var token in tokens)
                 {
-                    Put(docId, keyId, token);
+                    GraphBuilder.MergeOrAdd(
+                        column,
+                        new VectorNode(token, docId),
+                        Model,
+                        Model.FoldAngle,
+                        Model.IdenticalAngle);
                 }
             }
         }

@@ -135,34 +135,40 @@ namespace Sir.Search
         public IndexInfo Write(Job job, WriteSession writeSession, IndexSession indexSession)
         {
             var time = Stopwatch.StartNew();
-            var payload = new List<IDictionary<string, object>>(job.Documents);
+            var writeTime = new Stopwatch();
 
-            foreach (var document in payload)
+            using (var queue = new ProducerConsumerQueue<IDictionary<string, object>>(8,
+                document =>
+                {
+                    var docId = (long)document["___docid"];
+
+                    Parallel.ForEach(document, kv =>
+                    //foreach (var kv in document)
+                    {
+                        if (!kv.Key.StartsWith("_"))
+                        {
+                            var keyId = GetKeyId(job.CollectionId, kv.Key.ToHash());
+
+                            indexSession.Put(docId, keyId, kv.Value);
+                        }
+                    });
+                }))
             {
-                writeSession.Write(document);
+                writeTime.Start();
+
+                foreach (var document in job.Documents)
+                {
+                    writeSession.Write(document);
+
+                    queue.Enqueue(document);
+                }
+
+                writeTime.Stop();
+
+                _logger.LogInformation($"writing ({job.CollectionId}) took {writeTime.Elapsed}");
             }
 
-            _logger.LogInformation($"writing job ({job.CollectionId}) took {time.Elapsed}");
-
-            time.Restart();
-
-            Parallel.ForEach(payload, document =>
-            //foreach (var document in payload)
-            {
-                var docId = (long)document["___docid"];
-
-                foreach (var kv in document)
-                {
-                    if (!kv.Key.StartsWith("_"))
-                    {
-                        var keyId = GetKeyId(job.CollectionId, kv.Key.ToHash());
-
-                        indexSession.Put(docId, keyId, kv.Value);
-                    }
-                }
-            });
-
-            _logger.LogInformation($"indexing job ({job.CollectionId}) took {time.Elapsed}");
+            _logger.LogInformation($"indexing ({job.CollectionId}) took {time.Elapsed - writeTime.Elapsed}");
 
             return indexSession.GetIndexInfo();
         }
