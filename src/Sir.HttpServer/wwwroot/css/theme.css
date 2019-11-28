@@ -1,6 +1,6 @@
 ﻿body {
     padding: 0px 0px 0px 0px;
-    margin: 15px 10px 0px 5px;
+    margin: 5px 10px 0px 5px;
     font-family: sans-serif;
     font-size: medium;
 }
@@ -12,7 +12,7 @@ sup, sub {
 }
 
 label {
-    font-size: 10pt;
+    font-size: 9pt;
     color: black;
 }
 
@@ -64,18 +64,13 @@ a h1 {
     text-decoration: none;
 }
 
-h3 {
-    margin-top: 20px;
-    margin-bottom: 15px;
-}
-
 p {
     margin-top: 20px;
     margin-bottom: 15px;
 }
 
 ol {
-    padding: 5px 5px 5px 30px;
+    padding: 5px 5px 5px 25px;
     margin: 0px 0px 0px 0px;
 }
 
@@ -124,7 +119,7 @@ div.upvote {
 
 .document-body {
     margin-left: 0px;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     margin-top: 5px;
 }
 
@@ -158,31 +153,24 @@ input[type="text"] {
     margin-left: 2px;
 }
 
-h3.querystats{
-    color:gray;
-    margin-left: 0px;
-    font-size: 13pt;
-}
-
-span.querystats {
-    color: black;
+h3.querystats {
+    margin-left: 1px;
+    margin-top: 20px;
+    margin-bottom: 5px;
+    font-size: 9pt;
 }
 
 .logo1 {
     margin-top: 0px;
     margin-bottom: 0px;
-    margin-left: 9px;
-    font-size: 10pt;
+    margin-left: 6px;
+    font-size: 11pt;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
 }
 
-/*.logo1 a{
-    color:silver;
-}*/
-
 .logo2 {
     margin-top: 0px;
-    margin-bottom: 17px;
+    margin-bottom: 15px;
     margin-left: 0px;
     font-size: 18pt;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
@@ -192,10 +180,10 @@ span.querystats {
     font-size: 9pt;
     border: none;
     width: 90%;
-    margin-left: 0px;
+    margin-left: 1px;
     margin-right: 0px;
     margin-top: 0px;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
     padding-left: 0px;
     padding-right: 0px;
     padding-top: 15px;
@@ -279,9 +267,9 @@ div.buttons {
 }
 
 .download-json-result{
-    margin-left:10px;
+    margin-left:1px;
     margin-bottom: 15px;
-    font-size: 10pt;
+    font-size: 9pt;
     color: black;
 }
 

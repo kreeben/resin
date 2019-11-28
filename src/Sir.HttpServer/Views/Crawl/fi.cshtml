@@ -8,11 +8,13 @@
         {"collection", collection }
     };
 
+    var originalSearchLink = $"{Context.Request.Path.Value.ToLower().Replace("/crawl", "/search")}{Context.Request.QueryString}";
     var queryString = string.Join('&', query.Select(x => $"{x.Key}={x.Value}"));
     var searchLink = $"{Context.Request.Path.Value.ToLower().Replace("/crawl", "/search")}?{queryString}";
 }
     <form action="/crawl/" method="post">
         <div class="blog-wrapper">
+            <a href="@originalSearchLink">&#8592; Back to result</a>
             <h2>Job has been enqueued.</h2>
             <p>
                 Your searchable collection, once we're finished processing, will be <a href="@searchLink">here</a>.
