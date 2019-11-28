@@ -5,7 +5,7 @@ namespace Sir.VectorSpace
 {
     public static class PathFinder
     {
-        public static Hit ClosestMatch(VectorNode root, IVector vector, IEuclidSpace model)
+        public static Hit ClosestMatch(VectorNode root, IVector vector, IModel model)
         {
             var best = root;
             var cursor = root;

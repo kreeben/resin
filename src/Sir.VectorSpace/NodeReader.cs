@@ -94,7 +94,7 @@ namespace Sir.VectorSpace
             IVector queryVector,
             Stream indexFile,
             Stream vectorFile,
-            IEuclidSpace model)
+            IModel model)
         {
             Span<byte> block = stackalloc byte[VectorNode.BlockSize];
             var best = new Hit();

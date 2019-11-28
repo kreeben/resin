@@ -10,19 +10,23 @@ namespace Sir
     {
     }
 
-    public interface IModel<T> : IEuclidSpace
+    public interface IModel<T> : IModel
     {
         IEnumerable<IVector> Tokenize(T data);
     }
 
-    public interface IEuclidSpace : IEuclidDistance
+    public interface IModel : IVectorSpaceConfig, ISimilarity
+    {
+    }
+
+    public interface IVectorSpaceConfig
     {
         int VectorWidth { get; }
         double FoldAngle { get; }
         double IdenticalAngle { get; }
     }
 
-    public interface IEuclidDistance
+    public interface ISimilarity
     {
         double CosAngle(IVector vec1, IVector vec2);
         double CosAngle(IVector vector, long vectorOffset, int componentCount, Stream vectorStream);

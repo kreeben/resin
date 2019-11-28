@@ -4,7 +4,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading.Tasks;
 
 namespace Sir.Search
 {
@@ -76,18 +75,6 @@ namespace Sir.Search
             //{
             //    throw new ApplicationException();
             //}
-        }
-
-        public void Put((long docId, long keyId, IVector vector) work)
-        {
-            var column = Index.GetOrAdd(work.keyId, new VectorNode());
-
-            GraphBuilder.MergeOrAdd(
-                column,
-                new VectorNode(work.vector, work.docId),
-                Model,
-                Model.FoldAngle,
-                Model.IdenticalAngle);
         }
 
         public IndexInfo GetIndexInfo()

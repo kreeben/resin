@@ -21,61 +21,6 @@ namespace Sir.Search
             var embeddings = new List<IVector>();
             var embedding = new SortedList<int, float>();
 
-            for (; index < source.Length; index++)
-            {
-                char c = source[index];
-
-                if (!char.IsLetterOrDigit(c) || char.IsWhiteSpace(c) || char.IsPunctuation(c) || char.IsSymbol(c))
-                {
-                    continue;
-                }
-
-                if (++stepped == VectorWidth)
-                {
-                    var compressed = new SortedList<int, float>();
-                    var isWellFormed = false;
-
-                    foreach (var kv in embedding)
-                    {
-                        if (kv.Value == 1)
-                        {
-                            compressed.Add(kv.Key, kv.Value);
-                            isWellFormed = true;
-                        }
-                    }
-
-                    embeddings.Add(new IndexedVector(
-                        isWellFormed ? compressed : embedding,
-                        source.Slice(index, Math.Min(VectorWidth, source.Length - index)).ToArray(),
-                        VectorWidth));
-
-                    embedding = new SortedList<int, float>();
-                    stepped = 0;
-                }
-
-                embedding.AddOrAppendToComponent(c, 1);
-
-            }
-
-            if (embedding.Count > 0)
-            {
-                var compressed = new SortedList<int, float>();
-                var isWellFormed = false;
-
-                foreach (var kv in embedding)
-                {
-                    if (kv.Value == 1)
-                    {
-                        compressed.Add(kv.Key, kv.Value);
-                        isWellFormed = true;
-                    }
-                }
-
-                embeddings.Add(new IndexedVector(
-                    isWellFormed ? compressed : embedding,
-                    source.Slice(index - stepped, Math.Min(VectorWidth, source.Length - (index - stepped))).ToArray(),
-                    VectorWidth));
-            }
 
             return embeddings;
         }
@@ -113,5 +58,12 @@ namespace Sir.Search
 
             return (dotProduct / (Math.Sqrt(dotSelf1) * Math.Sqrt(dotSelf2)));
         }
+    }
+
+    public class FuzzySpace : IVectorSpaceConfig
+    {
+        public double IdenticalAngle => 0.1;
+        public double FoldAngle => 0.05d;
+        public int VectorWidth => int.MaxValue;
     }
 }
