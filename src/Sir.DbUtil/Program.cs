@@ -179,8 +179,8 @@ namespace Sir.DbUtil
 
             using (var sessionFactory = new SessionFactory(new IniConfiguration("sir.ini"), model, log))
             {
-                sessionFactory.WriteAndReportConcurrent(
-                            new Job(collectionId, documents, model), logger);
+                sessionFactory.WriteConcurrent(
+                            new Job(collectionId, documents, model));
             }
 
             logger.LogInformation($"indexed {fileName} in {time.Elapsed}");

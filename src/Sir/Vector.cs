@@ -15,12 +15,15 @@ namespace Sir
 
         public IndexedVector(SortedList<int, float> dictionary, Memory<char> data, int vectorWidth)
         {
-            var tuples = new Tuple<int, float>[dictionary.Count];
+            var tuples = new Tuple<int, float>[Math.Min(dictionary.Count, vectorWidth)];
 
             var i = 0;
 
             foreach (var p in dictionary)
             {
+                if (i == vectorWidth)
+                    break;
+
                 tuples[i++] = new Tuple<int, float>(p.Key, p.Value);
             }
 
@@ -32,10 +35,13 @@ namespace Sir
 
         public IndexedVector(int[] index, float[] values, int vectorWidth)
         {
-            var tuples = new Tuple<int, float>[index.Length];
+            var tuples = new Tuple<int, float>[Math.Min(index.Length, vectorWidth)];
 
             for (int i = 0; i < index.Length; i++)
             {
+                if (i == vectorWidth)
+                    break;
+
                 tuples[i] = new Tuple<int, float>(index[i], values[i]);
             }
 

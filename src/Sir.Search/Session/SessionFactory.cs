@@ -137,13 +137,13 @@ namespace Sir.Search
             var time = Stopwatch.StartNew();
             var writeTime = new Stopwatch();
 
-            using (var queue = new ProducerConsumerQueue<IDictionary<string, object>>(8,
+            using (var queue = new ProducerConsumerQueue<IDictionary<string, object>>(4,
                 document =>
                 {
                     var docId = (long)document["___docid"];
 
-                    Parallel.ForEach(document, kv =>
-                    //foreach (var kv in document)
+                    //Parallel.ForEach(document, kv =>
+                    foreach (var kv in document)
                     {
                         if (!kv.Key.StartsWith("_"))
                         {
@@ -151,29 +151,33 @@ namespace Sir.Search
 
                             indexSession.Put(docId, keyId, kv.Value);
                         }
-                    });
+                    }//);
                 }))
             {
                 writeTime.Start();
+
+                var docCount = 0;
 
                 foreach (var document in job.Documents)
                 {
                     writeSession.Write(document);
 
                     queue.Enqueue(document);
+
+                    docCount++;
                 }
 
                 writeTime.Stop();
 
-                _logger.LogInformation($"writing ({job.CollectionId}) took {writeTime.Elapsed}");
+                _logger.LogInformation($"writing {docCount} documents to {job.CollectionId} took {writeTime.Elapsed}");
             }
 
-            _logger.LogInformation($"indexing ({job.CollectionId}) took {time.Elapsed - writeTime.Elapsed}");
+            _logger.LogInformation($"indexing {job.CollectionId} took {time.Elapsed - writeTime.Elapsed}");
 
             return indexSession.GetIndexInfo();
         }
 
-        public void WriteAndReport(Job job, WriteSession writeSession, IndexSession indexSession, ILogger logger, int reportSize)
+        public void Write(Job job, WriteSession writeSession, IndexSession indexSession, int reportSize)
         {
             var time = Stopwatch.StartNew();
             var info = Write(job, writeSession, indexSession);
@@ -181,32 +185,34 @@ namespace Sir.Search
             var docsPerSecond = (int)(reportSize / t * 1000);
             var debug = string.Join('\n', info.Info.Select(x => x.ToString()));
 
-            logger.LogInformation($"{debug}\n{docsPerSecond} docs/s\n");
+            _logger.LogInformation($"{debug}\n{docsPerSecond} docs/s\n");
         }
 
-        public void WriteAndReportConcurrent(Job job, ILogger logger, int reportSize = 1000)
+        public void WriteConcurrent(Job job, int reportSize = 1000)
         {
             _semaphore.WaitOne();
 
             var batchNo = 0;
+            var time = Stopwatch.StartNew();
 
             using (var writeSession = CreateWriteSession(job.CollectionId))
             using (var indexSession = CreateIndexSession(job.CollectionId))
             {
                 foreach (var batch in job.Documents.Batch(reportSize))
                 {
-                    WriteAndReport(
+                    Write(
                             new Job(job.CollectionId, batch, job.Model),
                             writeSession,
                             indexSession,
-                            logger,
                             reportSize);
 
-                    logger.LogInformation($"processed batch {++batchNo}");
+                    _logger.LogInformation($"processed batch {++batchNo}");
                 }
             }
 
             _semaphore.Release();
+
+            _logger.LogInformation($"processed job ({job.CollectionId}), in total: {time.Elapsed}");
         }
 
         public void WriteConcurrent(Job job)
