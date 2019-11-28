@@ -153,27 +153,27 @@ h3.querystats {
     margin-left: 1px;
     margin-top: 20px;
     margin-bottom: 5px;
-    font-size: 9pt;
+    font-size: 10pt;
 }
 
 .logo1 {
     margin-top: 7px;
     margin-bottom: 0px;
-    margin-left: 6px;
+    margin-left: 10px;
     font-size: 11pt;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
 }
 
 .logo2 {
     margin-top: 0px;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     margin-left: 0px;
     font-size: 18pt;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
 }
 
 .search-fields {
-    font-size: 9pt;
+    font-size: 10pt;
     border: none;
     width: 90%;
     margin-left: 1px;
@@ -264,8 +264,8 @@ div.buttons {
 
 .download-json-result{
     margin-left:1px;
-    margin-bottom: 10px;
-    font-size: 9pt;
+    margin-bottom: 12px;
+    font-size: 10pt;
     color: black;
 }
 
