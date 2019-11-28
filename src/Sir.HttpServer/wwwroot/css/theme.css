@@ -5,6 +5,10 @@
     font-size: medium;
 }
 
+h2{
+    margin-top: 0px;
+}
+
 sup, sub {
     font-size: x-small;
     color: orangered;
@@ -12,7 +16,7 @@ sup, sub {
 }
 
 label {
-    font-size: 9pt;
+    font-size: 10pt;
     color: black;
 }
 
@@ -76,7 +80,7 @@ li{
 
 
 footer {
-    font-size: 9pt;
+    font-size: 10pt;
     margin-top: 20px;
     margin-left: 5px;
     margin-bottom: 30px;
@@ -157,7 +161,7 @@ h3.querystats {
 }
 
 .logo1 {
-    margin-top: 7px;
+    margin-top: 0px;
     margin-bottom: 0px;
     margin-left: 10px;
     font-size: 11pt;
@@ -166,9 +170,9 @@ h3.querystats {
 
 .logo2 {
     margin-top: 0px;
-    margin-bottom: 8px;
+    margin-bottom: 11px;
     margin-left: 0px;
-    font-size: 18pt;
+    font-size: 20pt;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
 }
 
@@ -179,7 +183,7 @@ h3.querystats {
     margin-left: 1px;
     margin-right: 0px;
     margin-top: 0px;
-    margin-bottom: 0px;
+    margin-bottom: 10px;
     padding-left: 0px;
     padding-right: 0px;
     padding-top: 15px;
