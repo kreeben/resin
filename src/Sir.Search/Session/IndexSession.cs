@@ -40,47 +40,53 @@ namespace Sir.Search
             _logger = logger;
         }
 
-        public void Put(long docId, long keyId, object value)
+        public IList<VectorNode> GetDistinct(long docId, IEnumerable<IVector> tokens)
         {
-            if (value is string strValue)
-            {
-                var tokens = Model.Tokenize(strValue);
-                var column = Index.GetOrAdd(keyId, new VectorNode());
+            var document = new VectorNode();
+            var distinct = new List<VectorNode>();
 
-                foreach (var token in tokens)
+            foreach (var token in tokens)
+            {
+                var node = new VectorNode(token, docId);
+
+                if (!GraphBuilder.MergeOrAdd(
+                    document,
+                    node,
+                    Model,
+                    Model.FoldAngle,
+                    Model.IdenticalAngle))
                 {
-                    GraphBuilder.MergeOrAdd(
-                        column,
-                        new VectorNode(token, docId),
-                        Model,
-                        Model.FoldAngle,
-                        Model.IdenticalAngle);
+                    distinct.Add(node);
                 }
+            }
+
+            return distinct;
+        }
+
+        public void Put(long docId, long keyId, string value)
+        {
+            var tokens = GetDistinct(docId, (IList<IVector>)Model.Tokenize(value));
+            var column = Index.GetOrAdd(keyId, new VectorNode());
+
+            foreach (var node in tokens)
+            {
+                GraphBuilder.MergeOrAdd(
+                    column,
+                    new VectorNode(node.Vector, docId),
+                    Model,
+                    Model.FoldAngle,
+                    Model.IdenticalAngle);
             }
         }
 
-        public void Put(long docId, long keyId, IVector vector)
+        public void Put(long docId, IVector vector, VectorNode column)
         {
-            var column = Index.GetOrAdd(keyId, new VectorNode());
-
             GraphBuilder.MergeOrAdd(
                 column,
                 new VectorNode(vector, docId),
                 Model,
                 Model.FoldAngle,
                 Model.IdenticalAngle);
-
-            //var hit = PathFinder.ClosestMatch(column, vector, _model);
-
-            //if (hit == null || hit.Score < _model.IdenticalAngle)
-            //{
-            //    throw new Exception();
-            //}
-
-            //if (!hit.Node.DocIds.Contains(docId))
-            //{
-            //    throw new ApplicationException();
-            //}
         }
 
         public IndexInfo GetIndexInfo()

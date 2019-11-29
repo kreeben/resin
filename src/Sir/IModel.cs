@@ -15,7 +15,7 @@ namespace Sir
         IEnumerable<IVector> Tokenize(T data);
     }
 
-    public interface IModel : IVectorSpaceConfig, ISimilarity
+    public interface IModel : IVectorSpaceConfig, IDistanceCalculator
     {
     }
 
@@ -26,7 +26,7 @@ namespace Sir
         double IdenticalAngle { get; }
     }
 
-    public interface ISimilarity
+    public interface IDistanceCalculator
     {
         double CosAngle(IVector vec1, IVector vec2);
         double CosAngle(IVector vector, long vectorOffset, int componentCount, Stream vectorStream);

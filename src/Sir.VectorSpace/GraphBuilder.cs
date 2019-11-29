@@ -10,7 +10,7 @@ namespace Sir.VectorSpace
         public static bool TryMerge(
             VectorNode root, 
             VectorNode node,
-            ISimilarity model,
+            IDistanceCalculator model,
             double foldAngle,
             double identicalAngle,
             out VectorNode parent)
@@ -58,7 +58,7 @@ namespace Sir.VectorSpace
         public static long GetOrIncrementId(
             VectorNode root, 
             VectorNode node,
-            ISimilarity model, 
+            IDistanceCalculator model, 
             double foldAngle, 
             double identicalAngle,
             Func<long> identity)
@@ -105,7 +105,7 @@ namespace Sir.VectorSpace
         public static bool MergeOrAdd(
             VectorNode root, 
             VectorNode node,
-            ISimilarity model, 
+            IDistanceCalculator model, 
             double foldAngle, 
             double identicalAngle)
         {
@@ -117,7 +117,7 @@ namespace Sir.VectorSpace
 
                 if (angle >= identicalAngle)
                 {
-                    lock (cursor)
+                    lock (cursor.Sync)
                     {
                         AddDocId(cursor, node);
                     }
@@ -128,7 +128,7 @@ namespace Sir.VectorSpace
                 {
                     if (cursor.Left == null)
                     {
-                        lock (root)
+                        lock (cursor.Sync)
                         {
                             if (cursor.Left == null)
                             {
@@ -150,7 +150,7 @@ namespace Sir.VectorSpace
                 {
                     if (cursor.Right == null)
                     {
-                        lock (root)
+                        lock (cursor.Sync)
                         {
                             if (cursor.Right == null)
                             {

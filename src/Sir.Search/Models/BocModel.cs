@@ -9,9 +9,9 @@ namespace Sir.Search
 {
     public class BocModel : IStringModel
     {
-        public double IdenticalAngle => 0.99;
-        public double FoldAngle => 0.65d;
-        public int VectorWidth => 3;
+        public double IdenticalAngle => 0.9;
+        public double FoldAngle => 0.35d;
+        public int VectorWidth => 10;
 
         public IEnumerable<IVector> Tokenize(string text)
         {
@@ -34,10 +34,12 @@ namespace Sir.Search
 
                         if (len > 0)
                         {
+                            var slice = source.Slice(offset, len).ToArray();
+
                             embeddings.Add(
                                 new IndexedVector(
                                     embedding,
-                                    source.Slice(offset, len).ToArray(),
+                                    slice,
                                     VectorWidth));
 
                             embedding = new SortedList<int, float>();
@@ -86,7 +88,12 @@ namespace Sir.Search
 
         public double CosAngle(IVector vec1, IVector vec2)
         {
-            return vec1.Value.DotProduct(vec2.Value) / (vec1.Value.Norm(2) * vec2.Value.Norm(2));
+            var dotProduct = vec1.Value.DotProduct(vec2.Value);
+            var dotSelf1 = vec1.Value.DotProduct(vec1.Value);
+            var dotSelf2 = vec2.Value.DotProduct(vec2.Value);
+            return (dotProduct / (Math.Sqrt(dotSelf1) * Math.Sqrt(dotSelf2)));
+
+            //return vec1.Value.DotProduct(vec2.Value) / (vec1.Value.Norm(2) * vec2.Value.Norm(2));
         }
 
         public double CosAngle(IVector vector, long vectorOffset, int componentCount, Stream vectorStream)
@@ -107,8 +114,11 @@ namespace Sir.Search
 
             var otherVector = CreateVector.SparseOfIndexed(VectorWidth, tuples);
 
-            return vector.Value.DotProduct(otherVector) / (vector.Value.Norm(2) * otherVector.Norm(2));
+            var dotProduct = vector.Value.DotProduct(otherVector);
+            var dotSelf1 = vector.Value.DotProduct(vector.Value);
+            var dotSelf2 = otherVector.DotProduct(otherVector);
 
+            return (dotProduct / (Math.Sqrt(dotSelf1) * Math.Sqrt(dotSelf2)));
         }
     }
 }

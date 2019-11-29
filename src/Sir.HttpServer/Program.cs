@@ -22,9 +22,8 @@ namespace Sir.HttpServer
                 logging.ClearProviders();
                 logging.AddDebug();
 
-                if (!Directory.Exists("AppData"))
-                    Directory.CreateDirectory("AppData");
-
+                //if (!Directory.Exists("AppData"))
+                //    Directory.CreateDirectory("AppData");
                 //logging.AddFile("AppData/log-{Date}.txt");
             })
             .ConfigureWebHostDefaults(webBuilder =>

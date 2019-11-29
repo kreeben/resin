@@ -23,10 +23,11 @@ namespace Sir.Search
         public void Put(long docId, long keyId, string value)
         {
             var tokens = _indexSession.Model.Tokenize(value);
+            var column = _indexSession.Index.GetOrAdd(keyId, new VectorNode());
 
             foreach (var vector in tokens)
             {
-                _indexSession.Put(docId, keyId, vector);
+                _indexSession.Put(docId, vector, column);
 
                 _debugWords.GetOrAdd(keyId, new ConcurrentBag<IVector>()).Add(vector);
             }

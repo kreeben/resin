@@ -27,8 +27,7 @@ namespace Sir.DbUtil
                     .AddFilter("Microsoft", LogLevel.Warning)
                     .AddFilter("System", LogLevel.Warning)
                     .AddFilter("Sir.DbUtil.Program", LogLevel.Debug)
-                    .AddConsole()
-                    .AddEventLog();
+                    .AddConsole().AddDebug();
             });
 
             var logger = loggerFactory.CreateLogger("dbutil");
@@ -70,6 +69,10 @@ namespace Sir.DbUtil
             {
                 DownloadAndIndexWat(args, model, loggerFactory, logger);
             }
+            else if (command == "write_wet")
+            {
+                WriteWet(args, model, loggerFactory);
+            }
             else if (command == "truncate")
             {
                 Truncate(args, model, loggerFactory);
@@ -84,6 +87,83 @@ namespace Sir.DbUtil
             }
 
             logger.LogInformation($"executed {command}");
+        }
+
+        private static void WriteWet(string[] args, IStringModel model, ILoggerFactory logger)
+        {
+            var fileName = args[1];
+            var collectionId = "cc_wet".ToHash();
+            var writeJob = new Job(collectionId, ReadWetFile(fileName), model);
+
+            using (var sessionFactory = new SessionFactory(new IniConfiguration("sir.ini"), model, logger))
+            {
+                sessionFactory.Truncate(collectionId);
+
+                sessionFactory.WriteConcurrent(writeJob, reportSize:1000);
+            }
+        }
+
+        private static IEnumerable<IDictionary<string, object>> ReadWetFile(string fileName)
+        {
+            const string uriLabel = "WARC-Target-URI: ";
+            const string contentLabel = "Content-Length: ";
+            const string contentEndLabel = "WARC/1.0";
+
+            string url = null;
+            var content = new StringBuilder();
+            bool isContent = false;
+
+            var lines = ReadAllLinesFromGz(fileName).Skip(15);
+
+            foreach (var line in lines)
+            {
+                if (isContent)
+                {
+                    if (line.Length > 0)
+                        content.AppendLine(line);
+                }
+
+                if (line.StartsWith(contentEndLabel))
+                {
+                    isContent = false;
+
+                    if (content.Length > 0)
+                    {
+                        yield return new Dictionary<string, object>
+                    {
+                        { "url", url},
+                        { "description", content.ToString() }
+                    };
+
+                        content = new StringBuilder();
+                    }
+                }
+                else if (line.StartsWith(uriLabel))
+                {
+                    url = line.Replace(uriLabel, "");
+                }
+                else if (line.StartsWith(contentLabel))
+                {
+                    isContent = true;
+                }
+            }
+        }
+
+        private static IEnumerable<string> ReadAllLinesFromGz(string fileName)
+        {
+            using (var stream = File.OpenRead(fileName))
+            using (var zip = new GZipStream(stream, CompressionMode.Decompress))
+            using (var reader = new StreamReader(zip))
+            {
+                var line = reader.ReadLine();
+
+                while (line != null)
+                {
+                    yield return line;
+
+                    line = reader.ReadLine();
+                }
+            }
         }
 
         private static void DownloadAndIndexWat(string[] args, IStringModel model, ILoggerFactory logger, ILogger log)

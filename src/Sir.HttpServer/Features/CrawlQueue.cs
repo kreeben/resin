@@ -103,13 +103,6 @@ namespace Sir.HttpServer.Features
 
                             _sessionFactory.WriteConcurrent(writeJob, reportSize:1000);
 
-                            //_sessionFactory.WriteAndReportConcurrent(
-                            //        new Job(
-                            //            crawlJob.Target.ToHash(),
-                            //            writeJob.Documents,
-                            //            _model),
-                            //        _logger);
-
                             _logger.LogInformation($"write job took {time.Elapsed}");
 
                             existingWetRecords = _readSession.Read(wetQuery, 0, int.MaxValue);
@@ -136,7 +129,7 @@ namespace Sir.HttpServer.Features
             }
         }
 
-        private IEnumerable<IDictionary<string,object>> ReadWetFile(string fileName)
+        public static IEnumerable<IDictionary<string,object>> ReadWetFile(string fileName)
         {
             const string uriLabel = "WARC-Target-URI: ";
             const string contentLabel = "Content-Length: ";

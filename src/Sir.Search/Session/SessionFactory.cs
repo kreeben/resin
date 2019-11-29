@@ -132,47 +132,49 @@ namespace Sir.Search
             _pageInfo.Clear();
         }
 
+        public IEnumerable<IDictionary<string, object>> WriteOnly(Job job, WriteSession writeSession)
+        {
+            foreach (var document in job.Documents)
+            {
+                writeSession.Write(document);
+
+                yield return document;
+            }
+        }
+
         public IndexInfo Write(Job job, WriteSession writeSession, IndexSession indexSession)
         {
             var time = Stopwatch.StartNew();
-            var writeTime = new Stopwatch();
+            var writeTime = Stopwatch.StartNew();
+            var docCount = 0;
 
-            using (var queue = new ProducerConsumerQueue<IDictionary<string, object>>(4,
-                document =>
-                {
-                    var docId = (long)document["___docid"];
-
-                    //Parallel.ForEach(document, kv =>
-                    foreach (var kv in document)
-                    {
-                        if (!kv.Key.StartsWith("_"))
-                        {
-                            var keyId = GetKeyId(job.CollectionId, kv.Key.ToHash());
-
-                            indexSession.Put(docId, keyId, kv.Value);
-                        }
-                    }//);
-                }))
+            Parallel.ForEach(WriteOnly(job, writeSession), document=>
+            //foreach (var document in WriteOnly(job, writeSession))
             {
-                writeTime.Start();
+                var docId = (long)document["___docid"];
 
-                var docCount = 0;
-
-                foreach (var document in job.Documents)
+                //Parallel.ForEach(document, kv =>
+                foreach (var kv in document)
                 {
-                    writeSession.Write(document);
+                    if (!kv.Key.StartsWith("_"))
+                    {
+                        var keyId = GetKeyId(job.CollectionId, kv.Key.ToHash());
+                        var tokens = indexSession.GetDistinct(docId, indexSession.Model.Tokenize((string)kv.Value));
+                        var column = indexSession.Index.GetOrAdd(keyId, new VectorNode());
 
-                    queue.Enqueue(document);
+                        foreach (var vector in tokens)
+                        {
+                            indexSession.Put(docId, vector.Vector, column);
+                        }
+                    }
+                }//);
 
-                    docCount++;
-                }
+                docCount++;
+            });
 
-                writeTime.Stop();
+            writeTime.Stop();
 
-                _logger.LogInformation($"writing {docCount} documents to {job.CollectionId} took {writeTime.Elapsed}");
-            }
-
-            _logger.LogInformation($"indexing {job.CollectionId} took {time.Elapsed - writeTime.Elapsed}");
+            _logger.LogInformation($"writing {docCount} documents {job.CollectionId} took {writeTime.Elapsed}.");
 
             return indexSession.GetIndexInfo();
         }
