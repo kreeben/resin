@@ -6,7 +6,7 @@
 }
 
 h2{
-    margin-top: 5px;
+    margin-top: 10px;
 }
 
 sup, sub {
@@ -161,23 +161,23 @@ h3.querystats {
 }
 
 .logo1 {
-    margin-bottom: 0px;
-    margin-left: 15px;
+    margin-bottom: -2px;
+    margin-left: 19px;
     font-size: 11pt;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
 }
 
-.logo1 a{
+/*.logo1 a{
     text-shadow: 0px 0px 1px silver;
-}
+}*/
 
-.logo2 a{
-    text-shadow: 0px 0px 1px silver;
-}
+/*.logo2 a{
+    text-shadow: 1px 0px 1px silver;
+}*/
 
 .logo2 {
     margin-top: 0px;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     margin-left: 0px;
     font-size: 23pt;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
@@ -233,23 +233,33 @@ div.buttons {
     }
 }
 
-@media only screen and (max-width: 335px) {
+@media only screen and (max-width: 375px) {
     div.q {
-        width: 70%;
+        width: 69%;
     }
 
     div.buttons {
-        width: 30%;
+        width: 31%;
+    }
+}
+
+@media only screen and (max-width: 335px) {
+    div.q {
+        width: 65%;
+    }
+
+    div.buttons {
+        width: 35%;
     }
 }
 
 @media only screen and (max-width: 315px) {
     div.q {
-        width: 60%;
+        width: 55%;
     }
 
     div.buttons {
-        width: 40%;
+        width: 45%;
     }
 }
 
