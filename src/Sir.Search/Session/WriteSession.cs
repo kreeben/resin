@@ -9,12 +9,14 @@ namespace Sir.Search
     /// </summary>
     public class WriteSession : IDisposable
     {
+        private readonly ulong _collectionId;
         private readonly DocumentWriter _streamWriter;
 
         public WriteSession(
             ulong collectionId,
             DocumentWriter streamWriter)
         {
+            _collectionId = collectionId;
             _streamWriter = streamWriter;
         }
 
@@ -28,16 +30,19 @@ namespace Sir.Search
         /// Fields prefixed with "__" will not be stored.
         /// </summary>
         /// <returns>Document ID</returns>
-        public void Write(IDictionary<string, object> document)
+        public void Write(IDictionary<string, object> document, HashSet<string> storedFieldNames)
         {
-            document["_created"] = DateTime.Now.ToBinary();
+            document["created"] = DateTime.Now.ToBinary();
+            document["collectionid"] = _collectionId;
 
             var docMap = new List<(long keyId, long valId)>();
             var docId = _streamWriter.GetNextDocId();
 
             foreach (var key in document.Keys)
             {
-                if (key.StartsWith("__"))
+                var keyId = _streamWriter.EnsureKeyExists(key);
+
+                if (key != "collectionid" && !storedFieldNames.Contains(key))
                 {
                     continue;
                 }
@@ -52,7 +57,7 @@ namespace Sir.Search
                 byte dataType;
 
                 // store k/v
-                var kvmap = _streamWriter.Put(key, val, out dataType);
+                var kvmap = _streamWriter.Put(keyId, val, out dataType);
 
                 // store refs to k/v pair
                 docMap.Add(kvmap);

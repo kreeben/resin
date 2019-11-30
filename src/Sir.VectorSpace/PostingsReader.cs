@@ -20,19 +20,21 @@ namespace Sir.Search
             _streams = new ConcurrentDictionary<ulong, Stream>();
         }
 
-        public IDictionary<(ulong, long), double> ReadWithScore(ulong collectionId, IList<long> offsets, double score)
+        public IDictionary<(ulong, long), double> ReadWithPredefinedScore(ulong collectionId, IList<long> offsets, double score)
         {
+            var collectionRef = _sessionFactory.GetCollectionReference(collectionId);
+
             var result = new Dictionary<(ulong, long), double>();
 
             foreach (var offset in offsets)
             {
-                GetPostingsFromStream(collectionId, offset, result, score);
+                GetPostingsFromStream(collectionRef, offset, result, score);
             }
 
             return result;
         }
 
-        public Stream GetOrTryCreateStream(ulong collectionId)
+        public Stream GetOrCreateStream(ulong collectionId)
         {
             return _streams.GetOrAdd(
                 collectionId,
@@ -43,10 +45,12 @@ namespace Sir.Search
 
         protected override IList<(ulong, long)> Read(ulong collectionId, IList<long> offsets)
         {
+            var collectionRef = _sessionFactory.GetCollectionReference(collectionId);
+
             var list = new List<(ulong, long)>();
 
             foreach (var postingsOffset in offsets)
-                GetPostingsFromStream(collectionId, postingsOffset, list);
+                GetPostingsFromStream(collectionRef, postingsOffset, list);
 
             return list;
         }
@@ -65,7 +69,7 @@ namespace Sir.Search
 
         private void GetPostingsFromStream(ulong collectionId, long postingsOffset, IList<(ulong collectionId, long docId)> result)
         {
-            var stream = GetOrTryCreateStream(collectionId);
+            var stream = GetOrCreateStream(collectionId);
 
             stream.Seek(postingsOffset, SeekOrigin.Begin);
 

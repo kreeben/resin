@@ -8,26 +8,30 @@
     var queryString = string.Join('&', query.Select(x => $"{x.Key}={x.Value}"));
     var searchLink = $"{Context.Request.Path.Value.ToLower().Replace("/crawl", "/search")}?{queryString}";
 }
-    <h3>Read/write instructions</h3>
-    <p>
-        <h4>Read with browser</h4>
-        HTTP GET text/html<br />
-        <span>crawlcrawler.com/?collection=@collection</span>
-    </p>
-    <p>
-        <h4>Read with any HTTP client</h4>
-        HTTP GET application/json <br />
-        <span>crawlcrawler.com/query?collection=@collection&q=[Your_Query]&field=title&field=description</span>
-    </p>
-    <p>
-        <h4>Write (append to) with any HTTP client</h4>
-        HTTP POST application/json (list of JSON documents)<br />
-        <span>crawlcrawler.com/write?collection=@collection</span>
-    </p>
-    <h4>Advanced querying</h4>
-    HTTP POST application/json<br />
-    <span>crawlcrawler.com/query?collection=@collection</span>
-    <p>Example query:</p>
+<h3>Read/write instructions</h3>
+<p>
+    <h4>Read with browser</h4>
+    HTTP GET crawlcrawler.com/?collection=@collection<br />
+    Accept: text/html
+</p>
+<p>
+    <h4>Read with any HTTP client</h4>
+    HTTP GET crawlcrawler.com/query?collection=@collection&q=[Your_Query]&field=title&field=description<br />
+    Accept: application/json<br />
+</p>
+<p>
+    <h4>Write (append to) with any HTTP client</h4>
+    HTTP POST crawlcrawler.com/write?collection=@collection<br />
+    Content-Type: application/json (list of JSON documents)<br />
+</p>
+<h4>Advanced querying</h4>
+    HTTP POST crawlcrawler.com/query?collection=@collection
+    <br />
+    Content-Type: application/json
+    <br />
+    Accept: application/json
+    <br />
+    <p>Example body:</p>
     <div class="pre">
         <pre>
 {

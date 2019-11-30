@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Sir.Core;
 using Sir.Document;
 using Sir.KeyValue;
 using Sir.VectorSpace;
@@ -10,7 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
-using System.Threading;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace Sir.Search
@@ -20,12 +19,12 @@ namespace Sir.Search
     /// </summary>
     public class SessionFactory : IDisposable, ISessionFactory
     {
+        private ConcurrentDictionary<ulong, ulong> _collectionAliases;
         private ConcurrentDictionary<ulong, ConcurrentDictionary<ulong, long>> _keys;
         private readonly ConcurrentDictionary<string, IList<(long offset, long length)>> _pageInfo;
         private readonly ConcurrentDictionary<string, MemoryMappedFile> _mmfs;
         private ILogger<SessionFactory> _logger;
         private readonly ILoggerFactory _loggerFactory;
-        private readonly Semaphore _semaphore = new Semaphore(1, 2);
 
         public string Dir { get; }
         public IConfigurationProvider Config { get; }
@@ -37,6 +36,7 @@ namespace Sir.Search
 
             Dir = config.Get("data_dir");
             Config = config;
+            Model = model;
 
             if (!Directory.Exists(Dir))
             {
@@ -45,12 +45,10 @@ namespace Sir.Search
 
             _pageInfo = new ConcurrentDictionary<string, IList<(long offset, long length)>>();
             _mmfs = new ConcurrentDictionary<string, MemoryMappedFile>();
-            Model = model;
-
             _logger = loggerFactory.CreateLogger<SessionFactory>();
             _loggerFactory = loggerFactory;
-
             _keys = LoadKeys();
+            _collectionAliases = LoadCollectionAliases();
 
             _logger.LogInformation($"initiated in {time.Elapsed}");
         }
@@ -136,9 +134,29 @@ namespace Sir.Search
         {
             foreach (var document in job.Documents)
             {
-                writeSession.Write(document);
+                writeSession.Write(document, job.StoredFieldNames);
 
                 yield return document;
+            }
+        }
+
+        public void IndexOnly(IEnumerable<IDictionary<string, object>> documents, IndexSession indexSession, HashSet<string> indexedFieldNames)
+        {
+            foreach (var document in documents)
+            {
+                var docId = (long)document["___docid"];
+                var collectionId = (ulong)document["collectionid"];
+
+                //Parallel.ForEach(document, kv =>
+                foreach (var kv in document)
+                {
+                    if (indexedFieldNames.Contains(kv.Key))
+                    {
+                        var keyId = GetKeyId(collectionId, kv.Key.ToHash());
+
+                        indexSession.Put(docId, keyId, kv.Value.ToString());
+                    }
+                }//);
             }
         }
 
@@ -156,16 +174,11 @@ namespace Sir.Search
                 //Parallel.ForEach(document, kv =>
                 foreach (var kv in document)
                 {
-                    if (!kv.Key.StartsWith("_"))
+                    if (job.IndexedFieldNames.Contains(kv.Key) && kv.Value != null)
                     {
                         var keyId = GetKeyId(job.CollectionId, kv.Key.ToHash());
-                        var tokens = indexSession.GetDistinct(docId, indexSession.Model.Tokenize((string)kv.Value));
-                        var column = indexSession.Index.GetOrAdd(keyId, new VectorNode());
 
-                        foreach (var vector in tokens)
-                        {
-                            indexSession.Put(docId, vector.Vector, column);
-                        }
+                        indexSession.Put(docId, keyId, kv.Value.ToString());
                     }
                 }//);
 
@@ -190,10 +203,8 @@ namespace Sir.Search
             _logger.LogInformation($"{debug}\n{docsPerSecond} docs/s\n");
         }
 
-        public void WriteConcurrent(Job job, int reportSize)
+        public void Write(Job job, int reportSize)
         {
-            _semaphore.WaitOne();
-
             var batchNo = 0;
             var time = Stopwatch.StartNew();
 
@@ -203,49 +214,47 @@ namespace Sir.Search
                 foreach (var batch in job.Documents.Batch(reportSize))
                 {
                     Write(
-                            new Job(job.CollectionId, batch, job.Model),
-                            writeSession,
-                            indexSession,
-                            reportSize);
+                        new Job(
+                            job.CollectionId, 
+                            batch, 
+                            job.Model, 
+                            job.StoredFieldNames, 
+                            job.IndexedFieldNames),
+                        writeSession,
+                        indexSession,
+                        reportSize);
 
                     _logger.LogInformation($"processed batch {++batchNo}");
                 }
             }
 
-            _semaphore.Release();
-
             _logger.LogInformation($"processed job ({job.CollectionId}), in total: {time.Elapsed}");
         }
 
-        public void WriteConcurrent(Job job)
+        public void Write(Job job)
         {
-            _semaphore.WaitOne();
-
             using (var writeSession = CreateWriteSession(job.CollectionId))
             using (var indexSession = CreateIndexSession(job.CollectionId))
             {
                 Write(job, writeSession, indexSession);
             }
-
-            _semaphore.Release();
         }
 
-        public void WriteConcurrent(Job job, IndexSession indexSession)
+        public void Write(Job job, IndexSession indexSession)
         {
-            _semaphore.WaitOne();
-
             using (var writeSession = CreateWriteSession(job.CollectionId))
             {
                 Write(job, writeSession, indexSession);
             }
-
-            _semaphore.Release();
         }
 
-        public void WriteConcurrent(IEnumerable<IDictionary<string, object>> documents, IStringModel model)
+        public void Write(
+            IEnumerable<IDictionary<string, object>> documents, 
+            IStringModel model, 
+            HashSet<string> storedFieldNames,
+            HashSet<string> indexedFieldNames
+            )
         {
-            _semaphore.WaitOne();
-
             Parallel.ForEach(documents.GroupBy(d => (string)d["___collectionid"]), group =>
             //foreach (var group in documents.GroupBy(d => (string)d["___collectionid"]))
             {
@@ -254,11 +263,17 @@ namespace Sir.Search
                 using (var writeSession = CreateWriteSession(collectionId))
                 using (var indexSession = CreateIndexSession(collectionId))
                 {
-                    Write(new Job(collectionId, group, model), writeSession, indexSession);
+                    Write(
+                        new Job(
+                            collectionId, 
+                            group, 
+                            model, 
+                            storedFieldNames, 
+                            indexedFieldNames), 
+                        writeSession, 
+                        indexSession);
                 }
             });
-
-            _semaphore.Release();
         }
 
         public FileStream CreateLockFile(ulong collectionId)
@@ -284,9 +299,36 @@ namespace Sir.Search
             });
         }
 
-        public void RefreshKeys()
+        public void Refresh()
         {
             _keys = LoadKeys();
+            _collectionAliases = LoadCollectionAliases();
+        }
+
+        public ConcurrentDictionary<ulong, ulong> LoadCollectionAliases()
+        {
+            var timer = Stopwatch.StartNew();
+            var aliases = new Dictionary<ulong, ulong>();
+            var fileName = Path.Combine(Dir, "aliases.cmap");
+
+            using (var stream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite))
+            {
+                Span<byte> buf = new byte[sizeof(ulong)*2];
+                var read = stream.Read(buf);
+
+                while (read > 0)
+                {
+                    var data = MemoryMarshal.Cast<byte, ulong>(buf);
+
+                    aliases.Add(data[0], data[1]);
+
+                    read = stream.Read(buf);
+                }
+            }
+
+            _logger.LogInformation($"loaded {aliases.Count} collection ID -> original collection ID mappings into memory in {timer.Elapsed}");
+
+            return new ConcurrentDictionary<ulong, ulong>(aliases);
         }
 
         public ConcurrentDictionary<ulong, ConcurrentDictionary<ulong, long>> LoadKeys()
@@ -325,7 +367,7 @@ namespace Sir.Search
             return allkeys;
         }
 
-        public void PersistKeyMapping(ulong collectionId, ulong keyHash, long keyId)
+        public void RegisterKeyMapping(ulong collectionId, ulong keyHash, long keyId)
         {
             var fileName = Path.Combine(Dir, string.Format("{0}.kmap", collectionId));
             ConcurrentDictionary<ulong, long> keys;
@@ -345,6 +387,47 @@ namespace Sir.Search
                     stream.Write(BitConverter.GetBytes(keyHash), 0, sizeof(ulong));
                 }
             }
+        }
+
+        public void RegisterCollectionAlias(ulong collectionId, ulong originalCollectionId)
+        {
+            if (!_collectionAliases.ContainsKey(collectionId))
+            {
+                _collectionAliases.GetOrAdd(collectionId, originalCollectionId);
+
+                var fileName = Path.Combine(Dir, "aliases.cmap");
+
+                using (var stream = CreateAppendStream(fileName))
+                {
+                    Span<ulong> buf = new ulong[2];
+
+                    buf[0] = collectionId;
+                    buf[1] = originalCollectionId;
+
+                    stream.Write(MemoryMarshal.Cast<ulong, byte>(buf));
+                }
+
+                var keyMapFileName = Path.Combine(Dir, $"{collectionId}.kmap");
+
+                if (!File.Exists(keyMapFileName))
+                {
+                    var originalKeyMapFileName = Path.Combine(Dir, $"{originalCollectionId}.kmap");
+
+                    File.Copy(originalKeyMapFileName, keyMapFileName);
+                }
+            }
+        }
+
+        public ulong GetCollectionReference(ulong collectionId)
+        {
+            ulong alias;
+
+            if (!_collectionAliases.TryGetValue(collectionId, out alias))
+            {
+                return collectionId;
+            }
+
+            return alias;
         }
 
         public long GetKeyId(ulong collectionId, ulong keyHash)
@@ -448,7 +531,15 @@ namespace Sir.Search
 
         public bool CollectionExists(ulong collectionId)
         {
-            return File.Exists(Path.Combine(Dir, collectionId + ".docs"));
+            return File.Exists(Path.Combine(Dir, collectionId + ".vec"));
+        }
+
+        public bool CollectionIsIndexOnly(ulong collectionId)
+        {
+            if (!CollectionExists(collectionId))
+                throw new InvalidOperationException($"{collectionId} dows not exist");
+
+            return !File.Exists(Path.Combine(Dir, collectionId + ".docs"));
         }
 
         public void Dispose()

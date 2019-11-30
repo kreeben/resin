@@ -93,13 +93,21 @@ namespace Sir.DbUtil
         {
             var fileName = args[1];
             var collectionId = "cc_wet".ToHash();
-            var writeJob = new Job(collectionId, ReadWetFile(fileName), model);
+            var storedFieldNames = new HashSet<string> { "url" };
+            var indexedFieldNames = new HashSet<string> { "description" };
+
+            var writeJob = new Job(
+                collectionId, 
+                ReadWetFile(fileName), 
+                model,
+                storedFieldNames,
+                indexedFieldNames);
 
             using (var sessionFactory = new SessionFactory(new IniConfiguration("sir.ini"), model, logger))
             {
                 sessionFactory.Truncate(collectionId);
 
-                sessionFactory.WriteConcurrent(writeJob, reportSize:1000);
+                sessionFactory.Write(writeJob, reportSize:1000);
             }
         }
 
@@ -253,20 +261,34 @@ namespace Sir.DbUtil
             ILogger logger,
             string refFileName)
         {
-            var documents = ReadCC(fileName, refFileName);
+            var documents = ReadWatFile(fileName, refFileName);
             var collectionId = collection.ToHash();
             var time = Stopwatch.StartNew();
+            var storedFieldNames = new HashSet<string>
+            {
+                "title", "url", "filename"
+            };
+            var indexedFieldNames = new HashSet<string>
+            {
+                "title","description", "scheme", "host", "path", "query", "url", "filename"
+            };
 
             using (var sessionFactory = new SessionFactory(new IniConfiguration("sir.ini"), model, log))
             {
-                sessionFactory.WriteConcurrent(
-                            new Job(collectionId, documents, model));
+                sessionFactory.Write(
+                            new Job(
+                                collectionId, 
+                                documents, 
+                                model,
+                                storedFieldNames,
+                                indexedFieldNames),
+                            reportSize:1000);
             }
 
             logger.LogInformation($"indexed {fileName} in {time.Elapsed}");
         }
 
-        private static IEnumerable<IDictionary<string, object>> ReadCC(string fileName, string refFileNae)
+        private static IEnumerable<IDictionary<string, object>> ReadWatFile(string fileName, string refFileNae)
         {
             using (var fs = File.OpenRead(fileName))
             using (var zip = new GZipStream(fs, CompressionMode.Decompress))

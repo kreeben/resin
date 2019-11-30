@@ -6,8 +6,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Sir.Search
 {
@@ -21,7 +19,7 @@ namespace Sir.Search
         private readonly IStringModel _model;
         private readonly IPostingsReader _postingsReader;
         private readonly ConcurrentDictionary<ulong, DocumentReader> _streamReaders;
-        private readonly ConcurrentDictionary<ulong, INodeReader> _nodeReaders;
+        private readonly ConcurrentDictionary<ulong, ConcurrentDictionary<long, INodeReader>> _nodeReaders;
         private readonly ILogger<ReadSession> _logger;
 
         public ReadSession(
@@ -36,7 +34,7 @@ namespace Sir.Search
             _model = model;
             _streamReaders = new ConcurrentDictionary<ulong, DocumentReader>();
             _postingsReader = postingsReader;
-            _nodeReaders = new ConcurrentDictionary<ulong, INodeReader>();
+            _nodeReaders = new ConcurrentDictionary<ulong, ConcurrentDictionary<long, INodeReader>>();
             _logger = logger;
         }
 
@@ -47,14 +45,20 @@ namespace Sir.Search
                 reader.Dispose();
             }
 
-            foreach (var reader in _nodeReaders.Values)
-                reader.Dispose();
+            foreach (var collection in _nodeReaders.Values)
+                foreach (var reader in collection.Values)
+                    reader.Dispose();
 
             _postingsReader.Dispose();
         }
 
         public ReadResult Read(Query query, int skip, int take)
         {
+            if (query is null)
+            {
+                throw new ArgumentNullException(nameof(query));
+            }
+
             var result = MapReduce(query, skip, take);
 
             if (result != null)
@@ -83,7 +87,7 @@ namespace Sir.Search
                     }
 
                     var docIds = _postingsReader
-                        .ReadWithScore(term.CollectionId, hit.Node.PostingsOffsets, _model.IdenticalAngle);
+                        .ReadWithPredefinedScore(term.CollectionId, hit.Node.PostingsOffsets, _model.IdenticalAngle);
 
                     if (!docIds.ContainsKey((term.CollectionId, docId)))
                     {
@@ -104,15 +108,15 @@ namespace Sir.Search
 
             timer.Restart();
 
-            var result = new Dictionary<(ulong, long), double>();
+            var scoredResult = new Dictionary<(ulong, long), double>();
 
-            _postingsReader.Reduce(query, result);
+            _postingsReader.Reduce(query, scoredResult);
 
             _logger.LogInformation("reducing took {0}", timer.Elapsed);
 
             timer.Restart();
 
-            var sorted = Sort(result, skip, take);
+            var sorted = Sort(scoredResult, skip, take);
 
             _logger.LogInformation("sorting took {0}", timer.Elapsed);
 
@@ -174,13 +178,22 @@ namespace Sir.Search
             if (!File.Exists(ixFileName))
                 return null;
 
-            //return _nodeReaders.GetOrAdd(
-            //    $"{collectionId}.{keyId}".ToHash(), new NodeReader(
-            //        collectionId,
-            //        keyId,
-            //        _sessionFactory,
-            //        _sessionFactory.CreateReadStream(Path.Combine(_sessionFactory.Dir, $"{collectionId}.vec")),
-            //        _sessionFactory.CreateReadStream(ixFileName)));
+            var collectionReaders = _nodeReaders.GetOrAdd(collectionId, new ConcurrentDictionary<long, INodeReader>());
+
+            return collectionReaders.GetOrAdd(keyId, new NodeReader(
+                    collectionId,
+                    keyId,
+                    _sessionFactory,
+                    _sessionFactory.CreateReadStream(Path.Combine(_sessionFactory.Dir, $"{collectionId}.vec")),
+                    _sessionFactory.CreateReadStream(ixFileName)));
+        }
+
+        public INodeReader GetOrTryCreateIndexReaderNoCache(ulong collectionId, long keyId)
+        {
+            var ixFileName = Path.Combine(_sessionFactory.Dir, string.Format("{0}.{1}.ix", collectionId, keyId));
+
+            if (!File.Exists(ixFileName))
+                return null;
 
             return new NodeReader(
                     collectionId,
@@ -190,7 +203,7 @@ namespace Sir.Search
                     _sessionFactory.CreateReadStream(ixFileName));
         }
 
-        public DocumentReader GetOrTryCreateDocumentReader(ulong collectionId)
+        public DocumentReader GetOrCreateDocumentReader(ulong collectionId)
         {
             return _streamReaders.GetOrAdd(
                 collectionId,
@@ -207,7 +220,7 @@ namespace Sir.Search
 
             foreach (var dkvp in docs)
             {
-                var streamReader = GetOrTryCreateDocumentReader(dkvp.Key.collectionId);
+                var streamReader = GetOrCreateDocumentReader(dkvp.Key.collectionId);
                 var docInfo = streamReader.GetDocumentAddress(dkvp.Key.docId);
                 var docMap = streamReader.GetDocumentMap(docInfo.offset, docInfo.length);
                 var doc = new Dictionary<string, object>();

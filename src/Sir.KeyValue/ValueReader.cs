@@ -61,6 +61,10 @@ namespace Sir.KeyValue
             {
                 return BitConverter.ToInt64(buf);
             }
+            else if (DataType.ULONG == typeId)
+            {
+                return BitConverter.ToUInt64(buf);
+            }
             else if (DataType.DATETIME == typeId)
             {
                 return DateTime.FromBinary(BitConverter.ToInt64(buf));

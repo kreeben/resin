@@ -60,9 +60,8 @@ namespace Sir.Document
             _sessionFactory = sessionFactory;
         }
 
-        public (long keyId, long valueId) Put(string key, object val, out byte dataType)
+        public long EnsureKeyExists(string keyStr)
         {
-            var keyStr = key.ToString();
             var keyHash = keyStr.ToHash();
             long keyId;
 
@@ -74,9 +73,14 @@ namespace Sir.Document
                 var keyInfo = PutKey(keyStr);
 
                 keyId = PutKeyInfo(keyInfo.offset, keyInfo.len, keyInfo.dataType);
-                _sessionFactory.PersistKeyMapping(_collectionId, keyHash, keyId);
+                _sessionFactory.RegisterKeyMapping(_collectionId, keyHash, keyId);
             }
 
+            return keyId;
+        }
+
+        public (long keyId, long valueId) Put(long keyId, object val, out byte dataType)
+        {
             // store value
             var valInfo = PutValue(val);
             var valId = PutValueInfo(valInfo.offset, valInfo.len, valInfo.dataType);

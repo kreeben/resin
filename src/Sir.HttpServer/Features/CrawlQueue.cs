@@ -7,8 +7,6 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Text;
-using System.Threading.Tasks;
-using HtmlAgilityPack;
 using Microsoft.Extensions.Logging;
 using Sir.Core;
 using Sir.Search;
@@ -54,7 +52,7 @@ namespace Sir.HttpServer.Features
         {
             try
             {
-                var query = _queryParser.Parse(crawlJob.Collection, crawlJob.Q, crawlJob.Field, and: true, or: false);
+                var query = _queryParser.Parse(crawlJob.Collection, crawlJob.Q, crawlJob.Field, and: crawlJob.And, or: crawlJob.Or);
                 var readResult = _readSession.Read(query, 0, int.MaxValue);
                 var wetFiles = new SortedList<string, object>();
 
@@ -72,13 +70,16 @@ namespace Sir.HttpServer.Features
                         var wetQuery = _queryParser.Parse(
                             new string[] { "cc_wet" }, 
                             warcId,
-                            new string[] { "filename" }, and: true, or: false);
+                            new string[] { "warcid" }, and: true, or: false);
 
                         ReadResult existingWetRecords = null;
+                        var storedFieldNames = new HashSet<string> { "url", "description" };
+                        var indexedFieldNames = new HashSet<string> { "url", "warcid" };
+                        var wetCollectionId = "cc_wet".ToHash();
 
                         if (wetQuery != null)
                         {
-                            existingWetRecords = _readSession.Read(wetQuery, 0, 1);
+                            existingWetRecords = _readSession.Read(wetQuery, 0, int.MaxValue);
                         }
 
                         if (existingWetRecords == null || existingWetRecords.Total == 0)
@@ -98,12 +99,22 @@ namespace Sir.HttpServer.Features
                             }
 
                             var time = Stopwatch.StartNew();
-                            var collectionId = "cc_wet".ToHash();
-                            var writeJob = new Job(collectionId, ReadWetFile(localFileName), _model);
 
-                            _sessionFactory.WriteConcurrent(writeJob, reportSize:1000);
+                            var writeJob = new Job(
+                                wetCollectionId, 
+                                ReadWetFile(localFileName, warcId), 
+                                _model,
+                                storedFieldNames,
+                                indexedFieldNames);
 
-                            _logger.LogInformation($"write job took {time.Elapsed}");
+                            _sessionFactory.Write(writeJob, reportSize:1000);
+
+                            _logger.LogInformation($"wet file write job took {time.Elapsed}");
+
+                            wetQuery = _queryParser.Parse(
+                                new string[] { "cc_wet" },
+                                warcId,
+                                new string[] { "warcid" }, and: true, or: false);
 
                             existingWetRecords = _readSession.Read(wetQuery, 0, int.MaxValue);
                         }
@@ -113,11 +124,17 @@ namespace Sir.HttpServer.Features
                             throw new DataMisalignedException();
                         }
 
-                        using (var writeSession = _sessionFactory.CreateWriteSession(crawlJob.Target.ToHash()))
+                        var indexTime = Stopwatch.StartNew();
+                        var targetCollectionId = crawlJob.Target.ToHash();
+
+                        using (var indexSession = _sessionFactory.CreateIndexSession(targetCollectionId))
                         {
-                            foreach (var doc in existingWetRecords.Docs)
-                                writeSession.Write(doc);
+                            _sessionFactory.IndexOnly(existingWetRecords.Docs, indexSession, indexedFieldNames);
                         }
+
+                        _sessionFactory.RegisterCollectionAlias(targetCollectionId, wetCollectionId);
+
+                        _logger.LogInformation($"index job took {indexTime.Elapsed}");
                     }
                 }
 
@@ -129,7 +146,7 @@ namespace Sir.HttpServer.Features
             }
         }
 
-        public static IEnumerable<IDictionary<string,object>> ReadWetFile(string fileName)
+        public static IEnumerable<IDictionary<string,object>> ReadWetFile(string fileName, string warcId)
         {
             const string uriLabel = "WARC-Target-URI: ";
             const string contentLabel = "Content-Length: ";
@@ -158,7 +175,8 @@ namespace Sir.HttpServer.Features
                         yield return new Dictionary<string, object>
                     {
                         { "url", url},
-                        { "description", content.ToString() }
+                        { "description", content.ToString() },
+                        { "warcid", warcId }
                     };
 
                         content = new StringBuilder();
@@ -192,153 +210,6 @@ namespace Sir.HttpServer.Features
             }
         }
 
-        public string GetTitle(Uri uri)
-        {
-            try
-            {
-                var url = uri.ToString().Replace(uri.Scheme + "://", string.Empty);
-                var str = GetWebString(uri);
-
-                if (str == null)
-                {
-                    return string.Empty;
-                }
-
-                var html = new HtmlDocument();
-
-                html.LoadHtml(str);
-
-                var doc = Parse(html, uri);
-
-                if (doc.title == null)
-                {
-                    return string.Empty;
-                }
-
-                return doc.title;
-            }
-            catch
-            {
-                return string.Empty;
-            }
-        }
-
-        private IDictionary<string, object> GetDocument(string collectionName, string url, string title)
-        {
-            const string key = "_url";
-
-            var collectionId = collectionName.ToHash();
-
-            var keyId = _sessionFactory.GetKeyId(collectionName.ToHash(), key.ToHash());
-
-            var urlQuery = new Query(
-                _model.Tokenize(url)
-                    .Select(x => new Term(collectionId, keyId, key, x, and: true, or: false, not: false)).ToList(),
-                and: true,
-                or: false,
-                not: false
-            );
-
-            using (var readSession = _sessionFactory.CreateReadSession())
-            {
-                var result = readSession.Read(urlQuery, 0, 1).Docs.ToList();
-
-                return result.Count == 0
-                    ? null : (float)result[0]["___score"] >= _model.IdenticalAngle
-                    ? result[0] : null;
-            }
-        }
-
-        public void ExecuteWrite(string collectionName, IDictionary<string, object> doc)
-        {
-            _sessionFactory.WriteConcurrent(new Job(collectionName.ToHash(), new[] { doc }, _model));
-        }
-
-        private string GetWebString(Uri uri)
-        {
-            var urlStr = uri.ToString();
-
-            try
-            {
-                var req = (HttpWebRequest)WebRequest.Create(uri);
-                req.ReadWriteTimeout = 10 * 1000;
-                req.Headers.Add("User-Agent", "dygg-robot/didyougogo.com");
-                req.Headers.Add("Accept", "text/html");
-
-                using (var response = (HttpWebResponse)req.GetResponse())
-                using (var content = response.GetResponseStream())
-                using (var reader = new StreamReader(content))
-                {
-                    if (!response.GetResponseHeader("Content-Type").Contains("text/html"))
-                    {
-                        return null;
-                    }
-
-                    if (response.StatusCode != HttpStatusCode.OK)
-                    {
-                        _logger.LogInformation(string.Format("bad request: {0} response: {1}", uri, response.StatusCode));
-
-                        return null;
-                    }
-
-                    _logger.LogInformation(string.Format("requested: {0}", uri));
-
-                    return reader.ReadToEnd();
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(string.Format("request failed: {0} {1}", uri, ex));
-
-                return null;
-            }
-        }
-
-        private static HashSet<string> GetForbiddenUrls(string robotTxt)
-        {
-            var result = new HashSet<string>();
-
-            foreach (var line in robotTxt.Split('\r', '\n'))
-            {
-                var parts = line.ToLower().Split(':');
-
-                if (parts[0].Trim() == "disallow")
-                {
-                    var rule = parts[1].Trim(' ', '?').Replace("/*", string.Empty);
-
-                    if (rule != "/")
-                        result.Add(rule);
-                }
-            }
-
-            return result;
-        }
-
-        private (string title, string body) Parse(HtmlDocument htmlDocument, Uri owner)
-        {
-            var titleNodes = htmlDocument.DocumentNode.SelectNodes("//title");
-
-            if (titleNodes == null) return (null, null);
-
-            var titleNode = titleNodes.FirstOrDefault();
-
-            if (titleNode == null) return (null, null);
-
-            var title = WebUtility.HtmlDecode(titleNode.InnerText);
-            var root = htmlDocument.DocumentNode.SelectNodes("//body").First();
-            var txtNodes = root.Descendants().Where(x =>
-                x.Name == "#text" &&
-                (x.ParentNode.Name != "script") &&
-                (!string.IsNullOrWhiteSpace(x.InnerText))
-            ).ToList();
-
-            var ownerUrl = owner.Host;
-            var txt = txtNodes.Select(x => WebUtility.HtmlDecode(x.InnerText));
-            var body = string.Join("\r\n", txt);
-
-            return (title, body);
-        }
-
         public void Dispose()
         {
             _queue.Dispose();
@@ -354,8 +225,10 @@ namespace Sir.HttpServer.Features
         public string Q { get; }
         public string Target { get; }
         public string Job { get; }
+        public bool And { get; }
+        public bool Or { get; }
 
-        public CrawlJob(string id, string[] collection, string[] field, string q, string target, string job)
+        public CrawlJob(string id, string[] collection, string[] field, string q, string target, string job, bool and, bool or)
         {
             Id = id;
             Collection = collection;
@@ -363,6 +236,8 @@ namespace Sir.HttpServer.Features
             Q = q;
             Target = target;
             Job = job;
+            And = and;
+            Or = or;
         }
 
         public override bool Equals(object obj)

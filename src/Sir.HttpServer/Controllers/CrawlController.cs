@@ -29,7 +29,7 @@ namespace Sir.HttpServer.Controllers
         }
 
         [HttpPost]
-        public IActionResult Post(string id, string[] collection, string[] field, string q, string target, string job)
+        public IActionResult Post(string id, string[] collection, string[] field, string q, string target, string job, string and, string or)
         {
             bool isValid = true;
             ViewBag.JobValidationError = null;
@@ -60,7 +60,7 @@ namespace Sir.HttpServer.Controllers
 
             var jobType = job.ToLower();
 
-            _crawlQueue.Enqueue(new CrawlJob(id, collection, field, q, target, job));
+            _crawlQueue.Enqueue(new CrawlJob(id, collection, field, q, target, job, and!=null, or!=null));
 
             return View(jobType);
         }

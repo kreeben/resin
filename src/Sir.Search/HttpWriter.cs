@@ -25,19 +25,31 @@ namespace Sir.Search
         public void Write(HttpRequest request, IStringModel model)
         {
             var documents = Deserialize<IEnumerable<IDictionary<string, object>>>(request.Body);
+            var storedFieldNames = new HashSet<string>(request.Query["storedFields"].ToArray());
+            var indexedFieldNames = new HashSet<string>(request.Query["indexedFields"].ToArray());
 
             if (request.Query.ContainsKey("collection"))
             {
                 var collections = request.Query["collection"].ToArray();
-
+                
                 foreach (var collection in collections)
                 {
-                    _sessionFactory.WriteConcurrent(new Job(collection.ToHash(), documents, model));
+                    _sessionFactory.Write(
+                        new Job(
+                            collection.ToHash(), 
+                            documents, 
+                            model,
+                            storedFieldNames,
+                            indexedFieldNames));
                 }
             }
             else
             {
-                _sessionFactory.WriteConcurrent(documents, model);
+                _sessionFactory.Write(
+                    documents, 
+                    model, 
+                    storedFieldNames, 
+                    indexedFieldNames);
             }
         }
 

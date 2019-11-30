@@ -30,17 +30,20 @@
                 <span>Search @col</span>;
             }
         </legend>
-        <label><input type="checkbox" name="field" id="title" value="title" @(titleSelected ? "checked" : "") />title</label>
-        <label><input type="checkbox" name="field" id="description" value="description" @(descriptionSelected ? "checked" : "") />description</label>
-        @if (col == "cc_wat" || col == "cc_warc")
+
+        @if (col == "cc_wat")
         {
+            <label><input type="checkbox" name="field" id="title" value="title" @(titleSelected ? "checked" : "") />title</label>
+            <label><input type="checkbox" name="field" id="description" value="description" @(descriptionSelected ? "checked" : "") />description</label>
             <label><input type="checkbox" name="field" id="filename" value="filename" @(fileNameSelected ? "checked" : "") />filename</label>
-            <label><input type="checkbox" name="field" id="url" value="url" @(urlSelected ? "checked" : "") />url</label>
             <label><input type="checkbox" name="field" id="scheme" value="scheme" @(schemeSelected ? "checked" : "") />scheme</label>
             <label><input type="checkbox" name="field" id="host" value="host" @(hostSelected ? "checked" : "") />host</label>
             <label><input type="checkbox" name="field" id="path" value="path" @(pathSelected ? "checked" : "") />path</label>
             <label><input type="checkbox" name="field" id="query" value="query" @(querySelected ? "checked" : "") />query</label>
         }
+
+        <label><input type="checkbox" name="field" id="url" value="url" @(urlSelected ? "checked" : "") />url</label>
+
     </fieldset>
     <div class="input-wrapper">
         <div class="q">

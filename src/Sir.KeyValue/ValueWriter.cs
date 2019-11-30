@@ -55,6 +55,11 @@ namespace Sir.KeyValue
                 buffer = BitConverter.GetBytes((long)value);
                 dataType = DataType.LONG;
             }
+            else if (value is ulong)
+            {
+                buffer = BitConverter.GetBytes((ulong)value);
+                dataType = DataType.ULONG;
+            }
             else if (value is DateTime)
             {
                 buffer = BitConverter.GetBytes(((DateTime)value).ToBinary());

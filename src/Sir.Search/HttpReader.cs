@@ -73,7 +73,7 @@ namespace Sir.Search
                 if (request.Query.ContainsKey("id") && request.Query.ContainsKey("collection"))
                 {
                     var collectionId = request.Query["collection"].ToString().ToHash();
-                    var ids = request.Query["id"].ToDictionary(s => (collectionId, long.Parse(s)), x => (double)1);
+                    var ids = request.Query["id"].ToDictionary(s => (collectionId, docId:long.Parse(s)), x => (double)1);
                     var docs = readSession.ReadDocs(ids, query);
 
                     result = new ReadResult { Query = query, Docs = docs, Total = docs.Count };
@@ -82,20 +82,6 @@ namespace Sir.Search
                 {
                     result = readSession.Read(query, skip, take);
                 }
-            }
-
-            string newCollectionName = null;
-
-            if (request.Query.ContainsKey("target"))
-            {
-                newCollectionName = request.Query["target"].ToString();
-
-                if (string.IsNullOrWhiteSpace(newCollectionName))
-                {
-                    newCollectionName = Guid.NewGuid().ToString();
-                }
-
-                _sessionFactory.WriteConcurrent(new Job(newCollectionName.ToHash(), result.Docs, model));
             }
 
             using (var mem = new MemoryStream())
@@ -107,8 +93,7 @@ namespace Sir.Search
                     MediaType = "application/json",
                     Documents = result.Docs,
                     Total = result.Total,
-                    Body = mem.ToArray(),
-                    Target = newCollectionName
+                    Body = mem.ToArray()
                 };
             }
         }
