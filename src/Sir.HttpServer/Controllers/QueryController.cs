@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -21,7 +22,7 @@ namespace Sir.HttpServer.Controllers
 
         [HttpGet]
         [HttpPost]
-        public IActionResult Get()
+        public async Task<IActionResult> Get()
         {
             var mediaType = Request.Headers["Accept"].ToArray()[0];
             var reader = _plugins.Get<IHttpReader>(mediaType);
@@ -37,11 +38,14 @@ namespace Sir.HttpServer.Controllers
             }
 
             var timer = Stopwatch.StartNew();
-            var result = reader.Read(Request, _model);
+            var result = await reader.Read(Request, _model);
 
             _logger.LogInformation($"processed {mediaType} request in {timer.Elapsed}");
 
             Response.Headers.Add("X-Total", result.Total.ToString());
+
+            if (result.Total == 0)
+                return new EmptyResult();
 
             return new FileContentResult(result.Body, result.MediaType);
         }

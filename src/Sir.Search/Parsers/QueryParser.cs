@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 
 namespace Sir.Search
 {
@@ -79,13 +80,15 @@ namespace Sir.Search
             return ParseQuery(root);
         }
 
-        public Query ParseQuery(IDictionary<string, object> document)
+        public Query ParseQuery(dynamic document)
         {
             Query root = null;
             Query cursor = null;
             string[] parentCollections = null;
-            string op = null;
-            var operation = document;
+            bool and = false;
+            bool or = false;
+            bool not = false;
+            var operation = (JObject)document;
 
             while (operation != null)
             {
@@ -101,22 +104,22 @@ namespace Sir.Search
                         collections = ((string)kvp.Value)
                             .Split(',', System.StringSplitOptions.RemoveEmptyEntries);
 
-                        if (parentCollections == null)
-                            parentCollections = collections;
+                        parentCollections = collections;
+
                     }
                     else if (kvp.Key == "and")
                     {
-                        op = "and";
+                        and = true;
                         next = kvp.Value;
                     }
                     else if (kvp.Key == "or")
                     {
-                        op = "or";
+                        or = true;
                         next = kvp.Value;
                     }
                     else if (kvp.Key == "not")
                     {
-                        op = "not";
+                        not = true;
                         next = kvp.Value;
                     }
                     else
@@ -126,54 +129,36 @@ namespace Sir.Search
                     }
                 }
 
-                operation = next as IDictionary<string, object>;
+                operation = next as JObject;
 
-                if (key == null)
+                if (value == null)
+                {
                     continue;
-
-                Query r = null;
-                Query c = null;
-                bool and = op == "and";
-                bool or = op == "or";
-                bool not = op == "not";
-
-                foreach (var collection in collections)
-                {
-                    var terms = ParseTerms(collection, key, value, and, or, not);
-
-                    if (terms.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    var q = new Query(ParseTerms(collection, key, value, and, or, not), and, or, not);
-
-                    if (r == null)
-                    {
-                        r = c = q;
-                    }
-                    else
-                    {
-                        c.Or = q;
-
-                        c = q;
-                    }
-                }
-
-                if (root == null)
-                {
-                    root = cursor = r;
                 }
                 else
                 {
-                    if (and)
-                        cursor.And = r;
-                    else if (or)
-                        cursor.Or = r;
-                    else
-                        cursor.Not = r;
+                    foreach (var collection in collections ?? parentCollections)
+                    {
+                        var terms = ParseTerms(collection, key, value, and, or, not);
 
-                    cursor = r;
+                        if (terms.Count == 0)
+                        {
+                            continue;
+                        }
+
+                        var query = new Query(ParseTerms(collection, key, value, and, or, not), and, or, not);
+
+                        if (root == null)
+                        {
+                            root = cursor = query;
+                        }
+                        else
+                        {
+                            cursor.Or = query;
+
+                            cursor = query;
+                        }
+                    }
                 }
             }
 

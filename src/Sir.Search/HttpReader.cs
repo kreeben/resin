@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -37,7 +37,7 @@ namespace Sir.Search
         {
         }
 
-        public ResponseModel Read(HttpRequest request, IStringModel model)
+        public async Task<ResponseModel> Read(HttpRequest request, IStringModel model)
         {
             var timer = Stopwatch.StartNew();
             var take = 100;
@@ -49,7 +49,7 @@ namespace Sir.Search
             if (request.Query.ContainsKey("skip"))
                 skip = int.Parse(request.Query["skip"]);
 
-            var query = _httpQueryParser.ParseRequest(request);
+            var query = await _httpQueryParser.ParseRequest(request);
 
             if (query == null)
             {

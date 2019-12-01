@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Sir.Search
 {
@@ -13,10 +14,10 @@ namespace Sir.Search
             _sessionFactory = sessionFactory;
         }
 
-        public string Format(HttpRequest request, IStringModel tokenizer)
+        public async Task<string> Format(HttpRequest request, IStringModel tokenizer)
         {
             var parser = new HttpQueryParser(new QueryParser(_sessionFactory, tokenizer));
-            var query = parser.ParseRequest(request);
+            var query = await parser.ParseRequest(request);
             var dictionary = new Dictionary<string, object>();
             
             parser.ParseQuery(query, dictionary);

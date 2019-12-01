@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Sir.Search
 {
@@ -20,13 +22,13 @@ namespace Sir.Search
             _parser = parser;
         }
 
-        public Query ParseRequest(HttpRequest request)
+        public async Task<Query> ParseRequest(HttpRequest request)
         {
             if (request.Method == "GET")
             {
                 if (!request.Query.ContainsKey("collection"))
                 {
-                    throw new InvalidOperationException("collectionId missing from query string");
+                    throw new InvalidOperationException("collection missing from query string");
                 }
 
                 string[] collections = request.Query["collection"].ToArray()
@@ -43,20 +45,18 @@ namespace Sir.Search
             }
             else
             {
-                var jsonQuery = DeserializeFromStream(request.Body);
+                JObject query = await DeserializeFromStream(request.Body);
 
-                return ParseDictionary(jsonQuery);
+                return _parser.ParseQuery(query);
             }
         }
 
-        public static Dictionary<string, object> DeserializeFromStream(Stream stream)
+        public static async Task<JObject> DeserializeFromStream(Stream stream)
         {
-            var serializer = new JsonSerializer();
-
             using (var sr = new StreamReader(stream))
-            using (var jsonTextReader = new JsonTextReader(sr))
             {
-                return serializer.Deserialize<Dictionary<string, object>>(jsonTextReader);
+                var json = await sr.ReadToEndAsync();
+                return JObject.Parse(json);
             }
         }
 
@@ -67,6 +67,8 @@ namespace Sir.Search
 
             return ParseDictionary(document);
         }
+
+
 
         public Query ParseDictionary(IDictionary<string, object> document)
         {

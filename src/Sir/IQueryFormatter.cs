@@ -1,9 +1,10 @@
 ﻿using Microsoft.AspNetCore.Http;
+using System.Threading.Tasks;
 
 namespace Sir
 {
     public interface IQueryFormatter
     {
-        string Format(HttpRequest request, IStringModel model);
+        Task<string> Format(HttpRequest request, IStringModel model);
     }
 }
