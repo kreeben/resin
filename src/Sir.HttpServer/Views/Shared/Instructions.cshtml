@@ -25,7 +25,7 @@
     Content-Type: application/json (list of JSON documents)<br />
 </p>
 <h4>Advanced querying</h4>
-    HTTP POST crawlcrawler.com/query?collection=@collection
+    HTTP POST crawlcrawler.com/query/
     <br />
     Content-Type: application/json
     <br />
@@ -37,7 +37,7 @@
 {
     "and":
     {
-	    "collection": "film,music",
+	    "collection": "film,music,@collection",
 	    "title": "rocky eye of the tiger",
 	    "or":
 	    {
