@@ -2,27 +2,38 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width" />
-    <title>@ViewBag.Title @ViewBag.Collection - Common Crawl Crawl Crawler</title>
+    <title>@ViewBag.Title @ViewBag.Collection - Crawl Crawler</title>
     <meta charset="UTF-8">
     <link rel="stylesheet" type="text/css" href="/css/theme.css">
 </head>
 <body>
     <div class="outer-container">
-        <div class="logo1"><a href="/?collection=cc_wat">Common Crawl </a></div><div class="logo2"><a href="/?collection=cc_wat">Crawl Crawler</a></div>
+        <div class="logo2"><a href="/?collection=cc_wat">Crawl Crawler</a></div>
         @RenderBody()
-</div>
+    </div>
     <footer>
         <div>
             <p><a href="/about">About</a> | <a href="/faq">FAQ</a> | <a href="/toc">Terms</a> | <a href="/contact">Contact</a> | <a href="/donate">Donate</a></p>
         </div>
         <div>
-            <p>WAT index coverage 0.004%. <br />WET coverage 0.002%.</p>
+            <p><a href="/?collection=cc_wat" title="WAT index coverage">WAT</a>: 0.004%. 
+            <a href="/?collection=cc_wet" title="WET index coverage">WET</a>: 0.002%. <br />
+            <a href="/?collection=cc_warc_url" title="WARC URL index coverage">WARC URL</a>: 0.002%. 
+            <a href="/?collection=cc_warc" title="WARC index coverage">WARC</a>: 0%</p>
         </div>
         <div>
-            <p>All services free during BETA testing.</p>
+            <p>
+                Independent, non-tracking search 
+                powered by <a href="https://github.com/kreeben/resin" title="Resin Extensible Search Engine">Resin Extensible Search Engine.</a>
+                Services free during BETA testing.
+
+            </p>
         </div>
         <div>
-            <span>Non-tracking search powered by <a href="https://github.com/kreeben/resin" title="Resin Extensible Search Engine">Resin Extensible Search Engine</a></span>
+            <p></p>
+        </div>
+        <div>
+            
         </div>
     </footer>
 </body>

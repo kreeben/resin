@@ -5,47 +5,59 @@
         <div class="blog-wrapper">
             <h2>About</h2>
             <p>
-                At Crawl Crawler we've specialized in search.
-                We crawl and index web pages, <a href="https://commoncrawl.org/the-data/get-started/#WAT-Format">WAT</a> and
-                <a href="https://commoncrawl.org/the-data/get-started/#WET-Format">WET</a> files,
-                and, from time to time, take on custom search solution projects.
+                We've built a search engine but we don't know what parts of the internet to index. 
+                That's why we host searchable document collections with your choice of data.
+                We make sure you can always query it using either a web browser or HTTP client,
+                construct simple/complex joins of boolean statements with a JSON query language,
+                slice it,
+                append to it,
+                and download the results of your searches as JSON.
             </p>
-            <h3>We host multiple indices</h3>
+            <p>
+                We crawl and index web pages, mostly <a href="https://commoncrawl.org/the-data/get-started/#WAT-Format">WAT</a> and
+                <a href="https://commoncrawl.org/the-data/get-started/#WET-Format">WET</a> files 
+                but from time to time, <a href="https://commoncrawl.org/the-data/get-started/#WARC-Format">WARC</a> files, and on occasion, WWW, 
+                and we sometimes take on fun custom search solution projects for people with great ideas.
+            </p>
+            <h3>We host many indices</h3>
             <p>
                 We provide a search index (<a href="/?collection=cc_wat">cc_wat</a>) over the meta data from <a href="https://commoncrawl.org/">Common Crawl's</a> data set.
                 You may use it to find and extract web page content from Common Crawl's wide web crawl sessions.
                 We're doing our very best to try to automate that whole process, for your convenience.
             </p>
             <p>
-                We also provide a partial search index (<a href="/?collection=cc_wet">cc_wet</a>) over the text content
+                We also provide aonther search index (<a href="/?collection=cc_wet">cc_wet</a>) over the text content
                 of web pages from the Common Crawl data set. Anytime anyone extracts content from a Common Crawl WET file
                 via crawlcrawler.com, that data will end up in the public "cc_wet" search index, for everyone's convenience.
             </p>
             <p>
-                You may search multiple indices in one query, like <a href="/?collection=cc_wat,cc_wet">this</a>.
+                We also host your indices. They may be slices from larger, public document collections 
+                or from data you've provided.
+            </p>
+            <p>
+                BTW, did you know you can search multiple indices in one query, like <a href="/?collection=cc_wat,cc_wet">this</a>?
             </p>
             <h3>We provide a public API</h3>
             <p>
-                We provide a API for humans/browsers as well as a restful HTTP API that you may use to query any
+                We provide an API for humans/browsers as well as a restful HTTP API that you may use to query any
                 public index we host. These APIs also let you create your own data collections from slices of existing 
                 collections or from data that you've provided via the write API. 
             </p>
-            <h3>We'll crawl WWW for a small fee</h3>
+            <h3>We crawl WWW</h3>
             <p>
-                We need a way to be able to pay for our servers so that we can provide Common Crawl crawling to the public,
-                for free.
-                That's why we offer to web crawl. Here's how to do that. 
+                We offer to web crawl, in exchange for a small fee. 
             </p>
+            <h3>The convenience of web crawling with Crawl Crawler</h3>
             <p>
-                <strong>Step one:</strong> search the public "cc_wat" crawlcrawler index.
-                <br /><strong>Step two:</strong> from the search result, click "crawl" then let crawlcrawler fetch a snapshot of the web content by making HTTP requests on your behalf to the original resources.
-                Now you have a searchable web index of your favorite content.
+                <strong>Easy step one:</strong> search the public "cc_wat" Crawl Crawler index.
+                <br /><br /><strong>Very easy step two:</strong> from the search result, click "crawl", then let crawlcrawler fetch a snapshot 
+                of the web content by making HTTP requests on your behalf, to the original resources references in your 
+                search result. Now you have a searchable web index of your favorite content.
             </p>
-            <p>We'll also crawl WWW resources recurringly.</p>
-            <h3>Technology stack</h3>
+            <p>On your request we'll also crawl WWW resources recurringly.</p>
+            <h3>Technology</h3>
             <p>
-                We build <a href="https://github.com/kreeben/resin">Resin</a>, an open-source and extensible search engine,
-                on which we base most of our solutions.
+                We build <a href="https://github.com/kreeben/resin">Resin</a>, an open-source and extensible search engine.
             </p>
         </div>
     </form>

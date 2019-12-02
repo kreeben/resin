@@ -17,10 +17,10 @@
                 <div class="validation-error">@ViewBag.JobValidationError</div>
             }
             <p>
-                <label><input type="radio" name="job" value="fi" @Html.Raw((job == "fi") ? "checked" : "") /> <strong>Fetch and index all web page content from referenced WET files</strong>.</label>
-            </p>
-            <p>
-                <label><input type="radio" name="job" value="ei" @Html.Raw((job == "ei") ? "checked" : "") /> <strong>Extract web page content from WET files and index</strong> those resources referenced in your result.</label>
+                <label>
+                <input type="radio" name="job" value="map" @Html.Raw((job == "map") ? "checked" : "") /> 
+                <strong>Map web page content from referenced WET files to WAT URLs.</strong>
+                </label>
             </p>
             <p>
             <label><input type="radio" disabled="disabled" name="job" value="wci" @Html.Raw((job == "wci") ? "checked" : "") /> <strong>Web crawl and index</strong> those resources referenced in your result. (Coming soon)</label>
@@ -28,24 +28,19 @@
         <p>
             <label><input type="radio" disabled="disabled" name="job" value="rwci" @Html.Raw((job == "rwci") ? "checked" : "")/> <strong>Recurringly web crawl and index</strong> those resources referenced in your result. (Coming soon)</label>
         </p>
-            <p>
-                When the crawling job has completed we will have created a searchable document collection.
-                We will host this collection for your convenience so that 
-                you will be able to query it using a web browser or HTTP client as well as slice it, 
-                append to it or download it as JSON.
-            </p>
-            <p>
-                Name your collection carefully.
-                You will need to reference your collection by name anytime you wish to interact with it.
-            </p>
-            @if (ViewBag.TargetCollectionValidationError != null)
-            {
-                <div class="validation-error">@ViewBag.TargetCollectionValidationError</div>
-            }
-            <p><input type="text" placeholder="Name your collection" name="target" /><input type="submit" /></p>
-            <input type="hidden" id="q" value="@q" />
-            <input type="hidden" id="field" value="@field" />
-            <input type="hidden" id="collection" value="@collection" />
-            <input type="hidden" id="id" value="@ViewBag.CrawlId" />
-        </div>
-    </form>
+
+        <p>
+            Name your collection carefully.
+            You will need to reference it by name anytime you wish to interact with it.
+        </p>
+        @if (ViewBag.TargetCollectionValidationError != null)
+        {
+            <div class="validation-error">@ViewBag.TargetCollectionValidationError</div>
+        }
+        <p><input type="text" placeholder="Name your collection" name="target" /><input type="submit" /></p>
+        <input type="hidden" id="q" value="@q" />
+        <input type="hidden" id="field" value="@field" />
+        <input type="hidden" id="collection" value="@collection" />
+        <input type="hidden" id="id" value="@ViewBag.CrawlId" />
+    </div>
+</form>
