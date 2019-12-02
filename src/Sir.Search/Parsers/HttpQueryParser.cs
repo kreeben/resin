@@ -45,9 +45,11 @@ namespace Sir.Search
             }
             else
             {
-                JObject query = await DeserializeFromStream(request.Body);
+                var jsonDocument = await DeserializeFromStream(request.Body);
 
-                return _parser.ParseQuery(query);
+                var query = _parser.ParseQuery(jsonDocument);
+
+                return query;
             }
         }
 
@@ -67,8 +69,6 @@ namespace Sir.Search
 
             return ParseDictionary(document);
         }
-
-
 
         public Query ParseDictionary(IDictionary<string, object> document)
         {

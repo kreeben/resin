@@ -88,14 +88,14 @@ namespace Sir.Search
             bool and = false;
             bool or = false;
             bool not = false;
-            var operation = (JObject)document;
+            var operation = document;
 
             while (operation != null)
             {
                 string[] collections = null;
                 string key = null;
                 string value = null;
-                object next = null;
+                dynamic next = null;
 
                 foreach (var kvp in operation)
                 {
@@ -129,7 +129,7 @@ namespace Sir.Search
                     }
                 }
 
-                operation = next as JObject;
+                operation = next;
 
                 if (value == null)
                 {
