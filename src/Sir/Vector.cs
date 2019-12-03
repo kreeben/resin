@@ -16,7 +16,6 @@ namespace Sir
         public IndexedVector(SortedList<int, float> dictionary, Memory<char> data, int vectorWidth)
         {
             var tuples = new Tuple<int, float>[Math.Min(dictionary.Count, vectorWidth)];
-
             var i = 0;
 
             foreach (var p in dictionary)
@@ -28,7 +27,6 @@ namespace Sir
             }
 
             Value = CreateVector.SparseOfIndexed(vectorWidth, tuples);
-
             ComponentCount = tuples.Length;
             Data = data;
         }
@@ -60,6 +58,19 @@ namespace Sir
         public IndexedVector(Vector<float> vector)
         {
             Value = vector;
+            ComponentCount = ((SparseVectorStorage<float>)Value.Storage).Length;
+        }
+
+        public IndexedVector(IEnumerable<IVector> vectors)
+        { 
+            foreach (var vector in vectors)
+            {
+                if (Value == null)
+                    Value = vector.Value;
+                else
+                    Value.Add(vector.Value);
+            }
+
             ComponentCount = ((SparseVectorStorage<float>)Value.Storage).Length;
         }
 

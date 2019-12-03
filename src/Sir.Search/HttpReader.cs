@@ -57,15 +57,14 @@ namespace Sir.Search
             }
 
 #if DEBUG
-
             var debug = new Dictionary<string, object>();
 
             _httpQueryParser.ParseQuery(query, debug);
 
             _logger.LogInformation(JsonConvert.SerializeObject(debug));
             _logger.LogInformation($"divider {query.GetDivider()}");
-
 #endif
+
             ReadResult result = null;
 
             using (var readSession = _sessionFactory.CreateReadSession())
@@ -74,9 +73,9 @@ namespace Sir.Search
                 {
                     var collectionId = request.Query["collection"].ToString().ToHash();
                     var ids = request.Query["id"].ToDictionary(s => (collectionId, docId:long.Parse(s)), x => (double)1);
-                    var docs = readSession.ReadDocs(ids, query);
+                    var docs = readSession.ReadDocs(ids, query.GetDivider());
 
-                    result = new ReadResult { Query = query, Docs = docs, Total = docs.Count };
+                    result = new ReadResult { Query = query.Q, Docs = docs, Total = docs.Count };
                 }
                 else
                 {

@@ -22,6 +22,9 @@ namespace Sir.HttpServer.Features
         private readonly ILogger _logger;
         private readonly IReadSession _readSession;
         private readonly HashSet<string> _enquedIds;
+        private readonly HashSet<string> _wetStoredFieldNames;
+        private readonly HashSet<string> _wetIndexedFieldNames;
+        private readonly HashSet<string> _mapIndexedFieldNames;
 
         public (Uri uri, string title) LastProcessed { get; private set; }
 
@@ -31,13 +34,17 @@ namespace Sir.HttpServer.Features
             IStringModel model, 
             ILogger<CrawlQueue> logger)
         {
-            _queue = new ProducerConsumerQueue<CrawlJob>(1, DoWork);
+            _queue = new ProducerConsumerQueue<CrawlJob>(1, DispatchJob);
             _sessionFactory = sessionFactory;
             _queryParser = queryParser;
             _model = model;
             _logger = logger;
             _readSession = sessionFactory.CreateReadSession();
             _enquedIds = new HashSet<string>();
+
+            _wetStoredFieldNames = new HashSet<string> { "url", "description" };
+            _wetIndexedFieldNames = new HashSet<string> { "url", "warcid" };
+            _mapIndexedFieldNames = new HashSet<string> { "title","description", "description", "scheme", "host", "path", "query", "url", "filename" };
         }
 
         public void Enqueue(CrawlJob job)
@@ -48,94 +55,13 @@ namespace Sir.HttpServer.Features
             }
         }
 
-        private void DoWork(CrawlJob crawlJob)
+        private void DispatchJob(CrawlJob crawlJob)
         {
             try
             {
-                var query = _queryParser.Parse(crawlJob.Collection, crawlJob.Q, crawlJob.Field, and: crawlJob.And, or: crawlJob.Or);
-                var readResult = _readSession.Read(query, 0, int.MaxValue);
-                var wetFiles = new SortedList<string, object>();
-
-                foreach (var doc in readResult.Docs)
+                if (crawlJob.Job == "map")
                 {
-                    var wetFileName = ((string)doc["filename"]).Replace("/warc", "/wet").Replace(".gz", ".wet.gz");
-
-                    wetFiles.TryAdd(wetFileName, null);
-                }
-
-                using (var client = new WebClient())
-                {
-                    foreach (var warcId in wetFiles.Keys)
-                    {
-                        var wetQuery = _queryParser.Parse(
-                            new string[] { "cc_wet" }, 
-                            warcId,
-                            new string[] { "warcid" }, and: true, or: false);
-
-                        ReadResult existingWetRecords = null;
-                        var storedFieldNames = new HashSet<string> { "url", "description" };
-                        var indexedFieldNames = new HashSet<string> { "url", "warcid" };
-                        var wetCollectionId = "cc_wet".ToHash();
-
-                        if (wetQuery != null)
-                        {
-                            existingWetRecords = _readSession.Read(wetQuery, 0, int.MaxValue);
-                        }
-
-                        if (existingWetRecords == null || existingWetRecords.Total == 0)
-                        {
-                            var localFileName = Path.Combine(_sessionFactory.Dir, "wet", warcId);
-
-                            if (!File.Exists(localFileName))
-                            {
-                                if (!Directory.Exists(Path.GetDirectoryName(localFileName)))
-                                {
-                                    Directory.CreateDirectory(Path.GetDirectoryName(localFileName));
-                                }
-
-                                var remoteFileName = $"https://commoncrawl.s3.amazonaws.com/{warcId}";
-
-                                client.DownloadFile(remoteFileName, localFileName);
-                            }
-
-                            var time = Stopwatch.StartNew();
-
-                            var writeJob = new Job(
-                                wetCollectionId, 
-                                ReadWetFile(localFileName, warcId), 
-                                _model,
-                                storedFieldNames,
-                                indexedFieldNames);
-
-                            _sessionFactory.Write(writeJob, reportSize:1000);
-
-                            _logger.LogInformation($"wet file write job took {time.Elapsed}");
-
-                            wetQuery = _queryParser.Parse(
-                                new string[] { "cc_wet" },
-                                warcId,
-                                new string[] { "warcid" }, and: true, or: false);
-
-                            existingWetRecords = _readSession.Read(wetQuery, 0, int.MaxValue);
-                        }
-
-                        if (existingWetRecords.Total == 0)
-                        {
-                            throw new DataMisalignedException();
-                        }
-
-                        var indexTime = Stopwatch.StartNew();
-                        var targetCollectionId = crawlJob.Target.ToHash();
-
-                        using (var indexSession = _sessionFactory.CreateIndexSession(targetCollectionId))
-                        {
-                            _sessionFactory.IndexOnly(existingWetRecords.Docs, indexSession, indexedFieldNames);
-                        }
-
-                        _sessionFactory.RegisterCollectionAlias(targetCollectionId, wetCollectionId);
-
-                        _logger.LogInformation($"index job took {indexTime.Elapsed}");
-                    }
+                    Map(crawlJob);
                 }
 
                 _enquedIds.Remove(crawlJob.Id);
@@ -143,6 +69,83 @@ namespace Sir.HttpServer.Features
             catch (Exception ex)
             {
                 _logger.LogError($"error processing {crawlJob} {ex}");
+            }
+        }
+
+        private void Map(CrawlJob crawlJob)
+        {
+            var orignalQuery = _queryParser.Parse(crawlJob.Collection, crawlJob.Q, crawlJob.Field, and: crawlJob.And, or: crawlJob.Or);
+            
+            var originalResult = _readSession.Read(orignalQuery.Q, 0, int.MaxValue).Docs
+                .ToDictionary(x=>(long)x["___docid"]);
+
+            var wetFiles = new SortedList<string, object>();
+            ReadResult wetRecords = null;
+            var wetCollectionId = "cc_wet".ToHash();
+
+            foreach (var doc in originalResult.Values)
+            {
+                var wetFileName = ((string)doc["filename"]).Replace("/warc", "/wet").Replace(".gz", ".wet.gz");
+
+                wetFiles.TryAdd(wetFileName, null);
+            }
+
+            using (var client = new WebClient())
+            {
+                foreach (var warcId in wetFiles.Keys)
+                {
+                    var wetQuery = _queryParser.Parse(
+                        new string[] { "cc_wet" },
+                        warcId,
+                        new string[] { "warcid" }, and: true, or: false);
+
+                    if (wetQuery != null)
+                    {
+                        wetRecords = _readSession.Read(wetQuery.Q, 0, 1);
+                    }
+
+                    if (wetRecords == null || wetRecords.Total == 0)
+                    {
+                        var localFileName = Path.Combine(_sessionFactory.Dir, "wet", warcId);
+
+                        if (!File.Exists(localFileName))
+                        {
+                            if (!Directory.Exists(Path.GetDirectoryName(localFileName)))
+                            {
+                                Directory.CreateDirectory(Path.GetDirectoryName(localFileName));
+                            }
+
+                            var remoteFileName = $"https://commoncrawl.s3.amazonaws.com/{warcId}";
+
+                            client.DownloadFile(remoteFileName, localFileName);
+                        }
+
+                        var time = Stopwatch.StartNew();
+
+                        var writeJob = new Job(
+                            wetCollectionId,
+                            ReadWetFile(localFileName, warcId),
+                            _model,
+                            _wetStoredFieldNames,
+                            _wetIndexedFieldNames);
+
+                        _sessionFactory.Write(writeJob, reportSize: 1000);
+
+                        _logger.LogInformation($"wet file write job took {time.Elapsed}");
+
+                        wetQuery = _queryParser.Parse(
+                            new string[] { "cc_wet" },
+                            warcId,
+                            new string[] { "warcid" }, and: true, or: false);
+
+                        wetRecords = _readSession.Read(wetQuery.Q, 0, 1);
+                    }
+                }
+            }
+
+            if (wetRecords == null || wetRecords.Total == 0)
+            {
+                throw new DataMisalignedException();
             }
         }
 

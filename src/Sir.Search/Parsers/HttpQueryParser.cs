@@ -4,6 +4,7 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -22,7 +23,7 @@ namespace Sir.Search
             _parser = parser;
         }
 
-        public async Task<Query> ParseRequest(HttpRequest request)
+        public async Task<IQuery> ParseRequest(HttpRequest request)
         {
             if (request.Method == "GET")
             {
@@ -47,22 +48,22 @@ namespace Sir.Search
             {
                 var jsonDocument = await DeserializeFromStream(request.Body);
 
-                var query = _parser.ParseQuery(jsonDocument);
+                var query = _parser.Parse(jsonDocument);
 
                 return query;
             }
         }
 
-        public static async Task<JObject> DeserializeFromStream(Stream stream)
+        public static async Task<dynamic> DeserializeFromStream(Stream stream)
         {
             using (var sr = new StreamReader(stream))
             {
                 var json = await sr.ReadToEndAsync();
-                return JObject.Parse(json);
+                return JsonConvert.DeserializeObject<ExpandoObject>(json);
             }
         }
 
-        public Query ParseFormattedString(string formattedQuery)
+        public IQuery ParseFormattedString(string formattedQuery)
         {
             var document = JsonConvert.DeserializeObject<IDictionary<string, object>>(
                 formattedQuery, new JsonConverter[] { new DictionaryConverter() });
@@ -70,19 +71,20 @@ namespace Sir.Search
             return ParseDictionary(document);
         }
 
-        public Query ParseDictionary(IDictionary<string, object> document)
+        public IQuery ParseDictionary(IDictionary<string, object> document)
         {
-            return _parser.ParseQuery(document);
+            return _parser.Parse(document);
         }
 
-        public void ParseQuery(Query query, IDictionary<string, object> result)
+        private void DoParseQuery(Query query, IDictionary<string, object> result)
         {
             if (result == null)
                 return;
 
             var parent = result;
+            var q = (Query)query;
 
-            foreach (var term in query.Terms)
+            foreach (var term in q.Terms)
             {
                 var termdic = new Dictionary<string, object>();
 
@@ -105,18 +107,26 @@ namespace Sir.Search
                 parent = termdic;
             }
 
-            if (query.And != null)
+            if (q.And != null)
             {
-                ParseQuery(query.And, parent);
+                ParseQuery(q.And, parent);
             }
-            if (query.Or != null)
+            if (q.Or != null)
             {
-                ParseQuery(query.Or, parent);
+                ParseQuery(q.Or, parent);
             }
-            if (query.Not != null)
+            if (q.Not != null)
             {
-                ParseQuery(query.Not, parent);
+                ParseQuery(q.Not, parent);
             }
+        }
+
+        public void ParseQuery(IQuery query, IDictionary<string, object> result)
+        {
+            if (query is Query)
+                DoParseQuery((Query)query, result);
+            else
+                DoParseQuery(((Join)query).Q, result);
         }
     }
 

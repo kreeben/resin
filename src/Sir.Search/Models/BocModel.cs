@@ -11,7 +11,7 @@ namespace Sir.Search
     {
         public double IdenticalAngle => 0.9;
         public double FoldAngle => 0.35d;
-        public int VectorWidth => 15;
+        public int VectorWidth => 100;
 
         public IEnumerable<IVector> Tokenize(string text)
         {

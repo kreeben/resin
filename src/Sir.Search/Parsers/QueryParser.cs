@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Sir.Search
 {
@@ -14,7 +13,7 @@ namespace Sir.Search
             _model = model;
         }
 
-        public Query Parse(string[] collections, string q, string[] fields, bool and, bool or)
+        public IQuery Parse(string[] collections, string q, string[] fields, bool and, bool or)
         {
             var root = new Dictionary<string, object>();
             var cursor = root;
@@ -77,7 +76,17 @@ namespace Sir.Search
                 cursor = query;
             }
 
-            return ParseQuery(root);
+            return Parse(root);
+        }
+
+        public IQuery Parse(dynamic document)
+        {
+            if (((IDictionary<string,object>)document).ContainsKey("join"))
+            {
+                return ParseJoin(document);
+            }
+
+            return ParseQuery(document);
         }
 
         public Query ParseQuery(dynamic document)
@@ -163,6 +172,18 @@ namespace Sir.Search
             }
 
             return root;
+        }
+
+        public Join ParseJoin(dynamic document)
+        {
+            string[] joinInfo = ((string)((IDictionary<string,object>)document)["join"])
+                .Split(',', System.StringSplitOptions.RemoveEmptyEntries);
+
+            string joinCollection = joinInfo[0];
+            string primaryKey = joinInfo[1];
+            var query = ParseQuery(document.query);
+
+            return new Join(query, joinCollection, primaryKey);
         }
 
         public IList<Term> ParseTerms(string collectionName, string key, string value, bool and, bool or, bool not)

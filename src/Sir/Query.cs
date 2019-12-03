@@ -5,12 +5,13 @@ namespace Sir
     /// <summary>
     /// A boolean query,
     /// </summary>
-    public class Query : BooleanStatement
+    public class Query : BooleanStatement, IQuery
     {
         public IList<Term> Terms { get; }
         public Query And { get; set; }
         public Query Or { get; set; }
         public Query Not { get; set; }
+        public Query Q { get { return this; } }
 
         public Query(
             IList<Term> terms, 
@@ -165,5 +166,30 @@ namespace Sir
             _or = or;
             _not = not;
         }
+    }
+
+    public class Join : IQuery
+    {
+        public Join(Query query, string collection, string primaryKey)
+        {
+            Q = query;
+            Collection = collection;
+            PrimaryKey = primaryKey;
+        }
+
+        public string PrimaryKey { get;}
+        public string Collection { get; }
+        public Query Q { get; }
+
+        public int GetDivider()
+        {
+            return Q.GetDivider();
+        }
+    }
+
+    public interface IQuery
+    {
+        Query Q { get; }
+        int GetDivider();
     }
 }
