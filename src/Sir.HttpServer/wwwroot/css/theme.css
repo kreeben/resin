@@ -82,7 +82,7 @@ li{
 
 footer {
     font-size: 10pt;
-    margin-top: 10px;
+    margin-top: 20px;
     margin-left: 5px;
     margin-bottom: 30px;
 }
@@ -178,8 +178,8 @@ h3.querystats {
 }*/
 
 .logo2 {
-    margin-top: 0px;
-    margin-bottom: 10px;
+    margin-top: 20px;
+    margin-bottom: 15px;
     margin-left: 0px;
     font-size: 23pt;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
