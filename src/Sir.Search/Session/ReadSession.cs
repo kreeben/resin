@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace Sir.Search
 {
@@ -93,12 +94,12 @@ namespace Sir.Search
             {
                 var scoreDivider = join.Q.GetDivider();
                 var docs = ReadDocs(result.SortedDocuments, scoreDivider, join.PrimaryKey);
-                var primaryKeys = new List<Term>();
                 var joinCollectionId = join.Collection.ToHash();
                 var primaryKeyId = join.PrimaryKey.ToHash();
                 var keyId = _sessionFactory.GetKeyId(joinCollectionId, primaryKeyId);
                 Query lookupQuery = null;
                 Query cursor = null;
+                var timer = Stopwatch.StartNew();
 
                 foreach (var doc in docs)
                 {
@@ -130,16 +131,25 @@ namespace Sir.Search
                     }
                 }
 
-                var secondResult = Read(lookupQuery, 0, int.MaxValue);
+                _logger.LogInformation($"building lookup query took {timer.Elapsed}");
+
+                var secondResult = Read(lookupQuery, 0, docs.Count);
+
+                timer.Restart();
+
                 var merged = Merge(docs, secondResult.Docs, join.PrimaryKey);
 
-                return new ReadResult { Query = join.Q, Total = result.Total, Docs = merged };
+                _logger.LogInformation($"merging took {timer.Elapsed}");
+
+                var sorted = merged.OrderByDescending(x => (double)x["___score"]);
+
+                return new ReadResult { Query = join.Q, Total = merged.Count, Docs = sorted };
             }
 
             return new ReadResult { Query = join.Q, Total = 0, Docs = new IDictionary<string, object>[0] };
         }
 
-        private IEnumerable<IDictionary<string, object>> Merge(
+        private ICollection<IDictionary<string, object>> Merge(
             IDictionary<object,IDictionary<string, object>> first,
             IEnumerable<IDictionary<string, object>> other,
             string primaryKey)
@@ -158,10 +168,10 @@ namespace Sir.Search
                             doc[field.Key] = field.Value;
                         }
                     }
-
-                    yield return doc;
                 }
             }
+
+            return first.Values;
         }
 
         public void EnsureIsValid(Query query, long docId)
@@ -264,6 +274,21 @@ namespace Sir.Search
             return new ScoredResult { SortedDocuments = sortedByScore.GetRange(index, count), Total = sortedByScore.Count };
         }
 
+        public INodeReader CreateIndexReader(ulong collectionId, long keyId)
+        {
+            var ixFileName = Path.Combine(_sessionFactory.Dir, string.Format("{0}.{1}.ix", collectionId, keyId));
+
+            if (!File.Exists(ixFileName))
+                return null;
+
+            return new NodeReader(
+                    collectionId,
+                    keyId,
+                    _sessionFactory,
+                    _sessionFactory.CreateReadStream(Path.Combine(_sessionFactory.Dir, $"{collectionId}.vec")),
+                    _sessionFactory.CreateReadStream(ixFileName));
+        }
+
         public INodeReader GetOrTryCreateIndexReader(ulong collectionId, long keyId)
         {
             var ixFileName = Path.Combine(_sessionFactory.Dir, string.Format("{0}.{1}.ix", collectionId, keyId));
@@ -309,6 +334,7 @@ namespace Sir.Search
             int scoreDivider)
         {
             var result = new List<IDictionary<string, object>>();
+            var timer = Stopwatch.StartNew();
 
             foreach (var dkvp in docIds)
             {
@@ -334,6 +360,8 @@ namespace Sir.Search
                 result.Add(doc);
             }
 
+            _logger.LogInformation($"reading documents took {timer.Elapsed}");
+
             return result;
         }
 
@@ -342,6 +370,7 @@ namespace Sir.Search
             int scoreDivider,
             string primaryKey)
         {
+            var timer = Stopwatch.StartNew();
             var result = new Dictionary<object, IDictionary<string, object>>();
 
             foreach (var dkvp in docIds)
@@ -367,6 +396,8 @@ namespace Sir.Search
 
                 result.Add(doc[primaryKey], doc);
             }
+
+            _logger.LogInformation($"reading documents took {timer.Elapsed}");
 
             return result;
         }
