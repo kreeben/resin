@@ -6,11 +6,12 @@
     var jsonDownloadLink = $"{Context.Request.Path.Value.ToLower().Replace("/search", "/query")}{Context.Request.QueryString}";
     var crawlLink = $"{Context.Request.Path.Value.ToLower().Replace("/search", "/crawl")}{Context.Request.QueryString}";
 }
-<h3 class="querystats">@docs.Count results of @ViewData["total"] in @ViewData["time_ms"] ms</h3>
 @if (docs.Count > 0)
 {
-    <div class="download-json-result">Download result as <a href="@jsonDownloadLink" title="Use a HTTP client to GET result as Content-Type application/json">JSON</a> or 
-    <a href="@crawlLink">crawl it</a>.</div>
+    <div class="download-json-result">
+        <span>@docs.Count hits of @ViewData["total"] in @ViewData["time_ms"] ms.</span> <a href="@jsonDownloadLink" title="Use a HTTP client to GET result as Content-Type application/json">Download</a> 
+        result as JSON or <a href="@crawlLink">crawl</a>.
+    </div>
     <div class="result-list">
         <ol>
             @foreach (var item in docs)
@@ -31,8 +32,11 @@
                         <span class="medium-text">@Html.Raw(host)</span><br />
                         <span class="medium-text">Score: @score.ToString("N2")%</span><br />
                         <span class="medium-text">
-                        <a class="warc-link" href="https://commoncrawl.s3.amazonaws.com/@Html.Raw(warcFilename)">WARC</a> 
-                        <a class="warc-link" href="https://commoncrawl.s3.amazonaws.com/@Html.Raw(wetFileName)">WET</a></span>
+                            <a class="warc-link" href="https://commoncrawl.s3.amazonaws.com/@Html.Raw(wetFileName)">WET</a>
+                        </span>
+                        <span class="medium-text">
+                            <a class="warc-link" href="https://commoncrawl.s3.amazonaws.com/@Html.Raw(warcFilename)">WARC</a>
+                        </span>
                     </div>
                 </li>
             }

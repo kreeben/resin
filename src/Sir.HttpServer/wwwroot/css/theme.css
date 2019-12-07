@@ -199,6 +199,12 @@ h3.querystats {
     padding-bottom: 0px;
 }
 
+.search-fields a {
+    text-decoration: none;
+    color: gray;
+    text-decoration:underline;
+}
+
 input[type="text"].collection {
     padding: 10px 10px 10px 10px;
     color: orangered;
@@ -286,8 +292,9 @@ div.buttons {
 }
 
 .download-json-result{
-    margin-left:1px;
-    margin-bottom: 12px;
+    margin-left:0px;
+    margin-bottom: 10px;
+    margin-top: 15px;
     font-size: 10pt;
     color: black;
 }
