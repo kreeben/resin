@@ -5,15 +5,15 @@
     font-size: medium;
 }
 
-h2{
+h2 {
     margin-top: 12px;
-    font-size:1.4em;
+    font-size: 1.4em;
 }
 
 sup, sub {
     font-size: x-small;
     color: orangered;
-    font-weight:600;
+    font-weight: 600;
 }
 
 label {
@@ -26,8 +26,8 @@ a {
     color: orangered;
 }
 
-.outer-container{
-    max-width:935px;
+.outer-container {
+    max-width: 935px;
 }
 
 .sub {
@@ -37,7 +37,7 @@ a {
     margin-right: 2px;
 }
 
-.result-list{
+.result-list {
     margin-right: 5px;
 }
 
@@ -46,17 +46,17 @@ a.result-link {
     color: mediumblue;
 }
 
-a.result-link:visited {
-    color: purple;
-}
+    a.result-link:visited {
+        color: purple;
+    }
 
 a.warc-link {
     color: gray;
 }
 
-a.warc-link:visited {
-    color: purple;
-}
+    a.warc-link:visited {
+        color: purple;
+    }
 
 a:visited h1 {
 }
@@ -75,7 +75,7 @@ ol {
     margin: 0px 0px 0px 0px;
 }
 
-li{
+li {
     font-size: 10pt;
 }
 
@@ -87,24 +87,24 @@ footer {
     margin-bottom: 30px;
 }
 
-footer span {
-    padding-top: 10px;
-}
+    footer span {
+        padding-top: 10px;
+    }
 
-footer a {
-    text-decoration: none;
-    color: gray;
-}
+    footer a {
+        text-decoration: none;
+        color: gray;
+    }
 
-footer p {
-    margin-top: 15px;
-}
+    footer p {
+        margin-top: 15px;
+    }
 
 .pre {
     background-color: #d4d4d4;
     padding: 0px 5px 5px 0px;
     margin-top: 5px;
-    overflow:scroll;
+    overflow: scroll;
 }
 
 div.upvote {
@@ -128,7 +128,8 @@ input[type="text"].q {
     width: 100%;
     padding-left: 0px;
 }
-input[type="checkbox"]{
+
+input[type="checkbox"] {
     vertical-align: sub;
 }
 
@@ -150,7 +151,7 @@ input[type="text"] {
 .advanced {
     color: orangered;
     font-size: 0.7em;
-    margin-top:10px;
+    margin-top: 10px;
     margin-left: 2px;
 }
 
@@ -192,25 +193,25 @@ h3.querystats {
     margin-left: 1px;
     margin-right: 0px;
     margin-top: 0px;
-    margin-bottom: 10px;
+    margin-bottom: 20px;
     padding-left: 0px;
     padding-right: 0px;
     padding-top: 15px;
     padding-bottom: 0px;
 }
 
-.search-fields a {
-    text-decoration: none;
-    color: gray;
-    text-decoration:underline;
-}
+    .search-fields a {
+        text-decoration: none;
+        color: gray;
+        text-decoration: underline;
+    }
 
 input[type="text"].collection {
     padding: 10px 10px 10px 10px;
     color: orangered;
     font-size: xx-large;
     font-weight: 700;
-    border:none;
+    border: none;
 }
 
 .input-wrapper {
@@ -291,8 +292,8 @@ div.buttons {
     }
 }
 
-.download-json-result{
-    margin-left:0px;
+.download-json-result {
+    margin-left: 0px;
     margin-bottom: 10px;
     margin-top: 15px;
     font-size: 10pt;
@@ -307,7 +308,7 @@ div.buttons {
     max-width: 700px;
 }
 
-.validation-error{
-    color:white;
-    background-color:gray;
+.validation-error {
+    color: white;
+    background-color: gray;
 }
