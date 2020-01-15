@@ -23,6 +23,8 @@ namespace Sir.HttpServer.Controllers
 
         public override void OnActionExecuted(ActionExecutedContext context)
         {
+            ViewBag.CCTargetUrl = Config.Get("cc_target_url");
+            ViewBag.CCTargetName = Config.Get("cc_target_name");
             ViewBag.DefaultCollection = Config.Get("default_collection");
 
             ViewBag.Collection = context.HttpContext.Request.Query.ContainsKey("collection") ?
