@@ -9,8 +9,8 @@ namespace Sir.Search
 {
     public class BocModel : IStringModel
     {
-        public double IdenticalAngle => 0.9;
-        public double FoldAngle => 0.35d;
+        public double IdenticalAngle => 0.95d;
+        public double FoldAngle => 0.6d;
         public int VectorWidth => 256;
 
         public IEnumerable<IVector> Tokenize(Memory<char> source)

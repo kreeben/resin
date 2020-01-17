@@ -162,7 +162,6 @@ namespace Sir.Search
 
         public IndexInfo Write(Job job, WriteSession writeSession, IndexSession indexSession)
         {
-            var time = Stopwatch.StartNew();
             var writeTime = Stopwatch.StartNew();
             var docCount = 0;
 
