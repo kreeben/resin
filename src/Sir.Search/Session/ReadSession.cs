@@ -104,7 +104,7 @@ namespace Sir.Search
                 foreach (var doc in docs)
                 {
                     var docTerms = new List<Term>();
-                    var tokens = _model.Tokenize((string)doc.Key);
+                    var tokens = _model.Tokenize(((string)doc.Key).ToCharArray());
 
                     foreach (var token in tokens)
                     {

@@ -22,7 +22,7 @@
                 var host = uri.Host.ToString();
                 var title = item.Document.ContainsKey("title") ? item.Document["title"].ToString() : "Unknown title";
                 var score = (double)item.Document["___score"];
-                var warcFilename = (string)item.Document["filename"];
+                var warcFilename = item.Document.ContainsKey("filename") ? item.Document["filename"].ToString() : "";
                 var wetFileName = warcFilename.Replace("/warc", "/wet").Replace(".gz", ".wet.gz");
                 <li>
                     <div class="document-header">

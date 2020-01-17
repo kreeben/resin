@@ -38,7 +38,7 @@ namespace Sir.Search
             var body = (string)doc["body"];
             var keyId = _sessionFactory.GetKeyId(CollectionId, "body".ToHash());
             var query = new Query(
-                _model.Tokenize(body)
+                _model.Tokenize(body.ToCharArray())
                     .Select(x => new Term(CollectionId, keyId, "body", x, and:true, or:false, not:false)).ToList(), 
                 and:true, 
                 or:false, 

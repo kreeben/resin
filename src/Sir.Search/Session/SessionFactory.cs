@@ -166,8 +166,8 @@ namespace Sir.Search
             var writeTime = Stopwatch.StartNew();
             var docCount = 0;
 
-            Parallel.ForEach(WriteOnly(job, writeSession), document=>
-            //foreach (var document in WriteOnly(job, writeSession))
+            //Parallel.ForEach(WriteOnly(job, writeSession), document=>
+            foreach (var document in WriteOnly(job, writeSession))
             {
                 var docId = (long)document["___docid"];
 
@@ -183,7 +183,7 @@ namespace Sir.Search
                 }//);
 
                 docCount++;
-            });
+            }//);
 
             writeTime.Stop();
 
@@ -205,6 +205,8 @@ namespace Sir.Search
 
         public void Write(Job job, int reportSize)
         {
+            _logger.LogInformation($"writing to {job.CollectionId}");
+
             var batchNo = 0;
             var time = Stopwatch.StartNew();
 

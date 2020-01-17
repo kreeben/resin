@@ -40,39 +40,16 @@ namespace Sir.Search
             _logger = logger;
         }
 
-        public IList<VectorNode> GetDistinct(long docId, IEnumerable<IVector> tokens)
+        public void Put(long docId, long keyId, string value)
         {
-            var document = new VectorNode();
-            var distinct = new List<VectorNode>();
+            var tokens = Model.Tokenize(value.ToCharArray());
+            var column = Index.GetOrAdd(keyId, new VectorNode());
 
             foreach (var token in tokens)
             {
-                var node = new VectorNode(token, docId);
-
-                if (!GraphBuilder.MergeOrAdd(
-                    document,
-                    node,
-                    Model,
-                    Model.FoldAngle,
-                    Model.IdenticalAngle))
-                {
-                    distinct.Add(node);
-                }
-            }
-
-            return distinct;
-        }
-
-        public void Put(long docId, long keyId, string value)
-        {
-            var tokens = GetDistinct(docId, (IList<IVector>)Model.Tokenize(value));
-            var column = Index.GetOrAdd(keyId, new VectorNode());
-
-            foreach (var node in tokens)
-            {
                 GraphBuilder.MergeOrAdd(
                     column,
-                    new VectorNode(node.Vector, docId),
+                    new VectorNode(token, docId),
                     Model,
                     Model.FoldAngle,
                     Model.IdenticalAngle);

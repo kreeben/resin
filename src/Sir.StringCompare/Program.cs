@@ -26,7 +26,7 @@ namespace Sir.StringCompare
                         break;
                     }
 
-                    var node = new VectorNode(model.Tokenize(command).First());
+                    var node = new VectorNode(model.Tokenize(command.ToCharArray()).First());
                     GraphBuilder.TryMerge(root, node, model, model.FoldAngle, model.IdenticalAngle, out _);
                 }
 
@@ -43,15 +43,15 @@ namespace Sir.StringCompare
                         break;
                     }
 
-                    var hit = PathFinder.ClosestMatch(root, model.Tokenize(command).First(), model);
+                    var hit = PathFinder.ClosestMatch(root, model.Tokenize(command.ToCharArray()).First(), model);
 
                     Console.WriteLine($"{hit.Score} {hit.Node}");
                 }
             }
             else
             {
-                var doc1 = new VectorNode(model.Tokenize(args[0]).First());
-                var doc2 = new VectorNode(model.Tokenize(args[1]).First());
+                var doc1 = new VectorNode(model.Tokenize(args[0].ToCharArray()).First());
+                var doc2 = new VectorNode(model.Tokenize(args[1].ToCharArray()).First());
                 var angle = model.CosAngle(doc1.Vector, doc2.Vector);
                 Console.WriteLine($"similarity: {angle}");
             }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Sir
@@ -6,7 +7,7 @@ namespace Sir
     /// <summary>
     /// String vector space model.
     /// </summary>
-    public interface IStringModel : IModel<string>
+    public interface IStringModel : IModel<Memory<char>>
     {
     }
 

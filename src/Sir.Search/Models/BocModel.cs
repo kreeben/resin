@@ -11,89 +11,70 @@ namespace Sir.Search
     {
         public double IdenticalAngle => 0.9;
         public double FoldAngle => 0.35d;
-        public int VectorWidth => 100;
+        public int VectorWidth => 256;
 
-        public IEnumerable<IVector> Tokenize(string text)
+        public IEnumerable<IVector> Tokenize(Memory<char> source)
         {
-            Span<char> source = text.ToLower().ToCharArray();
-            var offset = 0;
-            bool word = false;
-            int index = 0;
-            var embeddings = new List<IVector>();
-            var embedding = new SortedList<int, float>();
+            var tokens = new List<IVector>();
 
-            for (; index < source.Length; index++)
+            if (source.Length > 0)
             {
-                char c = source[index];
+                var embedding = new SortedList<int, float>();
+                var offset = 0;
+                int index = 0;
+                var span = source.Span;
 
-                if (word)
+                for (; index < source.Length; index++)
                 {
-                    if (!char.IsLetterOrDigit(c))
+                    char c = char.ToLower(span[index]);
+
+                    if (c < VectorWidth && char.IsLetter(c))
+                    {
+                        embedding.AddOrAppendToComponent(c);
+                    }
+                    else
                     {
                         var len = index - offset;
 
-                        if (len > 0)
+                        if (embedding.Count > 0 && len < 20)
                         {
-                            var slice = source.Slice(offset, len).ToArray();
+                            var vector = new IndexedVector(
+                                embedding,
+                                source.Slice(offset, len),
+                                VectorWidth);
 
-                            embeddings.Add(
-                                new IndexedVector(
-                                    embedding,
-                                    slice,
-                                    VectorWidth));
-
-                            embedding = new SortedList<int, float>();
+                            tokens.Add(vector);
                         }
 
-                        offset = index;
-                        word = false;
-                    }
-                    else
-                    {
-                        embedding.AddOrAppendToComponent(c, 1);
+                        embedding.Clear();
+                        offset = index + 1;
                     }
                 }
-                else
-                {
-                    if (char.IsLetterOrDigit(c))
-                    {
-                        word = true;
-                        offset = index;
 
-                        embedding.AddOrAppendToComponent(c, 1);
-                    }
-                    else
-                    {
-                        offset++;
-                    }
+                if (embedding.Count > 0 && (index - offset) < 20)
+                {
+                    var len = index - offset;
+
+                    var vector = new IndexedVector(
+                                embedding,
+                                source.Slice(offset, len),
+                                VectorWidth);
+
+                    tokens.Add(vector);
                 }
             }
 
-            if (word)
-            {
-                var len = index - offset;
-
-                if (len > 0)
-                {
-                    embeddings.Add(
-                        new IndexedVector(
-                            embedding,
-                            source.Slice(offset, len).ToArray(),
-                            VectorWidth));
-                }
-            }
-
-            return embeddings;
+            return tokens;
         }
 
         public double CosAngle(IVector vec1, IVector vec2)
         {
-            var dotProduct = vec1.Value.DotProduct(vec2.Value);
-            var dotSelf1 = vec1.Value.DotProduct(vec1.Value);
-            var dotSelf2 = vec2.Value.DotProduct(vec2.Value);
-            return (dotProduct / (Math.Sqrt(dotSelf1) * Math.Sqrt(dotSelf2)));
+            //var dotProduct = vec1.Value.DotProduct(vec2.Value);
+            //var dotSelf1 = vec1.Value.DotProduct(vec1.Value);
+            //var dotSelf2 = vec2.Value.DotProduct(vec2.Value);
+            //return (dotProduct / (Math.Sqrt(dotSelf1) * Math.Sqrt(dotSelf2)));
 
-            //return vec1.Value.DotProduct(vec2.Value) / (vec1.Value.Norm(2) * vec2.Value.Norm(2));
+            return vec1.Value.DotProduct(vec2.Value) / (vec1.Value.Norm(2) * vec2.Value.Norm(2));
         }
 
         public double CosAngle(IVector vector, long vectorOffset, int componentCount, Stream vectorStream)

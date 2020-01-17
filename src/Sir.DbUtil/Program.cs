@@ -67,10 +67,13 @@ namespace Sir.DbUtil
             }
             else if (command == "download_wat")
             {
+                // Ex: download_wat CC-MAIN-2019-43 d:\ cc_wat 1
+
                 DownloadAndIndexWat(args, model, loggerFactory, logger);
             }
             else if (command == "write_wet")
             {
+                // Ex: D:\CC-MAIN-2019-43\segments\1570986647517.11\wet\CC-MAIN-20191013195541-20191013222541-00000.warc.wet.gz
                 WriteWet(args, model, loggerFactory);
             }
             else if (command == "truncate")
