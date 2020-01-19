@@ -10,7 +10,6 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 
 namespace Sir.Search
 {
@@ -147,7 +146,6 @@ namespace Sir.Search
                 var docId = (long)document["___docid"];
                 var collectionId = (ulong)document["collectionid"];
 
-                //Parallel.ForEach(document, kv =>
                 foreach (var kv in document)
                 {
                     if (indexedFieldNames.Contains(kv.Key))
@@ -156,7 +154,7 @@ namespace Sir.Search
 
                         indexSession.Put(docId, keyId, kv.Value.ToString());
                     }
-                }//);
+                }
             }
         }
 
@@ -165,12 +163,10 @@ namespace Sir.Search
             var writeTime = Stopwatch.StartNew();
             var docCount = 0;
 
-            //Parallel.ForEach(WriteOnly(job, writeSession), document=>
             foreach (var document in WriteOnly(job, writeSession))
             {
                 var docId = (long)document["___docid"];
 
-                //Parallel.ForEach(document, kv =>
                 foreach (var kv in document)
                 {
                     if (job.IndexedFieldNames.Contains(kv.Key) && kv.Value != null)
@@ -179,14 +175,14 @@ namespace Sir.Search
 
                         indexSession.Put(docId, keyId, kv.Value.ToString());
                     }
-                }//);
+                }
 
                 docCount++;
-            }//);
+            };
 
             writeTime.Stop();
 
-            _logger.LogInformation($"writing {docCount} documents {job.CollectionId} took {writeTime.Elapsed}.");
+            _logger.LogInformation($"storing and indexing {docCount} documents {job.CollectionId} took {writeTime.Elapsed}.");
 
             return indexSession.GetIndexInfo();
         }
@@ -256,8 +252,7 @@ namespace Sir.Search
             HashSet<string> indexedFieldNames
             )
         {
-            Parallel.ForEach(documents.GroupBy(d => (string)d["___collectionid"]), group =>
-            //foreach (var group in documents.GroupBy(d => (string)d["___collectionid"]))
+            foreach (var group in documents.GroupBy(d => (string)d["___collectionid"]))
             {
                 var collectionId = group.Key.ToHash();
 
@@ -274,7 +269,7 @@ namespace Sir.Search
                         writeSession, 
                         indexSession);
                 }
-            });
+            }
         }
 
         public FileStream CreateLockFile(ulong collectionId)
@@ -496,7 +491,7 @@ namespace Sir.Search
                 this,
                 Model,
                 Config,
-                new PostingsReader(this));
+                _logger);
         }
 
         public Stream CreateAsyncReadStream(string fileName, int bufferSize = 4096)

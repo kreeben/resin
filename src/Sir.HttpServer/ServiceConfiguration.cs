@@ -18,7 +18,7 @@ namespace Sir.HttpServer
         public static IServiceProvider Configure(IServiceCollection services)
         {
             var assemblyPath = Directory.GetCurrentDirectory();
-            var config = new IniConfiguration(Path.Combine(assemblyPath, "sir.ini"));
+            var config = new KeyValyeConfiguration(Path.Combine(assemblyPath, "sir.ini"));
 
             // register config
             services.Add(new ServiceDescriptor(typeof(IConfigurationProvider), config));

@@ -37,14 +37,13 @@ namespace Sir.VectorSpace
 
             var hits = new List<Hit>();
 
-            //Parallel.ForEach(pages, page =>
             foreach (var page in pages)
             {
                 var hit = ClosestTermInPage(vector, model, page.offset);
 
                 if (hit != null)
                     hits.Add(hit);
-            }//);
+            }
 
             Hit best = null;
 

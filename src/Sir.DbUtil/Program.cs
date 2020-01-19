@@ -55,6 +55,7 @@ namespace Sir.DbUtil
             }
             else if (command == "validate")
             {
+                // Ex: validate cc_wat 0 1000
                 var time = Stopwatch.StartNew();
 
                 Validate(args, model, loggerFactory);
@@ -106,7 +107,7 @@ namespace Sir.DbUtil
                 storedFieldNames,
                 indexedFieldNames);
 
-            using (var sessionFactory = new SessionFactory(new IniConfiguration("sir.ini"), model, logger))
+            using (var sessionFactory = new SessionFactory(new KeyValyeConfiguration("sir.ini"), model, logger))
             {
                 sessionFactory.Truncate(collectionId);
 
@@ -182,7 +183,8 @@ namespace Sir.DbUtil
             var ccName = args[1];
             var workingDir = args[2];
             var collection = args[3];
-            var take = args.Length == 5 ? int.Parse(args[4]) : 0;
+            var skip = int.Parse(args[4]);
+            var take = int.Parse(args[5]);
             var pathsFileName = $"{ccName}/wat.paths.gz";
             var localPathsFileName = Path.Combine(workingDir, pathsFileName);
 
@@ -207,12 +209,19 @@ namespace Sir.DbUtil
 
             log.LogInformation($"processing {localPathsFileName}");
 
-            //Task writeTask = null;
+            Task writeTask = null;
             var took = 0;
+            var skipped = 0;
 
             foreach (var watFileName in ReadAllLinesGromGz(localPathsFileName))
             {
-                if (take > 0 && took++ == take)
+                if (skip > skipped)
+                {
+                    skipped++;
+                    continue;
+                }
+
+                if (took++ == take)
                 {
                     break;
                 }
@@ -240,19 +249,21 @@ namespace Sir.DbUtil
 
                 var refFileName = watFileName.Replace(".wat", "").Replace("/wat", "/warc");
 
-                //if (writeTask != null)
-                //{
-                //    log.LogInformation($"synchronizing write");
+                if (writeTask != null)
+                {
+                    log.LogInformation($"synchronizing write");
 
-                //    writeTask.Wait();
-                //}
+                    writeTask.Wait();
+                }
 
-                log.LogInformation($"processing {localWatFileName}");
+                //WriteWatSegment(localWatFileName, collection, model, logger, log, refFileName);
 
-                WriteWatSegment(localWatFileName, collection, model, logger, log, refFileName);
+                writeTask = Task.Run(() =>
+                {
+                    log.LogInformation($"processing {localWatFileName}");
 
-                //writeTask = Task.Run(
-                //    () => WriteWatSegment(localWatFileName, collection, model, logger, log, refFileName));
+                    WriteWatSegment(localWatFileName, collection, model, logger, log, refFileName);
+                });
             }
         }
 
@@ -269,14 +280,14 @@ namespace Sir.DbUtil
             var time = Stopwatch.StartNew();
             var storedFieldNames = new HashSet<string>
             {
-                "title", "url", "filename"
+                "title","description", "scheme", "host", "path", "query", "url", "filename"
             };
             var indexedFieldNames = new HashSet<string>
             {
                 "title","description", "scheme", "host", "path", "query", "url", "filename"
             };
 
-            using (var sessionFactory = new SessionFactory(new IniConfiguration("sir.ini"), model, log))
+            using (var sessionFactory = new SessionFactory(new KeyValyeConfiguration("sir.ini"), model, log))
             {
                 sessionFactory.Write(
                             new Job(
@@ -399,14 +410,14 @@ namespace Sir.DbUtil
             var take = int.Parse(args[3]);
             var collectionId = collection.ToHash();
 
-            using (var sessionFactory = new SessionFactory(new IniConfiguration("sir.ini"), model, log))
+            using (var sessionFactory = new SessionFactory(new KeyValyeConfiguration("sir.ini"), model, log))
             {
                 using (var validateSession = sessionFactory.CreateValidateSession(collectionId))
                 using (var documents = new DocumentStreamSession(new DocumentReader(collectionId, sessionFactory)))
                 {
                     foreach (var doc in documents.ReadDocs(skip, take))
                     {
-                        validateSession.Validate(doc);
+                        validateSession.Validate(doc, "title");
 
                         Console.WriteLine(doc["___docid"]);
                     }
@@ -472,7 +483,7 @@ namespace Sir.DbUtil
             var collection = args[1];
             var collectionId = collection.ToHash();
 
-            using (var sessionFactory = new SessionFactory(new IniConfiguration("sir.ini"), model, log))
+            using (var sessionFactory = new SessionFactory(new KeyValyeConfiguration("sir.ini"), model, log))
             {
                 sessionFactory.Truncate(collectionId);
             }
@@ -483,7 +494,7 @@ namespace Sir.DbUtil
             var collection = args[1];
             var collectionId = collection.ToHash();
 
-            using (var sessionFactory = new SessionFactory(new IniConfiguration("sir.ini"), model, log))
+            using (var sessionFactory = new SessionFactory(new KeyValyeConfiguration("sir.ini"), model, log))
             {
                 sessionFactory.TruncateIndex(collectionId);
             }
