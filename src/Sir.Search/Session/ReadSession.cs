@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Sir.Search
 {
@@ -229,15 +230,15 @@ namespace Sir.Search
         /// <summary>
         /// Map query terms to posting list locations.
         /// </summary>
-        public void Map(Query query)
+        private void Map(Query query)
         {
             if (query == null)
                 return;
 
-            //Parallel.ForEach(query.Terms, term =>
-            foreach (var term in query.Terms)
+            Parallel.ForEach(query.Terms, term =>
+            //foreach (var term in query.Terms)
             {
-                var indexReader = GetOrTryCreateIndexReader(term.CollectionId, term.KeyId);
+                var indexReader = CreateIndexReader(term.CollectionId, term.KeyId);
 
                 if (indexReader != null)
                 {
@@ -249,7 +250,7 @@ namespace Sir.Search
                         term.PostingsOffsets = hit.Node.PostingsOffsets;
                     }
                 }
-            }//);
+            });
 
             Map(query.And);
             Map(query.Or);

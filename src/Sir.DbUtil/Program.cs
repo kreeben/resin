@@ -68,7 +68,7 @@ namespace Sir.DbUtil
             }
             else if (command == "download_wat")
             {
-                // Ex: download_wat CC-MAIN-2019-43 d:\ cc_wat 1
+                // Ex: download_wat CC-MAIN-2019-51 d:\ cc_wat 0 1
 
                 DownloadAndIndexWat(args, model, loggerFactory, logger);
             }
@@ -248,22 +248,24 @@ namespace Sir.DbUtil
                 }
 
                 var refFileName = watFileName.Replace(".wat", "").Replace("/wat", "/warc");
+                log.LogInformation($"processing {localWatFileName}");
+                WriteWatSegment(localWatFileName, collection, model, logger, log, refFileName);
 
-                if (writeTask != null)
-                {
-                    log.LogInformation($"synchronizing write");
 
-                    writeTask.Wait();
-                }
 
-                //WriteWatSegment(localWatFileName, collection, model, logger, log, refFileName);
+                //if (writeTask != null)
+                //{
+                //    log.LogInformation($"synchronizing write");
 
-                writeTask = Task.Run(() =>
-                {
-                    log.LogInformation($"processing {localWatFileName}");
+                //    writeTask.Wait();
+                //}
 
-                    WriteWatSegment(localWatFileName, collection, model, logger, log, refFileName);
-                });
+                //writeTask = Task.Run(() =>
+                //{
+                //    log.LogInformation($"processing {localWatFileName}");
+
+                //    WriteWatSegment(localWatFileName, collection, model, logger, log, refFileName);
+                //});
             }
         }
 

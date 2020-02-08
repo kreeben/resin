@@ -46,7 +46,7 @@ namespace Sir.VectorSpace
             if (read < componentCount)
                 throw new Exception("bad");
 
-            return new IndexedVector(index, values, vectorWidth);
+            return new IndexedVector(index, values, vectorWidth, (Memory<char>)null);
         }
 
         public static IVector DeserializeVector(long vectorOffset, int componentCount, int vectorWidth, Stream vectorStream)

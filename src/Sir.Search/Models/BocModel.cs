@@ -10,8 +10,9 @@ namespace Sir.Search
     public class BocModel : IStringModel
     {
         public double IdenticalAngle => 0.999d;
-        public double FoldAngle => 0.6d;
+        public double FoldAngle => 0.5d;
         public int VectorWidth => 256;
+        public int UnicodeStartingPoint => 32;
 
         public IEnumerable<IVector> Tokenize(Memory<char> source)
         {
@@ -28,30 +29,36 @@ namespace Sir.Search
                 {
                     char c = char.ToLower(span[index]);
 
-                    if (c < VectorWidth && char.IsLetter(c))
+                    if (c < UnicodeStartingPoint || c > UnicodeStartingPoint + VectorWidth)
+                    {
+                        continue;
+                    }
+
+                    if (char.IsLetterOrDigit(c))
                     {
                         embedding.AddOrAppendToComponent(c);
                     }
                     else
                     {
-                        var len = index - offset;
-
-                        if (embedding.Count > 0 && len < 20)
+                        if (embedding.Count > 0)
                         {
+                            var len = index - offset;
+                            var slice = source.Slice(offset, len);
+
                             var vector = new IndexedVector(
                                 embedding,
-                                source.Slice(offset, len),
+                                slice,
                                 VectorWidth);
 
+                            embedding.Clear();
                             tokens.Add(vector);
                         }
 
-                        embedding.Clear();
                         offset = index + 1;
                     }
                 }
 
-                if (embedding.Count > 0 && (index - offset) < 20)
+                if (embedding.Count > 0)
                 {
                     var len = index - offset;
 
