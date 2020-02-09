@@ -15,7 +15,8 @@ namespace Sir.Document
         private readonly DocIndexWriter _docIx;
         private readonly ulong _collectionId;
         private readonly ISessionFactory _sessionFactory;
-
+        private readonly object _keyLock = new object();
+        
         public DocumentWriter(ulong collectionId, ISessionFactory sessionFactory)
         {
             var valueStream = sessionFactory.CreateAppendStream(
@@ -67,13 +68,19 @@ namespace Sir.Document
 
             if (!_sessionFactory.TryGetKeyId(_collectionId, keyHash, out keyId))
             {
-                // We have a new key!
+                lock (_keyLock)
+                {
+                    if (!_sessionFactory.TryGetKeyId(_collectionId, keyHash, out keyId))
+                    {
+                        // We have a new key!
 
-                // store key
-                var keyInfo = PutKey(keyStr);
+                        // store key
+                        var keyInfo = PutKey(keyStr);
 
-                keyId = PutKeyInfo(keyInfo.offset, keyInfo.len, keyInfo.dataType);
-                _sessionFactory.RegisterKeyMapping(_collectionId, keyHash, keyId);
+                        keyId = PutKeyInfo(keyInfo.offset, keyInfo.len, keyInfo.dataType);
+                        _sessionFactory.RegisterKeyMapping(_collectionId, keyHash, keyId);
+                    }
+                }
             }
 
             return keyId;

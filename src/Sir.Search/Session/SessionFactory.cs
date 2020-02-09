@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Sir.Core;
 using Sir.Document;
 using Sir.KeyValue;
 using Sir.VectorSpace;
@@ -135,121 +136,58 @@ namespace Sir.Search
             _pageInfo.Clear();
         }
 
-        public IEnumerable<IDictionary<string, object>> WriteOnly(Job job, WriteSession writeSession)
+        public void Write(Job job, WriteSession writeSession, IndexSession indexSession, int reportSize = 1000)
         {
-            foreach (var document in job.Documents)
-            {
-                writeSession.Write(document, job.StoredFieldNames);
+            _logger.LogInformation($"writing job {job.CollectionId}");
 
-                yield return document;
-            }
-        }
-
-        public void IndexOnly(IEnumerable<IDictionary<string, object>> documents, IndexSession indexSession, HashSet<string> indexedFieldNames)
-        {
-            foreach (var document in documents)
-            {
-                var docId = (long)document["___docid"];
-                var collectionId = (ulong)document["collectionid"];
-
-                Parallel.ForEach(document, kv =>
-                //foreach (var kv in document)
-                {
-                    if (indexedFieldNames.Contains(kv.Key))
-                    {
-                        var keyId = GetKeyId(collectionId, kv.Key.ToHash());
-
-                        indexSession.Put(docId, keyId, kv.Value.ToString());
-                    }
-                });
-            }
-        }
-
-        public IndexInfo Write(Job job, WriteSession writeSession, IndexSession indexSession)
-        {
-            var writeTime = Stopwatch.StartNew();
-            var docCount = 0;
-
-            foreach (var document in WriteOnly(job, writeSession))
-            {
-                var docId = (long)document["___docid"];
-
-                Parallel.ForEach(document, kv =>
-                //foreach (var kv in document)
-                {
-                    if (job.IndexedFieldNames.Contains(kv.Key) && kv.Value != null)
-                    {
-                        var keyId = GetKeyId(job.CollectionId, kv.Key.ToHash());
-
-                        indexSession.Put(docId, keyId, kv.Value.ToString());
-                    }
-                });
-
-                docCount++;
-            };
-
-            writeTime.Stop();
-
-            _logger.LogInformation($"storing and indexing {docCount} documents {job.CollectionId} took {writeTime.Elapsed}.");
-
-            return indexSession.GetIndexInfo();
-        }
-
-        public void Write(Job job, WriteSession writeSession, IndexSession indexSession, int reportSize)
-        {
             var time = Stopwatch.StartNew();
-            var info = Write(job, writeSession, indexSession);
-            var t = time.Elapsed.TotalMilliseconds;
-            var docsPerSecond = (int)(reportSize / t * 1000);
-            var debug = string.Join('\n', info.Info.Select(x => x.ToString()));
-
-            _logger.LogInformation($"{debug}\n{docsPerSecond} docs/s\n");
-        }
-
-        public void Write(Job job, int reportSize)
-        {
-            _logger.LogInformation($"writing to {job.CollectionId}");
-
             var batchNo = 0;
-            var time = Stopwatch.StartNew();
 
-            using (var writeSession = CreateWriteSession(job.CollectionId))
-            using (var indexSession = CreateIndexSession(job.CollectionId))
+            foreach (var batch in job.Documents.Batch(reportSize))
             {
-                foreach (var batch in job.Documents.Batch(reportSize))
+                var batchTime = Stopwatch.StartNew();
+
+                foreach (var document in batch)
                 {
-                    Write(
-                        new Job(
-                            job.CollectionId, 
-                            batch, 
-                            job.Model, 
-                            job.StoredFieldNames, 
-                            job.IndexedFieldNames),
-                        writeSession,
-                        indexSession,
-                        reportSize);
+                    var docId = writeSession.Write(document, job.StoredFieldNames);
 
-                    _logger.LogInformation($"processed batch {++batchNo}");
+                    Parallel.ForEach(document, kv =>
+                    //foreach (var kv in document)
+                    {
+                        if (job.IndexedFieldNames.Contains(kv.Key) && kv.Value != null)
+                        {
+                            var keyId = GetKeyId(job.CollectionId, kv.Key.ToHash());
+
+                            indexSession.Put(docId++, keyId, kv.Value.ToString());
+                        }
+                    });
                 }
+
+                var info = indexSession.GetIndexInfo();
+                var t = batchTime.Elapsed.TotalMilliseconds;
+                var docsPerSecond = (int)(reportSize / t * 1000);
+                var debug = string.Join('\n', info.Info.Select(x => x.ToString()));
+
+                _logger.LogInformation($"batch {++batchNo}\n{debug}\n{docsPerSecond} docs/s\n");
             }
 
-            _logger.LogInformation($"processed job ({job.CollectionId}), in total: {time.Elapsed}");
+            _logger.LogInformation($"prcessed job ({job.CollectionId}), in total: {time.Elapsed}");
         }
 
-        public void Write(Job job)
+        public void Write(Job job, int reportSize = 1000)
         {
             using (var writeSession = CreateWriteSession(job.CollectionId))
             using (var indexSession = CreateIndexSession(job.CollectionId))
             {
-                Write(job, writeSession, indexSession);
+                Write(job, writeSession, indexSession, reportSize);
             }
         }
 
-        public void Write(Job job, IndexSession indexSession)
+        public void Write(Job job, IndexSession indexSession, int reportSize)
         {
             using (var writeSession = CreateWriteSession(job.CollectionId))
             {
-                Write(job, writeSession, indexSession);
+                Write(job, writeSession, indexSession, reportSize);
             }
         }
 
@@ -257,7 +195,8 @@ namespace Sir.Search
             IEnumerable<IDictionary<string, object>> documents, 
             IStringModel model, 
             HashSet<string> storedFieldNames,
-            HashSet<string> indexedFieldNames
+            HashSet<string> indexedFieldNames,
+            int reportSize = 1000
             )
         {
             foreach (var group in documents.GroupBy(d => (string)d["___collectionid"]))
@@ -275,7 +214,8 @@ namespace Sir.Search
                             storedFieldNames, 
                             indexedFieldNames), 
                         writeSession, 
-                        indexSession);
+                        indexSession,
+                        reportSize);
                 }
             }
         }

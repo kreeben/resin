@@ -30,13 +30,12 @@ namespace Sir.Search
         /// Fields prefixed with "__" will not be stored.
         /// </summary>
         /// <returns>Document ID</returns>
-        public void Write(IDictionary<string, object> document, HashSet<string> storedFieldNames)
+        public long Write(IDictionary<string, object> document, HashSet<string> storedFieldNames)
         {
-            document["created"] = DateTime.Now.ToBinary();
-            document["collectionid"] = _collectionId;
-
             var docMap = new List<(long keyId, long valId)>();
-            var docId = _streamWriter.GetNextDocId();
+
+            Write("created", DateTime.Now.ToBinary(), docMap);
+            Write("collection", _collectionId, docMap);
 
             foreach (var key in document.Keys)
             {
@@ -47,20 +46,26 @@ namespace Sir.Search
                     continue;
                 }
 
-                var keyId = _streamWriter.EnsureKeyExists(key);
-
-                // store k/v
-                var kvmap = _streamWriter.Put(keyId, val, out _);
-
-                // store refs to k/v pair
-                docMap.Add(kvmap);
+                Write(key, val, docMap);
             }
 
             var docMeta = _streamWriter.PutDocumentMap(docMap);
+            var docId = _streamWriter.GetNextDocId();
 
             _streamWriter.PutDocumentAddress(docId, docMeta.offset, docMeta.length);
+            
+            return docId;
+        }
 
-            document["___docid"] = docId;
+        private void Write(string key, object val, IList<(long, long)> docMap)
+        {
+            var keyId = _streamWriter.EnsureKeyExists(key);
+
+            // store k/v
+            var kvmap = _streamWriter.Put(keyId, val, out _);
+
+            // store refs to k/v pair
+            docMap.Add(kvmap);
         }
     }
 }
