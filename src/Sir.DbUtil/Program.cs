@@ -209,7 +209,7 @@ namespace Sir.DbUtil
 
             log.LogInformation($"processing {localPathsFileName}");
 
-            Task writeTask = null;
+            //Task writeTask = null;
             var took = 0;
             var skipped = 0;
 
@@ -248,10 +248,9 @@ namespace Sir.DbUtil
                 }
 
                 var refFileName = watFileName.Replace(".wat", "").Replace("/wat", "/warc");
+
                 log.LogInformation($"processing {localWatFileName}");
                 WriteWatSegment(localWatFileName, collection, model, logger, log, refFileName);
-
-
 
                 //if (writeTask != null)
                 //{
@@ -286,7 +285,7 @@ namespace Sir.DbUtil
             };
             var indexedFieldNames = new HashSet<string>
             {
-                "title","description", "scheme", "host", "path", "query", "url", "filename"
+                "title","description", "scheme", "host", "path", "query", "url"
             };
 
             using (var sessionFactory = new SessionFactory(new KeyValyeConfiguration("sir.ini"), model, log))

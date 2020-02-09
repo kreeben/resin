@@ -40,24 +40,17 @@ namespace Sir.Search
 
             foreach (var key in document.Keys)
             {
-                var keyId = _streamWriter.EnsureKeyExists(key);
-
-                if (key != "collectionid" && !storedFieldNames.Contains(key))
-                {
-                    continue;
-                }
-
                 var val = document[key];
 
-                if (val == null)
+                if ((val == null) || (key != "collectionid" && !storedFieldNames.Contains(key)))
                 {
                     continue;
                 }
 
-                byte dataType;
+                var keyId = _streamWriter.EnsureKeyExists(key);
 
                 // store k/v
-                var kvmap = _streamWriter.Put(keyId, val, out dataType);
+                var kvmap = _streamWriter.Put(keyId, val, out _);
 
                 // store refs to k/v pair
                 docMap.Add(kvmap);

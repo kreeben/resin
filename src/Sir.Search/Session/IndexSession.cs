@@ -17,11 +17,10 @@ namespace Sir.Search
         private readonly IConfigurationProvider _config;
         private readonly Stream _postingsStream;
         private readonly Stream _vectorStream;
-        private bool _flushed;
-        public IStringModel Model { get; }
-        public ConcurrentDictionary<long, VectorNode> Index { get; }
-
         private readonly ILogger<IndexSession> _logger;
+        private readonly IStringModel _model;
+        private readonly ConcurrentDictionary<long, VectorNode> _index;
+        private bool _flushed;
 
         public IndexSession(
             ulong collectionId,
@@ -35,35 +34,25 @@ namespace Sir.Search
             _config = config;
             _postingsStream = sessionFactory.CreateAppendStream(Path.Combine(sessionFactory.Dir, $"{collectionId}.pos"));
             _vectorStream = sessionFactory.CreateAppendStream(Path.Combine(sessionFactory.Dir, $"{collectionId}.vec"));
-            Model = model;
-            Index = new ConcurrentDictionary<long, VectorNode>();
+            _model = model;
+            _index = new ConcurrentDictionary<long, VectorNode>();
             _logger = logger;
         }
 
         public void Put(long docId, long keyId, string value)
         {
-            var tokens = Model.Tokenize(value.ToCharArray());
-            var column = Index.GetOrAdd(keyId, new VectorNode());
+            var vectors = _model.Tokenize(value.ToCharArray());
+            var column = _index.GetOrAdd(keyId, new VectorNode());
 
-            foreach (var token in tokens)
+            foreach (var vector in vectors)
             {
                 GraphBuilder.MergeOrAdd(
                     column,
-                    new VectorNode(token, docId),
-                    Model,
-                    Model.FoldAngle,
-                    Model.IdenticalAngle);
+                    new VectorNode(vector, docId),
+                    _model,
+                    _model.FoldAngle,
+                    _model.IdenticalAngle);
             }
-        }
-
-        public void Put(long docId, IVector vector, VectorNode column)
-        {
-            GraphBuilder.MergeOrAdd(
-                column,
-                new VectorNode(vector, docId),
-                Model,
-                Model.FoldAngle,
-                Model.IdenticalAngle);
         }
 
         public IndexInfo GetIndexInfo()
@@ -73,7 +62,7 @@ namespace Sir.Search
 
         private IEnumerable<GraphInfo> GetGraphInfo()
         {
-            foreach (var ix in Index)
+            foreach (var ix in _index)
             {
                 yield return new GraphInfo(ix.Key, ix.Value);
             }
@@ -88,7 +77,7 @@ namespace Sir.Search
 
             _flushed = true;
 
-            foreach (var column in Index)
+            foreach (var column in _index)
             {
                 using (var indexStream = _sessionFactory.CreateAppendStream(Path.Combine(_sessionFactory.Dir, $"{_collectionId}.{column.Key}.ix")))
                 using (var columnWriter = new ColumnWriter(_collectionId, column.Key, indexStream))

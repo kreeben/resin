@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace Sir.Search
 {
@@ -6,11 +8,13 @@ namespace Sir.Search
     {
         private readonly SessionFactory _sessionFactory;
         private readonly IStringModel _model;
+        private readonly ILogger<QueryParser> _log;
 
         public QueryParser(SessionFactory sessionFactory, IStringModel model)
         {
             _sessionFactory = sessionFactory;
             _model = model;
+            _log = _sessionFactory.GetLogger<QueryParser>();
         }
 
         public IQuery Parse(string[] collections, string q, string[] fields, bool and, bool or)
@@ -75,6 +79,8 @@ namespace Sir.Search
 
                 cursor = query;
             }
+
+            _log.LogDebug(JsonConvert.SerializeObject(root));
 
             return Parse(root);
         }
@@ -171,6 +177,8 @@ namespace Sir.Search
                 }
             }
 
+            _log.LogDebug(JsonConvert.SerializeObject(root));
+
             return root;
         }
 
@@ -182,8 +190,11 @@ namespace Sir.Search
             string joinCollection = joinInfo[0];
             string primaryKey = joinInfo[1];
             var query = ParseQuery(document.query);
+            var root = new Join(query, joinCollection, primaryKey);
 
-            return new Join(query, joinCollection, primaryKey);
+            _log.LogDebug(JsonConvert.SerializeObject(root));
+
+            return root;
         }
 
         public IList<Term> ParseTerms(string collectionName, string key, string value, bool and, bool or, bool not)

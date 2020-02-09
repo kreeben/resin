@@ -107,15 +107,7 @@ namespace Sir.VectorSpace
                 var cursorTerminator = BitConverter.ToInt64(block.Slice(sizeof(long) * 4));
                 var angle = model.CosAngle(queryVector, vecOffset, (int)componentCount, vectorFile);
 
-                if (angle >= model.IdenticalAngle)
-                {
-                    best.Score = angle;
-                    var n = new VectorNode(postingsOffset);
-                    best.Node = n;
-
-                    break;
-                }
-                else if (angle > model.FoldAngle)
+                if (angle > model.FoldAngle)
                 {
                     if (best == null || angle > best.Score)
                     {

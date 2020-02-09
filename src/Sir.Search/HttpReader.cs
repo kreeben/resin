@@ -49,7 +49,7 @@ namespace Sir.Search
             if (request.Query.ContainsKey("skip"))
                 skip = int.Parse(request.Query["skip"]);
 
-            var query = await _httpQueryParser.ParseRequest(request);
+            IQuery query = await _httpQueryParser.ParseRequest(request);
 
             if (query == null)
             {
@@ -75,7 +75,7 @@ namespace Sir.Search
                     var ids = request.Query["id"].ToDictionary(s => (collectionId, docId:long.Parse(s)), x => (double)1);
                     var docs = readSession.ReadDocs(ids, query.GetDivider());
 
-                    result = new ReadResult { Query = query.Q, Docs = docs, Total = docs.Count };
+                    result = new ReadResult { Query = query, Docs = docs, Total = docs.Count };
                 }
                 else
                 {

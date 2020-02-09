@@ -17,7 +17,7 @@ namespace Sir.Core
         private readonly Func<T, Task> _consumingFunc;
         private Task[] _consumers;
         private bool _started;
-        private bool _completing;
+        private bool _joining;
 
         public int Count { get { return _queue.Count; } }
 
@@ -95,15 +95,15 @@ namespace Sir.Core
 
         public void Join()
         {
-            if (_completing || _queue.IsCompleted || !_started)
+            if (_joining || _queue.IsCompleted || !_started)
                 return;
 
-            _completing = true;
+            _joining = true;
 
             _queue.CompleteAdding();
             Task.WaitAll(_consumers);
 
-            _completing = false;
+            _joining = false;
         }
 
         public void Dispose()

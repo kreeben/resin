@@ -28,7 +28,7 @@ namespace Sir.Search
                     }
                     else
                     {
-                        var scored = new HashSet<(ulong, long)>();
+                        var intersection = new Dictionary<(ulong, long), double>();
 
                         foreach (var docId in termResult)
                         {
@@ -36,26 +36,11 @@ namespace Sir.Search
 
                             if (queryResult.TryGetValue(docId, out score))
                             {
-                                queryResult[docId] = score + term.Score;
-
-                                scored.Add(docId);
+                                intersection.Add(docId, score + term.Score);
                             }
                         }
 
-                        var bad = new HashSet<(ulong, long)>();
-
-                        foreach (var doc in queryResult)
-                        {
-                            if (!scored.Contains(doc.Key))
-                            {
-                                bad.Add(doc.Key);
-                            }
-                        }
-
-                        foreach (var docId in bad)
-                        {
-                            queryResult.Remove(docId);
-                        }
+                        queryResult = intersection;
                     }
 
                 }
@@ -110,34 +95,19 @@ namespace Sir.Search
                 }
                 else
                 {
-                    var scored = new HashSet<(ulong, long)>();
-
-                    foreach (var docId in queryResult)
-                    {
-                        double score;
-
-                        if (result.TryGetValue(docId.Key, out score))
-                        {
-                            result[docId.Key] = score + docId.Value;
-
-                            scored.Add(docId.Key);
-                        }
-                    }
-
-                    var bad = new HashSet<(ulong, long)>();
+                    var intersection = new Dictionary<(ulong, long), double>();
 
                     foreach (var doc in queryResult)
                     {
-                        if (!scored.Contains(doc.Key))
+                        double score;
+
+                        if (result.TryGetValue(doc.Key, out score))
                         {
-                            bad.Add(doc.Key);
+                            intersection.Add(doc.Key, score + doc.Value);
                         }
                     }
 
-                    foreach (var docId in bad)
-                    {
-                        queryResult.Remove(docId);
-                    }
+                    result = intersection;
                 }
 
             }

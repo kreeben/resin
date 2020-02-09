@@ -11,7 +11,6 @@ namespace Sir
         public Query And { get; set; }
         public Query Or { get; set; }
         public Query Not { get; set; }
-        public Query Q { get { return this; } }
 
         public Query(
             IList<Term> terms, 
@@ -189,7 +188,6 @@ namespace Sir
 
     public interface IQuery
     {
-        Query Q { get; }
         int GetDivider();
     }
 }

@@ -76,7 +76,7 @@ namespace Sir.HttpServer.Features
         {
             var orignalQuery = _queryParser.Parse(crawlJob.Collection, crawlJob.Q, crawlJob.Field, and: crawlJob.And, or: crawlJob.Or);
             
-            var originalResult = _readSession.Read(orignalQuery.Q, 0, int.MaxValue).Docs
+            var originalResult = _readSession.Read(orignalQuery, 0, int.MaxValue).Docs
                 .ToDictionary(x=>(long)x["___docid"]);
 
             var wetFiles = new SortedList<string, object>();
@@ -101,7 +101,7 @@ namespace Sir.HttpServer.Features
 
                     if (wetQuery != null)
                     {
-                        wetRecords = _readSession.Read(wetQuery.Q, 0, 1);
+                        wetRecords = _readSession.Read(wetQuery, 0, 1);
                     }
 
                     if (wetRecords == null || wetRecords.Total == 0)
@@ -138,7 +138,7 @@ namespace Sir.HttpServer.Features
                             warcId,
                             new string[] { "warcid" }, and: true, or: false);
 
-                        wetRecords = _readSession.Read(wetQuery.Q, 0, 1);
+                        wetRecords = _readSession.Read(wetQuery, 0, 1);
                     }
                 }
             }

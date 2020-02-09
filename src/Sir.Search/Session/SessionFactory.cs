@@ -10,6 +10,7 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace Sir.Search
 {
@@ -50,6 +51,11 @@ namespace Sir.Search
             _collectionAliases = LoadCollectionAliases();
 
             _logger.LogInformation($"initiated in {time.Elapsed}");
+        }
+
+        public ILogger<T> GetLogger<T>()
+        {
+            return _loggerFactory.CreateLogger<T>();
         }
 
         public MemoryMappedFile OpenMMF(string fileName)
@@ -146,7 +152,8 @@ namespace Sir.Search
                 var docId = (long)document["___docid"];
                 var collectionId = (ulong)document["collectionid"];
 
-                foreach (var kv in document)
+                Parallel.ForEach(document, kv =>
+                //foreach (var kv in document)
                 {
                     if (indexedFieldNames.Contains(kv.Key))
                     {
@@ -154,7 +161,7 @@ namespace Sir.Search
 
                         indexSession.Put(docId, keyId, kv.Value.ToString());
                     }
-                }
+                });
             }
         }
 
@@ -167,7 +174,8 @@ namespace Sir.Search
             {
                 var docId = (long)document["___docid"];
 
-                foreach (var kv in document)
+                Parallel.ForEach(document, kv =>
+                //foreach (var kv in document)
                 {
                     if (job.IndexedFieldNames.Contains(kv.Key) && kv.Value != null)
                     {
@@ -175,7 +183,7 @@ namespace Sir.Search
 
                         indexSession.Put(docId, keyId, kv.Value.ToString());
                     }
-                }
+                });
 
                 docCount++;
             };
