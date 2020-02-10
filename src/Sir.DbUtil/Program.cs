@@ -305,7 +305,7 @@ namespace Sir.DbUtil
 
         private static IEnumerable<IDictionary<string, object>> ReadWatFile(string fileName, string refFileNae)
         {
-            using (var fs = File.OpenRead(fileName))
+            using (var fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.SequentialScan))
             using (var zip = new GZipStream(fs, CompressionMode.Decompress))
             using (var reader = new StreamReader(zip, Encoding.UTF8))
             {

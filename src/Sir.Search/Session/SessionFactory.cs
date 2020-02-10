@@ -141,34 +141,44 @@ namespace Sir.Search
             _logger.LogInformation($"writing job {job.CollectionId}");
 
             var time = Stopwatch.StartNew();
-            var batchNo = 0;
 
-            foreach (var batch in job.Documents.Batch(reportSize))
+            using (var indexer = new ProducerConsumerQueue<(long docId, IDictionary<string, object> document)>(1, document =>
             {
-                var batchTime = Stopwatch.StartNew();
-
-                foreach (var document in batch)
+                foreach (var kv in document.document)
                 {
-                    var docId = writeSession.Write(document, job.StoredFieldNames);
-
-                    Parallel.ForEach(document, kv =>
-                    //foreach (var kv in document)
+                    if (job.IndexedFieldNames.Contains(kv.Key) && kv.Value != null)
                     {
-                        if (job.IndexedFieldNames.Contains(kv.Key) && kv.Value != null)
-                        {
-                            var keyId = GetKeyId(job.CollectionId, kv.Key.ToHash());
+                        var keyId = GetKeyId(job.CollectionId, kv.Key.ToHash());
 
-                            indexSession.Put(docId++, keyId, kv.Value.ToString());
-                        }
-                    });
+                        indexSession.Put(document.docId, keyId, kv.Value.ToString());
+                    }
                 }
+            }))
+            using (var writer = new ProducerConsumerQueue<IDictionary<string, object>>(1, document =>
+            {
+                var docId = writeSession.Write(document, job.StoredFieldNames);
 
-                var info = indexSession.GetIndexInfo();
-                var t = batchTime.Elapsed.TotalMilliseconds;
-                var docsPerSecond = (int)(reportSize / t * 1000);
-                var debug = string.Join('\n', info.Info.Select(x => x.ToString()));
+                indexer.Enqueue((docId, document));
+            }))
+            {
+                var batchNo = 0;
 
-                _logger.LogInformation($"batch {++batchNo}\n{debug}\n{docsPerSecond} docs/s\n");
+                foreach (var batch in job.Documents.Batch(reportSize))
+                {
+                    var batchTime = Stopwatch.StartNew();
+
+                    foreach (var document in batch)
+                    {
+                        writer.Enqueue(document);
+                    }
+
+                    var info = indexSession.GetIndexInfo();
+                    var t = batchTime.Elapsed.TotalMilliseconds;
+                    var docsPerSecond = (int)(reportSize / t * 1000);
+                    var debug = string.Join('\n', info.Info.Select(x => x.ToString()));
+
+                    _logger.LogInformation($"batch {++batchNo}\n{debug}\n{docsPerSecond} docs/s \n write queue {writer.Count}\n index queue {indexer.Count}");
+                }
             }
 
             _logger.LogInformation($"prcessed job ({job.CollectionId}), in total: {time.Elapsed}");

@@ -9,7 +9,7 @@ namespace Sir.Search
 {
     public class BocModel : IStringModel
     {
-        public double IdenticalAngle => 0.999d;
+        public double IdenticalAngle => 0.93d;
         public double FoldAngle => 0.65d;
         public int VectorWidth => 256;
         public int UnicodeStartingPoint => 32;

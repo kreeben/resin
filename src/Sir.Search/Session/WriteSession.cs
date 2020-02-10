@@ -25,6 +25,11 @@ namespace Sir.Search
             _streamWriter.Dispose();
         }
 
+        public long EnsureKeyExists(string key)
+        {
+            return _streamWriter.EnsureKeyExists(key);
+        }
+
         /// <summary>
         /// Fields prefixed with "_" will not be indexed.
         /// Fields prefixed with "__" will not be stored.
