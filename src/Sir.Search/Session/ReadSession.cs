@@ -235,8 +235,8 @@ namespace Sir.Search
             if (query == null)
                 return;
 
-            //Parallel.ForEach(query.Terms, term =>
-            foreach (var term in query.Terms)
+            Parallel.ForEach(query.Terms, term =>
+            //foreach (var term in query.Terms)
             {
                 var indexReader = CreateIndexReader(term.CollectionId, term.KeyId);
 
@@ -250,7 +250,7 @@ namespace Sir.Search
                         term.PostingsOffsets = hit.Node.PostingsOffsets;
                     }
                 }
-            }//);
+            });
 
             Map(query.And);
             Map(query.Or);
