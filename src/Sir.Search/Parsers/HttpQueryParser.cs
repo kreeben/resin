@@ -126,7 +126,7 @@ namespace Sir.Search
             if (query is Query)
                 DoParseQuery((Query)query, result);
             else
-                DoParseQuery(((Join)query).Q, result);
+                DoParseQuery(((Join)query).Query, result);
         }
     }
 

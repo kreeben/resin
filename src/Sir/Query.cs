@@ -77,6 +77,31 @@ namespace Sir
                 Not.GetCollectionCount(dic);
             }
         }
+
+        public IEnumerable<Term> AllTerms()
+        {
+            var terms = new List<Term>();
+
+            foreach (var term in Terms)
+            {
+                terms.Add(term);
+            }
+
+            if (And != null)
+            {
+                terms.AddRange(And.Terms);
+            }
+            if (Or != null)
+            {
+                terms.AddRange(Or.Terms);
+            }
+            if (Not != null)
+            {
+                terms.AddRange(Not.Terms);
+            }
+
+            return terms;
+        }
     }
 
     [System.Diagnostics.DebuggerDisplay("{Key}:{StringValue}")]
@@ -171,18 +196,18 @@ namespace Sir
     {
         public Join(Query query, string collection, string primaryKey)
         {
-            Q = query;
+            Query = query;
             Collection = collection;
             PrimaryKey = primaryKey;
         }
 
         public string PrimaryKey { get;}
         public string Collection { get; }
-        public Query Q { get; }
+        public Query Query { get; }
 
         public int GetDivider()
         {
-            return Q.GetDivider();
+            return Query.GetDivider();
         }
     }
 

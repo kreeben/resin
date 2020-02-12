@@ -209,7 +209,7 @@ namespace Sir.DbUtil
 
             log.LogInformation($"processing {localPathsFileName}");
 
-            //Task writeTask = null;
+            Task writeTask = null;
             var took = 0;
             var skipped = 0;
 
@@ -249,22 +249,22 @@ namespace Sir.DbUtil
 
                 var refFileName = watFileName.Replace(".wat", "").Replace("/wat", "/warc");
 
-                log.LogInformation($"processing {localWatFileName}");
-                WriteWatSegment(localWatFileName, collection, model, logger, log, refFileName);
+                //log.LogInformation($"processing {localWatFileName}");
+                //WriteWatSegment(localWatFileName, collection, model, logger, log, refFileName);
 
-                //if (writeTask != null)
-                //{
-                //    log.LogInformation($"synchronizing write");
+                if (writeTask != null)
+                {
+                    log.LogInformation($"synchronizing write");
 
-                //    writeTask.Wait();
-                //}
+                    writeTask.Wait();
+                }
 
-                //writeTask = Task.Run(() =>
-                //{
-                //    log.LogInformation($"processing {localWatFileName}");
+                writeTask = Task.Run(() =>
+                {
+                    log.LogInformation($"processing {localWatFileName}");
 
-                //    WriteWatSegment(localWatFileName, collection, model, logger, log, refFileName);
-                //});
+                    WriteWatSegment(localWatFileName, collection, model, logger, log, refFileName);
+                });
             }
         }
 

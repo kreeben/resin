@@ -89,11 +89,11 @@ namespace Sir.Search
                 throw new ArgumentNullException(nameof(join));
             }
 
-            var result = MapReduceSort(join.Q, skip, take);
+            var result = MapReduceSort(join.Query, skip, take);
 
             if (result != null)
             {
-                var scoreDivider = join.Q.GetDivider();
+                var scoreDivider = join.Query.GetDivider();
                 var docs = ReadDocs(result.SortedDocuments, scoreDivider, join.PrimaryKey);
                 var joinCollectionId = join.Collection.ToHash();
                 var primaryKeyId = join.PrimaryKey.ToHash();
@@ -144,10 +144,10 @@ namespace Sir.Search
 
                 var sorted = merged.OrderByDescending(x => (double)x["___score"]);
 
-                return new ReadResult { Query = join.Q, Total = merged.Count, Docs = sorted };
+                return new ReadResult { Query = join.Query, Total = merged.Count, Docs = sorted };
             }
 
-            return new ReadResult { Query = join.Q, Total = 0, Docs = new IDictionary<string, object>[0] };
+            return new ReadResult { Query = join.Query, Total = 0, Docs = new IDictionary<string, object>[0] };
         }
 
         private ICollection<IDictionary<string, object>> Merge(
@@ -235,10 +235,10 @@ namespace Sir.Search
             if (query == null)
                 return;
 
-            Parallel.ForEach(query.Terms, term =>
-            //foreach (var term in query.Terms)
+            //Parallel.ForEach(query.AllTerms(), term =>
+            foreach (var term in query.Terms)
             {
-                var indexReader = CreateIndexReader(term.CollectionId, term.KeyId);
+                var indexReader = GetOrTryCreateIndexReader(term.CollectionId, term.KeyId);
 
                 if (indexReader != null)
                 {
@@ -250,11 +250,7 @@ namespace Sir.Search
                         term.PostingsOffsets = hit.Node.PostingsOffsets;
                     }
                 }
-            });
-
-            Map(query.And);
-            Map(query.Or);
-            Map(query.Not);
+            }//);
         }
 
         private static ScoredResult Sort(IDictionary<(ulong, long), double> documents, int skip, int take)
