@@ -26,7 +26,9 @@ namespace Sir.HttpServer
             // register plugin startup and teardown handlers
 
 #if DEBUG
-            assemblyPath = Path.Combine(assemblyPath, "bin", "Debug", "netcoreapp3.0");
+            var frameworkVersion = AppContext.TargetFrameworkName.Substring(AppContext.TargetFrameworkName.IndexOf("=v") + 2);
+
+            assemblyPath = Path.Combine(assemblyPath, "bin", "Debug", $"netcoreapp{frameworkVersion}");
 #endif
 
             var files = Directory.GetFiles(assemblyPath, "*.plugin.dll");
