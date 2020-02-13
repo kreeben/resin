@@ -33,6 +33,11 @@ namespace Sir.HttpServer
 
             services.AddControllersWithViews().AddRazorRuntimeCompilation();
 
+            services.Configure<IISOptions>(options =>
+            {
+                options.ForwardClientCertificate = false;
+            });
+
             var dataDir = ServiceProvider.GetService<IConfigurationProvider>().Get("data_dir");
 
             if (!Directory.Exists(dataDir))
