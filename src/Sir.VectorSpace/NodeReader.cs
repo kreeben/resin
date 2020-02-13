@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace Sir.VectorSpace
 {
@@ -10,8 +12,6 @@ namespace Sir.VectorSpace
     public class NodeReader : INodeReader
     {
         private readonly ISessionFactory _sessionFactory;
-        private readonly Stream _vectorFile;
-        private readonly Stream _ixFile;
         private readonly ulong _collectionId;
 
         public long KeyId { get; }
@@ -19,31 +19,28 @@ namespace Sir.VectorSpace
         public NodeReader(
             ulong collectionId,
             long keyId,
-            ISessionFactory sessionFactory,
-            Stream vectorFile,
-            Stream ixFile)
+            ISessionFactory sessionFactory)
         {
             KeyId = keyId;
             _collectionId = collectionId;
             _sessionFactory = sessionFactory;
-            _vectorFile = vectorFile;
-            _ixFile = ixFile;
         }
 
-        public Hit ClosestTerm(IVector vector, IStringModel model)
+        public Hit ClosestTerm(IVector vector, IStringModel model, long keyId)
         {
             var pages = GetAllPages(
                 Path.Combine(_sessionFactory.Dir, $"{_collectionId}.{KeyId}.ixtp"));
 
-            var hits = new List<Hit>();
+            var hits = new ConcurrentBag<Hit>();
 
-            foreach (var page in pages)
+            Parallel.ForEach(pages, page =>
+            //foreach (var page in pages)
             {
-                var hit = ClosestTermInPage(vector, model, page.offset);
+                var hit = ClosestTermInPage(vector, model, keyId, page.offset);
 
                 if (hit != null)
                     hits.Add(hit);
-            }
+            });
 
             Hit best = null;
 
@@ -71,19 +68,24 @@ namespace Sir.VectorSpace
         }
 
         private Hit ClosestTermInPage(
-            IVector vector, IStringModel model, long pageOffset)
+            IVector vector, IStringModel model, long keyId, long pageOffset)
         {
-            _ixFile.Seek(pageOffset, SeekOrigin.Begin);
+            var vectorFileName = Path.Combine(_sessionFactory.Dir, $"{_collectionId}.vec");
+            var ixFileName = Path.Combine(_sessionFactory.Dir, string.Format("{0}.{1}.ix", _collectionId, keyId));
+            var vectorFile = _sessionFactory.CreateReadStream(vectorFileName);
+            var ixFile = _sessionFactory.CreateReadStream(ixFileName);
 
-            var hit0 = ClosestMatchInSegment(
+            ixFile.Seek(pageOffset, SeekOrigin.Begin);
+
+            var hit = ClosestMatchInSegment(
                     vector,
-                    _ixFile,
-                    _vectorFile,
+                    ixFile,
+                    vectorFile,
                     model);
 
-            if (hit0.Score > 0)
+            if (hit.Score > 0)
             {
-                return hit0;
+                return hit;
             }
 
             return null;
@@ -194,7 +196,6 @@ namespace Sir.VectorSpace
 
         public void Dispose()
         {
-            _vectorFile.Dispose();
         }
     }
 }

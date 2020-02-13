@@ -179,11 +179,11 @@ namespace Sir.Search
         {
             foreach (var term in query.Terms)
             {
-                var indexReader = GetOrTryCreateIndexReader(term.CollectionId, term.KeyId);
+                var indexReader = CreateIndexReader(term.CollectionId, term.KeyId);
 
                 if (indexReader != null)
                 {
-                    var hit = indexReader.ClosestTerm(term.Vector, _model);
+                    var hit = indexReader.ClosestTerm(term.Vector, _model, term.KeyId);
 
                     if (hit == null || hit.Score < _model.IdenticalAngle)
                     {
@@ -235,14 +235,14 @@ namespace Sir.Search
             if (query == null)
                 return;
 
-            //Parallel.ForEach(query.AllTerms(), term =>
-            foreach (var term in query.Terms)
+            Parallel.ForEach(query.AllTerms(), term =>
+            //foreach (var term in query.Terms)
             {
-                var indexReader = GetOrTryCreateIndexReader(term.CollectionId, term.KeyId);
+                var indexReader = CreateIndexReader(term.CollectionId, term.KeyId);
 
                 if (indexReader != null)
                 {
-                    var hit = indexReader.ClosestTerm(term.Vector, _model);
+                    var hit = indexReader.ClosestTerm(term.Vector, _model, term.KeyId);
 
                     if (hit != null)
                     {
@@ -250,7 +250,7 @@ namespace Sir.Search
                         term.PostingsOffsets = hit.Node.PostingsOffsets;
                     }
                 }
-            }//);
+            });
         }
 
         private static ScoredResult Sort(IDictionary<(ulong, long), double> documents, int skip, int take)
@@ -286,9 +286,7 @@ namespace Sir.Search
             return new NodeReader(
                     collectionId,
                     keyId,
-                    _sessionFactory,
-                    _sessionFactory.CreateReadStream(Path.Combine(_sessionFactory.Dir, $"{collectionId}.vec")),
-                    _sessionFactory.CreateReadStream(ixFileName));
+                    _sessionFactory);
         }
 
         public INodeReader GetOrTryCreateIndexReader(ulong collectionId, long keyId)
@@ -303,9 +301,7 @@ namespace Sir.Search
             return collectionReaders.GetOrAdd(keyId, new NodeReader(
                     collectionId,
                     keyId,
-                    _sessionFactory,
-                    _sessionFactory.CreateReadStream(Path.Combine(_sessionFactory.Dir, $"{collectionId}.vec")),
-                    _sessionFactory.CreateReadStream(ixFileName)));
+                    _sessionFactory));
         }
 
         public DocumentReader GetOrCreateDocumentReader(ulong collectionId)
