@@ -16,4 +16,4 @@ log/*.*
 *.pos
 *.json
 *.zip
-*.pubxml
+publish
