@@ -72,23 +72,25 @@ namespace Sir.VectorSpace
         {
             var vectorFileName = Path.Combine(_sessionFactory.Dir, $"{_collectionId}.vec");
             var ixFileName = Path.Combine(_sessionFactory.Dir, string.Format("{0}.{1}.ix", _collectionId, keyId));
-            var vectorFile = _sessionFactory.CreateReadStream(vectorFileName);
-            var ixFile = _sessionFactory.CreateReadStream(ixFileName);
 
-            ixFile.Seek(pageOffset, SeekOrigin.Begin);
-
-            var hit = ClosestMatchInSegment(
-                    vector,
-                    ixFile,
-                    vectorFile,
-                    model);
-
-            if (hit.Score > 0)
+            using (var vectorFile = _sessionFactory.CreateReadStream(vectorFileName))
+            using (var ixFile = _sessionFactory.CreateReadStream(ixFileName))
             {
-                return hit;
-            }
+                ixFile.Seek(pageOffset, SeekOrigin.Begin);
 
-            return null;
+                var hit = ClosestMatchInSegment(
+                        vector,
+                        ixFile,
+                        vectorFile,
+                        model);
+
+                if (hit.Score > 0)
+                {
+                    return hit;
+                }
+
+                return null;
+            }
         }
 
         private Hit ClosestMatchInSegment(
