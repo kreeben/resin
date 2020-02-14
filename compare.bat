@@ -1,1 +1,1 @@
-dotnet src\Sir.StringCompare\bin\release\netcoreapp3.0\Sir.StringCompare.dll %*
+dotnet src\Sir.StringCompare\bin\release\netcoreapp3.1\Sir.StringCompare.dll %*
