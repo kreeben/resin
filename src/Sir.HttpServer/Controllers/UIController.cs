@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Sir.Document;
+using System.IO;
 
 namespace Sir.HttpServer.Controllers
 {
@@ -30,6 +32,15 @@ namespace Sir.HttpServer.Controllers
             ViewBag.Collection = context.HttpContext.Request.Query.ContainsKey("collection") ?
                 context.HttpContext.Request.Query["collection"].ToString() :
                 ViewBag.DefaultCollection;
+
+            var collectionId = ((string)ViewBag.Collection).ToHash();
+            var dixFileName = Path.Combine(_sessionFactory.Dir, $"{collectionId}.dix");
+
+            using (var dixFile = _sessionFactory.CreateReadStream(dixFileName))
+            using (var dix = new DocIndexReader(dixFile))
+            {
+                ViewBag.DocumentCount = dix.Count;
+            }
 
             base.OnActionExecuted(context);
         }

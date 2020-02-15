@@ -13,7 +13,7 @@
         result as JSON or <a href="@crawlLink">crawl</a>.
     </div>
     <div class="result-list">
-        <ol>
+        <ul>
             @foreach (var item in docs)
             {
                 var url = item.Document["url"].ToString();
@@ -40,6 +40,6 @@
                     </div>
                 </li>
             }
-        </ol>
+        </ul>
     </div>
 }
