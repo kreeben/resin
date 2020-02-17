@@ -1,6 +1,8 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -12,6 +14,7 @@ namespace Sir.VectorSpace
     public class NodeReader : INodeReader
     {
         private readonly ISessionFactory _sessionFactory;
+        private readonly ILogger _logger;
         private readonly ulong _collectionId;
 
         public long KeyId { get; }
@@ -19,28 +22,34 @@ namespace Sir.VectorSpace
         public NodeReader(
             ulong collectionId,
             long keyId,
-            ISessionFactory sessionFactory)
+            ISessionFactory sessionFactory,
+            ILogger logger)
         {
             KeyId = keyId;
             _collectionId = collectionId;
             _sessionFactory = sessionFactory;
+            _logger = logger;
         }
 
         public Hit ClosestTerm(IVector vector, IStringModel model, long keyId)
         {
+            var time = Stopwatch.StartNew();
+
             var pages = GetAllPages(
                 Path.Combine(_sessionFactory.Dir, $"{_collectionId}.{KeyId}.ixtp"));
 
             var hits = new ConcurrentBag<Hit>();
 
-            Parallel.ForEach(pages, page =>
-            //foreach (var page in pages)
+            //Parallel.ForEach(pages, page =>
+            foreach (var page in pages)
             {
                 var hit = ClosestTermInPage(vector, model, keyId, page.offset);
 
                 if (hit != null)
                     hits.Add(hit);
-            });
+            }//);
+
+            _logger.LogInformation($"scanning all pages took {time.Elapsed}");
 
             Hit best = null;
 
@@ -50,7 +59,7 @@ namespace Sir.VectorSpace
                 {
                     best = hit;
                 }
-                else if (hit.Score >= model.IdenticalAngle)
+                else if (hit.Score >= best.Score)
                 {
                     GraphBuilder.MergePostings(best.Node, hit.Node);
                 }
@@ -111,7 +120,15 @@ namespace Sir.VectorSpace
                 var cursorTerminator = BitConverter.ToInt64(block.Slice(sizeof(long) * 4));
                 var angle = model.CosAngle(queryVector, vecOffset, (int)componentCount, vectorFile);
 
-                if (angle > model.FoldAngle)
+                if (angle >= model.IdenticalAngle)
+                {
+                    best.Score = angle;
+                    var n = new VectorNode(postingsOffset);
+                    best.Node = n;
+
+                    break;
+                }
+                else if (angle > model.FoldAngle)
                 {
                     if (best == null || angle > best.Score)
                     {

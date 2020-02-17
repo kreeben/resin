@@ -1,12 +1,12 @@
-﻿@{ 
+﻿@{
     var progress = (double)ViewBag.DocumentCount / ((long)56000 * 44000) * 100;
-    var mDocs = (double)ViewBag.DocumentCount/1000000;
+    var millionDocs = (double)ViewBag.DocumentCount/1000000;
 }
 <!DOCTYPE html>
 <html>
 <head>
     <meta name="viewport" content="width=device-width" />
-    <title>@ViewBag.Title @ViewBag.Collection - Crawl Crawler</title>
+    <title>@ViewBag.Title@ViewBag.Collection - Crawl Crawler</title>
     <meta charset="UTF-8">
     <link rel="stylesheet" type="text/css" href="/css/theme.css">
 </head>
@@ -25,7 +25,7 @@
                 powered by <a href="https://github.com/kreeben/resin" title="Resin Extensible Search Engine">Resin Extensible Search Engine.</a>
             </p>
             <p>
-                Coverage: @progress.ToString("0.##")% (@mDocs.ToString("0.##")M documents).
+                Coverage: @progress.ToString("0.##")% (@millionDocs.ToString("0.##")M documents).
             </p>
         </div>
         <div>

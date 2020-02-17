@@ -286,7 +286,8 @@ namespace Sir.Search
             return new NodeReader(
                     collectionId,
                     keyId,
-                    _sessionFactory);
+                    _sessionFactory,
+                    _logger);
         }
 
         public INodeReader GetOrTryCreateIndexReader(ulong collectionId, long keyId)
@@ -301,7 +302,8 @@ namespace Sir.Search
             return collectionReaders.GetOrAdd(keyId, new NodeReader(
                     collectionId,
                     keyId,
-                    _sessionFactory));
+                    _sessionFactory,
+                    _logger));
         }
 
         public DocumentReader GetOrCreateDocumentReader(ulong collectionId)

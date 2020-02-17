@@ -36,12 +36,15 @@ namespace Sir.HttpServer.Controllers
             var collectionId = ((string)ViewBag.Collection).ToHash();
             var dixFileName = Path.Combine(_sessionFactory.Dir, $"{collectionId}.dix");
 
-            using (var dixFile = _sessionFactory.CreateReadStream(dixFileName))
-            using (var dix = new DocIndexReader(dixFile))
+            if (System.IO.File.Exists(dixFileName))
             {
-                ViewBag.DocumentCount = dix.Count;
+                using (var dixFile = _sessionFactory.CreateReadStream(dixFileName))
+                using (var dix = new DocIndexReader(dixFile))
+                {
+                    ViewBag.DocumentCount = dix.Count;
+                }
             }
-
+            
             base.OnActionExecuted(context);
         }
     }
