@@ -285,7 +285,6 @@ namespace Sir.Search
 
             return new NodeReader(
                     collectionId,
-                    keyId,
                     _sessionFactory,
                     _logger);
         }
@@ -301,7 +300,6 @@ namespace Sir.Search
 
             return collectionReaders.GetOrAdd(keyId, new NodeReader(
                     collectionId,
-                    keyId,
                     _sessionFactory,
                     _logger));
         }

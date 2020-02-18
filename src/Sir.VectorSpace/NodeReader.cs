@@ -17,15 +17,11 @@ namespace Sir.VectorSpace
         private readonly ILogger _logger;
         private readonly ulong _collectionId;
 
-        public long KeyId { get; }
-
         public NodeReader(
             ulong collectionId,
-            long keyId,
             ISessionFactory sessionFactory,
             ILogger logger)
         {
-            KeyId = keyId;
             _collectionId = collectionId;
             _sessionFactory = sessionFactory;
             _logger = logger;
@@ -36,18 +32,18 @@ namespace Sir.VectorSpace
             var time = Stopwatch.StartNew();
 
             var pages = GetAllPages(
-                Path.Combine(_sessionFactory.Dir, $"{_collectionId}.{KeyId}.ixtp"));
+                Path.Combine(_sessionFactory.Dir, $"{_collectionId}.{keyId}.ixtp"));
 
             var hits = new ConcurrentBag<Hit>();
 
-            //Parallel.ForEach(pages, page =>
-            foreach (var page in pages)
+            Parallel.ForEach(pages, page =>
+            //foreach (var page in pages)
             {
                 var hit = ClosestTermInPage(vector, model, keyId, page.offset);
 
                 if (hit != null)
                     hits.Add(hit);
-            }//);
+            });
 
             _logger.LogInformation($"scanning all pages took {time.Elapsed}");
 
