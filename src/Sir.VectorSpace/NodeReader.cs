@@ -55,7 +55,7 @@ namespace Sir.VectorSpace
                 {
                     best = hit;
                 }
-                else if (hit.Score >= best.Score)
+                else if (hit.Score.Approximates(best.Score))
                 {
                     GraphBuilder.MergePostings(best.Node, hit.Node);
                 }
@@ -211,6 +211,16 @@ namespace Sir.VectorSpace
 
         public void Dispose()
         {
+        }
+    }
+
+    public static class DoubleExtensions
+    {
+        private const double _precision = 0.01;
+
+        public static bool Approximates(this double left, double right)
+        {
+            return Math.Abs(left - right) < _precision;
         }
     }
 }
