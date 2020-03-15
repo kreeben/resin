@@ -196,7 +196,6 @@ h3.querystats {
 .search-fields a {
     text-decoration: none;
     color: gray;
-    text-decoration: underline;
 }
 
 input[type="text"].collection {

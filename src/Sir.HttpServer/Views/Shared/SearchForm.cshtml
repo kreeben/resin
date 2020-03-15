@@ -11,7 +11,13 @@
     var pathSelected = knownFields.Contains("path");
     var querySelected = knownFields.Contains("query");
     var urlSelected = knownFields.Contains("url");
+
+    if (!descriptionSelected && !schemeSelected && !hostSelected && !pathSelected && !querySelected && !urlSelected)
+    {
+        titleSelected = true;
+    }
 }
+
 @using (Html.BeginRouteForm("default", new { controller = "Search" }, FormMethod.Get))
 {
     <fieldset class="search-fields">
