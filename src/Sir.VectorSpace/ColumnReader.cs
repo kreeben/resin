@@ -10,7 +10,7 @@ namespace Sir.VectorSpace
     /// <summary>
     /// Index bitmap reader. Each block is a <see cref="Sir.Search.VectorNode"/>.
     /// </summary>
-    public class NodeReader : INodeReader
+    public class ColumnReader : IColumnReader
     {
         private readonly ISessionFactory _sessionFactory;
         private readonly ILogger _logger;
@@ -19,7 +19,7 @@ namespace Sir.VectorSpace
         private readonly Stream _ixFile;
         private readonly IList<(long offset, long length)> _pages;
 
-        public NodeReader(
+        public ColumnReader(
             ulong collectionId,
             long keyId,
             ISessionFactory sessionFactory,
@@ -39,14 +39,14 @@ namespace Sir.VectorSpace
                 Path.Combine(_sessionFactory.Dir, $"{_collectionId}.{keyId}.ixtp"));
         }
 
-        public Hit ClosestTerm(IVector vector, IStringModel model, long keyId)
+        public Hit ClosestMatch(IVector vector, IStringModel model)
         {
             var time = Stopwatch.StartNew();
             var hits = new ConcurrentBag<Hit>();
 
             foreach (var page in _pages)
             {
-                var hit = ClosestMatchInPage(vector, model, keyId, page.offset);
+                var hit = ClosestMatchInPage(vector, model, page.offset);
 
                 if (hit != null)
                     hits.Add(hit);
@@ -80,7 +80,7 @@ namespace Sir.VectorSpace
         }
 
         private Hit ClosestMatchInPage(
-        IVector vector, IStringModel model, long keyId, long pageOffset)
+        IVector vector, IStringModel model, long pageOffset)
         {
             _ixFile.Seek(pageOffset, SeekOrigin.Begin);
 

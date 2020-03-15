@@ -173,11 +173,11 @@ namespace Sir.Search
         {
             foreach (var term in query.Terms)
             {
-                var indexReader = CreateIndexReader(term.CollectionId, term.KeyId);
+                var columnReader = CreateColumnReader(term.CollectionId, term.KeyId);
 
-                if (indexReader != null)
+                if (columnReader != null)
                 {
-                    var hit = indexReader.ClosestTerm(term.Vector, _model, term.KeyId);
+                    var hit = columnReader.ClosestMatch(term.Vector, _model);
 
                     if (hit == null || hit.Score < _model.IdenticalAngle)
                     {
@@ -193,7 +193,7 @@ namespace Sir.Search
                             $"document {docId} not found in postings list for term \"{term}\".");
                     }
 
-                    indexReader.Dispose();
+                    columnReader.Dispose();
                 }
             }
         }
@@ -232,13 +232,13 @@ namespace Sir.Search
                 return;
 
             Parallel.ForEach(query.AllTerms(), term =>
-            //foreach (var term in query.Terms)
+            //foreach (var term in query.AllTerms())
             {
-                var indexReader = CreateIndexReader(term.CollectionId, term.KeyId);
+                var columnReader = CreateColumnReader(term.CollectionId, term.KeyId);
 
-                if (indexReader != null)
+                if (columnReader != null)
                 {
-                    var hit = indexReader.ClosestTerm(term.Vector, _model, term.KeyId);
+                    var hit = columnReader.ClosestMatch(term.Vector, _model);
 
                     if (hit != null)
                     {
@@ -246,7 +246,7 @@ namespace Sir.Search
                         term.PostingsOffsets = hit.Node.PostingsOffsets;
                     }
 
-                    indexReader.Dispose();
+                    columnReader.Dispose();
                 }
             });
         }
@@ -274,14 +274,14 @@ namespace Sir.Search
             return new ScoredResult { SortedDocuments = sortedByScore.GetRange(index, count), Total = sortedByScore.Count };
         }
 
-        public INodeReader CreateIndexReader(ulong collectionId, long keyId)
+        public IColumnReader CreateColumnReader(ulong collectionId, long keyId)
         {
             var ixFileName = Path.Combine(_sessionFactory.Dir, string.Format("{0}.{1}.ix", collectionId, keyId));
 
             if (!File.Exists(ixFileName))
                 return null;
 
-            return new NodeReader(
+            return new ColumnReader(
                     collectionId,
                     keyId,
                     _sessionFactory,
