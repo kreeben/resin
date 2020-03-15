@@ -24,6 +24,10 @@
                 var score = (double)item.Document["___score"];
                 var warcFilename = item.Document.ContainsKey("filename") ? item.Document["filename"].ToString() : "";
                 var wetFileName = warcFilename.Replace("/warc", "/wet").Replace(".gz", ".wet.gz");
+                var wetUrlFileName = "https://commoncrawl.s3.amazonaws.com/" + Html.Raw(wetFileName);
+                var warcUrlFileName = "https://commoncrawl.s3.amazonaws.com/" + Html.Raw(warcFilename);
+                var wetUrl = "/wet" + Context.Request.QueryString + "&fileName=" + wetUrlFileName;
+                var warcUrl = "/warc" + Context.Request.QueryString + "&fileName=" + warcUrlFileName;
                 <li>
                     <div class="document-header">
                         <span><a class="result-link" href="@Html.Raw(uri.ToString())">@Html.Raw(title)</a></span>
@@ -32,10 +36,10 @@
                         <span class="medium-text">@Html.Raw(host)</span><br />
                         <span class="medium-text">Score: @score.ToString("N2")%</span><br />
                         <span class="medium-text">
-                            <a class="warc-link" href="https://commoncrawl.s3.amazonaws.com/@Html.Raw(wetFileName)">WET</a>
+                            <a class="warc-link" href="@wetUrl">WET</a>                        
                         </span>
                         <span class="medium-text">
-                            <a class="warc-link" href="https://commoncrawl.s3.amazonaws.com/@Html.Raw(warcFilename)">WARC</a>
+                            <a class="warc-link" href="@warcUrl">WARC</a>
                         </span>
                     </div>
                 </li>

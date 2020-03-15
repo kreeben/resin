@@ -1,0 +1,22 @@
+﻿@using Sir.HttpServer;
+@{
+    Layout = "~/Views/_Layout.cshtml";
+}
+@{
+    var query = Context.Request.Query.ToStringExcept("fileName");
+    var searchLink = $"{Context.Request.Path.Value.ToLower().Replace("/warc", "/search")}?{query}";
+    var fileName = Context.Request.Query["fileName"].ToString();
+}
+<form action="/crawl/" method="get">
+    <div class="blog-wrapper">
+        <a href="@searchLink">&#8592; Back to result</a>
+        <h2>Download WARC file</h2>
+        <p>
+            Click file name to download <a href="https://commoncrawl.org/the-data/get-started/#WARC-Format">WARC</a> file.
+        </p>
+        <h3>WARC file</h3>
+        <p>
+            <a class="warc-link" href="@Html.Raw(fileName)">@fileName</a>
+        </p>
+    </div>
+</form>

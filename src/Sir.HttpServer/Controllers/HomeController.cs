@@ -46,5 +46,17 @@ namespace Sir.HttpServer.Controllers
         {
             return View();
         }
+
+        [Route("/wet")]
+        public ActionResult Wet()
+        {
+            return View();
+        }
+
+        [Route("/warc")]
+        public ActionResult Warc()
+        {
+            return View();
+        }
     }
 }
