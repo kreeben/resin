@@ -59,9 +59,9 @@ namespace Sir.HttpServer.Features
         {
             try
             {
-                if (crawlJob.Job == "map")
+                if (crawlJob.Job == "ccc")
                 {
-                    Map(crawlJob);
+                    FetchWetFile(crawlJob);
                 }
 
                 _enquedIds.Remove(crawlJob.Id);
@@ -72,7 +72,7 @@ namespace Sir.HttpServer.Features
             }
         }
 
-        private void Map(CrawlJob crawlJob)
+        private void FetchWetFile(CrawlJob crawlJob)
         {
             var orignalQuery = _queryParser.Parse(crawlJob.Collection, crawlJob.Q, crawlJob.Field, and: crawlJob.And, or: crawlJob.Or);
             
@@ -226,18 +226,16 @@ namespace Sir.HttpServer.Features
         public string[] Collection { get; }
         public string[] Field { get; }
         public string Q { get; }
-        public string Target { get; }
         public string Job { get; }
         public bool And { get; }
         public bool Or { get; }
 
-        public CrawlJob(string id, string[] collection, string[] field, string q, string target, string job, bool and, bool or)
+        public CrawlJob(string id, string[] collection, string[] field, string q, string job, bool and, bool or)
         {
             Id = id;
             Collection = collection;
             Field = field;
             Q = q;
-            Target = target;
             Job = job;
             And = and;
             Or = or;
@@ -249,13 +247,12 @@ namespace Sir.HttpServer.Features
                    EqualityComparer<string[]>.Default.Equals(Collection, job.Collection) &&
                    EqualityComparer<string[]>.Default.Equals(Field, job.Field) &&
                    Q == job.Q &&
-                   Target == job.Target &&
                    Job == job.Job;
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Collection, Field, Q, Target, Job);
+            return HashCode.Combine(Collection, Field, Q, Job);
         }
 
         public bool Equals([AllowNull] CrawlJob other)
@@ -267,7 +264,6 @@ namespace Sir.HttpServer.Features
                 EqualityComparer<string[]>.Default.Equals(Collection, other.Collection) &&
                 EqualityComparer<string[]>.Default.Equals(Field, other.Field) &&
                 Q == other.Q &&
-                Target == other.Target &&
                 Job == other.Job;
         }
 
@@ -283,7 +279,7 @@ namespace Sir.HttpServer.Features
 
         public override string ToString()
         {
-            return $"{Collection} {Field} {Q} {Target} {Job}";
+            return $"{Collection} {Field} {Q} {Job}";
         }
     }
 }

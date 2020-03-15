@@ -13,7 +13,7 @@
             <a href="@searchLink">&#8592; Back to result</a>
             <h2>Enrich search result</h2>
             <p>
-                You may enrich this search result with information from Common Crawl or WWW. 
+                You may enrich this search result with information from Common Crawl or the WWW. 
             </p>
             @if (ViewBag.JobValidationError != null)
             {
@@ -21,35 +21,26 @@
             }
             <p>
                 <label>
-                    <input type="radio" name="job" value="ccc" @Html.Raw((job == "ccc") ? "checked" : "") />
-                    Fetch cached page <strong>snapshots from Common Crawl</strong>.
+                    <input type="radio" name="job" value="ccc" @Html.Raw((job == "cc") ? "checked" : "") />
+                    Fetch latest web page content from <strong>Common Crawl</strong>.
                 </label>
             </p>
             <p>
                 <label>
-                    <input type="radio" name="job" value="wc" @Html.Raw((job == "wc") ? "checked" : "") />
-                    Fetch current page <strong>snapshots from WWW</strong> (coming soon).
+                    <input type="radio" disabled="disabled" name="job" value="wc" @Html.Raw((job == "wc") ? "checked" : "") />
+                    Fetch current web page content from <strong>WWW</strong> (coming soon).
                 </label>
             </p>
             <p>
                 <label>
                     <input type="radio" disabled="disabled" name="job" value="rwc" @Html.Raw((job == "rwc") ? "checked" : "") />
-                    Fetch current page <strong>snapshot from WWW, recurringly</strong> (coming soon).
+                    Fetch current web page content from <strong>WWW, recurringly, at a very reasonable fee</strong> (coming soon).
                 </label>
             </p>
-
-            @*<p>
-            Name your collection carefully.
-            You will need to reference it by name anytime you wish to interact with it.
-        </p>*@
-            @if (ViewBag.TargetCollectionValidationError != null)
-            {
-                <div class="validation-error">@ViewBag.TargetCollectionValidationError</div>
-            }
-            @*<p><input type="text" placeholder="Name your collection" name="target" /><input type="submit" /></p>*@
+            <p><input type="submit" /></p>
             <input type="hidden" id="q" value="@q" />
             <input type="hidden" id="field" value="@field" />
             <input type="hidden" id="collection" value="@collection" />
             <input type="hidden" id="id" value="@ViewBag.CrawlId" />
         </div>
-</form>
+    </form>

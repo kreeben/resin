@@ -36,11 +36,11 @@ a.result-link:visited {
 }
 
 a.warc-link {
-    color: gray;
+    color: black;
 }
 
 a.warc-link:visited {
-    color: purple;
+    color: black;
 }
 
 a:visited h1 {
@@ -126,7 +126,7 @@ div.upvote {
 .document-body {
     margin-left: 0px;
     margin-bottom: 10px;
-    margin-top: 5px;
+    margin-top: 3px;
 }
 
 input[type="text"].q {
@@ -198,8 +198,8 @@ h3.querystats {
 }
 
 .search-fields a {
-    text-decoration: none;
-    color: gray;
+    text-decoration: underline;
+    color: black;
 }
 
 input[type="text"].collection {

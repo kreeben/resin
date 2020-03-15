@@ -1,9 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Sir.HttpServer.Features;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Sir.HttpServer.Controllers
 {
@@ -29,7 +26,14 @@ namespace Sir.HttpServer.Controllers
         }
 
         [HttpPost]
-        public IActionResult Post(string id, string[] collection, string[] field, string q, string target, string job, string and, string or)
+        public IActionResult Post(
+            string id, 
+            string[] collection, 
+            string[] field, 
+            string q, 
+            string job, 
+            string and, 
+            string or)
         {
             bool isValid = true;
             ViewBag.JobValidationError = null;
@@ -41,18 +45,11 @@ namespace Sir.HttpServer.Controllers
                 isValid = false;
             }
 
-            if (string.IsNullOrWhiteSpace(target))
-            {
-                ViewBag.TargetCollectionValidationError = "Please enter a name for your collection.";
-                isValid = false;
-            }
-
             if (!isValid)
             {
                 ViewBag.Collection = collection;
                 ViewBag.Field = field;
                 ViewBag.Q = q;
-                ViewBag.Target = target;
                 ViewBag.Job = job;
 
                 return View("Index");
@@ -60,7 +57,7 @@ namespace Sir.HttpServer.Controllers
 
             var jobType = job.ToLower();
 
-            _crawlQueue.Enqueue(new CrawlJob(id, collection, field, q, target, job, and!=null, or!=null));
+            _crawlQueue.Enqueue(new CrawlJob(id, collection, field, q, job, and!=null, or!=null));
 
             return View(jobType);
         }

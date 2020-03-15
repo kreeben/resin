@@ -5,12 +5,16 @@
 
     var jsonDownloadLink = $"{Context.Request.Path.Value.ToLower().Replace("/search", "/query")}{Context.Request.QueryString}";
     var crawlLink = $"{Context.Request.Path.Value.ToLower().Replace("/search", "/crawl")}{Context.Request.QueryString}";
+    var saveAsLink = $"{Context.Request.Path.Value.ToLower().Replace("/search", "/saveas")}{Context.Request.QueryString}";
+
 }
 @if (docs.Count > 0)
 {
     <div class="download-json-result">
-        <span>@docs.Count hits of @ViewData["total"] in @ViewData["time_ms"] ms.</span> <a href="@jsonDownloadLink" title="Use a HTTP client to GET result as Content-Type application/json">Download</a> 
-        result as JSON or <a href="@crawlLink">enrich</a> it.
+        <span>@docs.Count hits of @ViewData["total"] in @ViewData["time_ms"] ms.</span>
+        <a href="@jsonDownloadLink" title="Use a HTTP client to GET result as Content-Type application/json">Download</a> as JSON.
+        <a href="@saveAsLink" title="Save as new index">Save as</a> new index.
+        <a href="@crawlLink" title="Make this index richer with information">Enrich</a>.
     </div>
     <div class="result-list">
         <ul>
