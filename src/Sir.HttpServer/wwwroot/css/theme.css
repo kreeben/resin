@@ -97,6 +97,10 @@ footer a {
     color: gray;
 }
 
+.footer-nav {
+    color: silver;
+}
+
 footer p {
     margin-top: 15px;
 }
