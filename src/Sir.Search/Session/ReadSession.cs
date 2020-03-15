@@ -21,7 +21,6 @@ namespace Sir.Search
         private readonly IStringModel _model;
         private readonly IPostingsReader _postingsReader;
         private readonly ConcurrentDictionary<ulong, DocumentReader> _streamReaders;
-        private readonly ConcurrentDictionary<ulong, ConcurrentDictionary<long, INodeReader>> _nodeReaders;
         private readonly ILogger<ReadSession> _logger;
 
         public ReadSession(
@@ -36,7 +35,6 @@ namespace Sir.Search
             _model = model;
             _streamReaders = new ConcurrentDictionary<ulong, DocumentReader>();
             _postingsReader = postingsReader;
-            _nodeReaders = new ConcurrentDictionary<ulong, ConcurrentDictionary<long, INodeReader>>();
             _logger = logger;
         }
 
@@ -46,10 +44,6 @@ namespace Sir.Search
             {
                 reader.Dispose();
             }
-
-            foreach (var collection in _nodeReaders.Values)
-                foreach (var reader in collection.Values)
-                    reader.Dispose();
 
             _postingsReader.Dispose();
         }
@@ -198,6 +192,8 @@ namespace Sir.Search
                         throw new DataMisalignedException(
                             $"document {docId} not found in postings list for term \"{term}\".");
                     }
+
+                    indexReader.Dispose();
                 }
             }
         }
@@ -249,6 +245,8 @@ namespace Sir.Search
                         term.Score = hit.Score;
                         term.PostingsOffsets = hit.Node.PostingsOffsets;
                     }
+
+                    indexReader.Dispose();
                 }
             });
         }
@@ -285,23 +283,9 @@ namespace Sir.Search
 
             return new NodeReader(
                     collectionId,
+                    keyId,
                     _sessionFactory,
                     _logger);
-        }
-
-        public INodeReader GetOrTryCreateIndexReader(ulong collectionId, long keyId)
-        {
-            var ixFileName = Path.Combine(_sessionFactory.Dir, string.Format("{0}.{1}.ix", collectionId, keyId));
-
-            if (!File.Exists(ixFileName))
-                return null;
-
-            var collectionReaders = _nodeReaders.GetOrAdd(collectionId, new ConcurrentDictionary<long, INodeReader>());
-
-            return collectionReaders.GetOrAdd(keyId, new NodeReader(
-                    collectionId,
-                    _sessionFactory,
-                    _logger));
         }
 
         public DocumentReader GetOrCreateDocumentReader(ulong collectionId)

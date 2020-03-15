@@ -89,15 +89,15 @@ namespace Sir
 
             if (And != null)
             {
-                terms.AddRange(And.Terms);
+                terms.AddRange(And.AllTerms());
             }
             if (Or != null)
             {
-                terms.AddRange(Or.Terms);
+                terms.AddRange(Or.AllTerms());
             }
             if (Not != null)
             {
-                terms.AddRange(Not.Terms);
+                terms.AddRange(Not.AllTerms());
             }
 
             return terms;

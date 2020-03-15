@@ -4,7 +4,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Threading.Tasks;
 
 namespace Sir.VectorSpace
 {
@@ -16,34 +15,42 @@ namespace Sir.VectorSpace
         private readonly ISessionFactory _sessionFactory;
         private readonly ILogger _logger;
         private readonly ulong _collectionId;
+        private readonly Stream _vectorFile;
+        private readonly Stream _ixFile;
+        private readonly IList<(long offset, long length)> _pages;
 
         public NodeReader(
             ulong collectionId,
+            long keyId,
             ISessionFactory sessionFactory,
             ILogger logger)
         {
             _collectionId = collectionId;
             _sessionFactory = sessionFactory;
             _logger = logger;
+
+            var vectorFileName = Path.Combine(_sessionFactory.Dir, $"{_collectionId}.vec");
+            var ixFileName = Path.Combine(_sessionFactory.Dir, string.Format("{0}.{1}.ix", _collectionId, keyId));
+
+            _vectorFile = _sessionFactory.CreateReadStream(vectorFileName);
+            _ixFile = _sessionFactory.CreateReadStream(ixFileName);
+
+            _pages = GetAllPages(
+                Path.Combine(_sessionFactory.Dir, $"{_collectionId}.{keyId}.ixtp"));
         }
 
         public Hit ClosestTerm(IVector vector, IStringModel model, long keyId)
         {
             var time = Stopwatch.StartNew();
-
-            var pages = GetAllPages(
-                Path.Combine(_sessionFactory.Dir, $"{_collectionId}.{keyId}.ixtp"));
-
             var hits = new ConcurrentBag<Hit>();
 
-            Parallel.ForEach(pages, page =>
-            //foreach (var page in pages)
+            foreach (var page in _pages)
             {
-                var hit = ClosestTermInPage(vector, model, keyId, page.offset);
+                var hit = ClosestMatchInPage(vector, model, keyId, page.offset);
 
                 if (hit != null)
                     hits.Add(hit);
-            });
+            }
 
             _logger.LogInformation($"scanning all pages took {time.Elapsed}");
 
@@ -64,7 +71,7 @@ namespace Sir.VectorSpace
             return best;
         }
 
-        public IList<(long offset, long length)> GetAllPages(string pageFileName)
+        private IList<(long offset, long length)> GetAllPages(string pageFileName)
         {
             using (var ixpStream = _sessionFactory.CreateReadStream(pageFileName))
             {
@@ -72,30 +79,23 @@ namespace Sir.VectorSpace
             }
         }
 
-        private Hit ClosestTermInPage(
-            IVector vector, IStringModel model, long keyId, long pageOffset)
+        private Hit ClosestMatchInPage(
+        IVector vector, IStringModel model, long keyId, long pageOffset)
         {
-            var vectorFileName = Path.Combine(_sessionFactory.Dir, $"{_collectionId}.vec");
-            var ixFileName = Path.Combine(_sessionFactory.Dir, string.Format("{0}.{1}.ix", _collectionId, keyId));
+            _ixFile.Seek(pageOffset, SeekOrigin.Begin);
 
-            using (var vectorFile = _sessionFactory.CreateReadStream(vectorFileName))
-            using (var ixFile = _sessionFactory.CreateReadStream(ixFileName))
+            var hit = ClosestMatchInSegment(
+                    vector,
+                    _ixFile,
+                    _vectorFile,
+                    model);
+
+            if (hit.Score > 0)
             {
-                ixFile.Seek(pageOffset, SeekOrigin.Begin);
-
-                var hit = ClosestMatchInSegment(
-                        vector,
-                        ixFile,
-                        vectorFile,
-                        model);
-
-                if (hit.Score > 0)
-                {
-                    return hit;
-                }
-
-                return null;
+                return hit;
             }
+
+            return null;
         }
 
         private Hit ClosestMatchInSegment(
@@ -211,16 +211,8 @@ namespace Sir.VectorSpace
 
         public void Dispose()
         {
-        }
-    }
-
-    public static class DoubleExtensions
-    {
-        private const double _precision = 0.01;
-
-        public static bool Approximates(this double left, double right)
-        {
-            return Math.Abs(left - right) < _precision;
+            _vectorFile.Dispose();
+            _ixFile.Dispose();
         }
     }
 }
