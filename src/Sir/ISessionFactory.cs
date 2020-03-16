@@ -1,9 +1,11 @@
-﻿using System.IO;
+﻿using Microsoft.Extensions.Logging;
+using System.IO;
 
 namespace Sir
 {
     public interface ISessionFactory
     {
+        ILoggerFactory LoggerFactory { get; }
         IConfigurationProvider Config { get; }
         string Dir { get; }
         IStringModel Model { get; }
@@ -22,5 +24,6 @@ namespace Sir
         void Truncate(ulong collectionId);
         void TruncateIndex(ulong collectionId);
         bool TryGetKeyId(ulong collectionId, ulong keyHash, out long keyId);
+        void Write(Job job, int reportSize);
     }
 }

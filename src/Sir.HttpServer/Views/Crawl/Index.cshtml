@@ -13,7 +13,8 @@
             <a href="@searchLink">&#8592; Back to result</a>
             <h2>Enrich search result</h2>
             <p>
-                You may enrich this search result with information from Common Crawl or the WWW. 
+                You may enrich this search result with information from Common Crawl or the WWW
+                so that the next time you search for something similar you will get even more relevant hits. 
             </p>
             @if (ViewBag.JobValidationError != null)
             {
@@ -22,19 +23,19 @@
             <p>
                 <label>
                     <input type="radio" name="job" value="ccc" @Html.Raw((job == "cc") ? "checked" : "") />
-                    Fetch latest web page content from <strong>Common Crawl</strong>.
+                    Fetch and index web content from <strong>Common Crawl's latest crawl</strong>.
                 </label>
             </p>
             <p>
                 <label>
                     <input type="radio" disabled="disabled" name="job" value="wc" @Html.Raw((job == "wc") ? "checked" : "") />
-                    Fetch current web page content from <strong>WWW</strong> (coming soon).
+                    Fetch and index up-to-date web content from <strong>WWW</strong> (coming soon).
                 </label>
             </p>
             <p>
                 <label>
                     <input type="radio" disabled="disabled" name="job" value="rwc" @Html.Raw((job == "rwc") ? "checked" : "") />
-                    Fetch current web page content from <strong>WWW, recurringly, at a very reasonable fee</strong> (coming soon).
+                    Fetch and index up-to-date web content from <strong>WWW, recurringly, at a very reasonable fee</strong> (coming soon).
                 </label>
             </p>
             <p><input type="submit" /></p>

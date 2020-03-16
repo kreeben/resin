@@ -11,7 +11,6 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 
 namespace Sir.Search
 {
@@ -30,6 +29,7 @@ namespace Sir.Search
         public string Dir { get; }
         public IConfigurationProvider Config { get; }
         public IStringModel Model { get; }
+        public ILoggerFactory LoggerFactory => _loggerFactory;
 
         public SessionFactory(IConfigurationProvider config, IStringModel model, ILoggerFactory loggerFactory)
         {

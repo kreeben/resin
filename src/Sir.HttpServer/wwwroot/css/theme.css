@@ -1,6 +1,6 @@
 ﻿body {
     padding: 0px 0px 0px 0px;
-    margin: 15px 10px 0px 10px;
+    margin: 0px 10px 0px 10px;
     font-family: sans-serif;
     font-size: medium;
 }
@@ -37,6 +37,7 @@ a.result-link:visited {
 
 a.warc-link {
     color: black;
+    padding-right: 3px;
 }
 
 a.warc-link:visited {
@@ -56,7 +57,7 @@ p {
 }
 
 ul {
-    padding: 10px 5px 0px 5px;
+    padding: 10px 5px 0px 0px;
     margin: 0px 0px 0px 0px;
     list-style-type: none;
 }
@@ -78,13 +79,12 @@ li {
 
 .result-list {
     margin-right: 5px;
-    margin-top: 5px;
+    margin-top: 7px;
 }
 
 footer {
     font-size: 10pt;
-    margin-top: 10px;
-    margin-left: 0px;
+    margin-top: 20px;
     margin-bottom: 30px;
 }
 
@@ -102,7 +102,7 @@ footer a {
 }
 
 footer p {
-    margin-top: 15px;
+    margin-top: 10px;
 }
 
 .pre {
@@ -125,7 +125,7 @@ div.upvote {
 
 .document-body {
     margin-left: 0px;
-    margin-bottom: 10px;
+    margin-bottom: 13px;
     margin-top: 3px;
 }
 
@@ -176,7 +176,7 @@ h3.querystats {
 }
 
 .logo2 {
-    margin-top: 20px;
+    margin-top: 15px;
     margin-bottom: 15px;
     margin-left: 0px;
     font-size: 23pt;
@@ -194,7 +194,7 @@ h3.querystats {
     padding-left: 0px;
     padding-right: 0px;
     padding-top: 15px;
-    padding-bottom: 0px;
+    padding-bottom: 5px;
 }
 
 .search-fields a {
@@ -288,11 +288,11 @@ div.buttons {
     }
 }
 
-.download-json-result {
+.toolbar-wrapper {
     margin-left: 0px;
     margin-bottom: 0px;
     margin-top: 15px;
-    font-size: 10pt;
+    font-size: 9pt;
     color: black;
 }
 
@@ -307,4 +307,8 @@ div.buttons {
 .validation-error {
     color: white;
     background-color: gray;
+}
+
+.toolbar{
+    margin-top:5px;
 }

@@ -10,11 +10,13 @@
 }
 @if (docs.Count > 0)
 {
-    <div class="download-json-result">
+    <div class="toolbar-wrapper">
         <span>@docs.Count hits of @ViewData["total"] in @ViewData["time_ms"] ms.</span>
-        <a href="@jsonDownloadLink" title="Use a HTTP client to GET result as Content-Type application/json">Download</a> as JSON.
-        <a href="@saveAsLink" title="Save as new index">Save as</a> new index.
-        <a href="@crawlLink" title="Make this index richer with information">Enrich</a>.
+        <div class="toolbar">
+            <a href="@jsonDownloadLink" title="Use a HTTP client to GET result as Content-Type application/json">Download</a> as JSON.
+            <a href="@saveAsLink" title="Save as new index">Save as</a> new index.
+            <a href="@crawlLink" title="Make this index richer with information">Enrich</a>.
+        </div>
     </div>
     <div class="result-list">
         <ul>
@@ -38,7 +40,7 @@
                     </div>
                     <div class="document-body">
                         <span class="medium-text">@Html.Raw(host)</span><br />
-                        <span class="medium-text">Score: @score.ToString("N2")%</span><br />
+                        <span class="medium-text">@score.ToString("N2")%</span><br />
                         <span class="medium-text">
                             <a class="warc-link" href="@wetUrl">WET</a>                        
                         </span>

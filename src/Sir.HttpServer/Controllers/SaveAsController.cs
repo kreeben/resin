@@ -2,23 +2,22 @@
 using Microsoft.AspNetCore.Mvc;
 using Sir.HttpServer.Features;
 using Sir.Search;
-using System;
 
 namespace Sir.HttpServer.Controllers
 {
-    [Route("crawl")]
-    public class CrawlController : UIController
+    [Route("saveas")]
+    public class SaveAsController : UIController
     {
         private readonly JobQueue _queue;
         private readonly IStringModel _model;
         private readonly QueryParser _queryParser;
 
-        public CrawlController(
+        public SaveAsController(
             IConfigurationProvider config,
             SessionFactory sessionFactory,
             IStringModel model,
             QueryParser queryParser,
-            CrawlJobQueue queue) : base(config, sessionFactory)
+            SaveAsJobQueue queue) : base(config, sessionFactory)
         {
             _queue = queue;
             _model = model;
@@ -28,8 +27,6 @@ namespace Sir.HttpServer.Controllers
         [HttpGet]
         public IActionResult Index()
         {
-            ViewBag.CrawlId = Guid.NewGuid().ToString();
-
             return View();
         }
 
@@ -65,12 +62,18 @@ namespace Sir.HttpServer.Controllers
 
             var jobType = job.ToLower();
 
-            _queue.Enqueue(new CrawlJob(
+            _queue.Enqueue(new SaveAsJob(
                 SessionFactory,
                 _queryParser,
                 _model,
-                SessionFactory.LoggerFactory.CreateLogger<CrawlJob>(),
-                id, collection, field, q, job, and!=null, or!=null));
+                SessionFactory.LoggerFactory.CreateLogger<SaveAsJob>(),
+                id, 
+                collection, 
+                field, 
+                q, 
+                job, 
+                and!=null, 
+                or!=null));
 
             return View(jobType);
         }

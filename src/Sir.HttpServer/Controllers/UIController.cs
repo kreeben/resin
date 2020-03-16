@@ -1,18 +1,20 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Sir.Document;
+using Sir.Search;
 using System.IO;
 
 namespace Sir.HttpServer.Controllers
 {
     public abstract class UIController : Controller
     {
-        private readonly ISessionFactory _sessionFactory;
+        private readonly SessionFactory _sessionFactory;
         private IConfigurationProvider config;
 
         protected IConfigurationProvider Config { get; }
+        protected SessionFactory SessionFactory => _sessionFactory;
 
-        public UIController(IConfigurationProvider config, ISessionFactory sessionFactory)
+        public UIController(IConfigurationProvider config, SessionFactory sessionFactory)
         {
             Config = config;
             _sessionFactory = sessionFactory;

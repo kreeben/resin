@@ -1,16 +1,11 @@
-﻿using Microsoft.AspNetCore.Http.Extensions;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Sir.Search;
-using System;
-using System.Collections.Specialized;
-using System.Linq;
-using System.Web;
 
 namespace Sir.HttpServer.Controllers
 {
     public class UpvoteController : UIController
     {
-        public UpvoteController(IConfigurationProvider config, ISessionFactory sessionFactory) : base(config, sessionFactory)
+        public UpvoteController(IConfigurationProvider config, SessionFactory sessionFactory) : base(config, sessionFactory)
         {
         }
 

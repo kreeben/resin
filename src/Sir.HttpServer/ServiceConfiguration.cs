@@ -12,7 +12,8 @@ namespace Sir.HttpServer
         public static void RegisterComponents(
             IServiceCollection services, PluginsCollection plugins, IServiceProvider container)
         {
-            services.AddSingleton(typeof(CrawlQueue));
+            services.AddSingleton(typeof(CrawlJobQueue));
+            services.AddSingleton(typeof(SaveAsJobQueue));
         }
 
         public static IServiceProvider Configure(IServiceCollection services)

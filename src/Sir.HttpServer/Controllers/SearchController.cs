@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Sir.Search;
 
 namespace Sir.HttpServer.Controllers
 {
@@ -15,7 +16,7 @@ namespace Sir.HttpServer.Controllers
             PluginsCollection plugins, 
             IConfigurationProvider config, 
             IStringModel model,
-            ISessionFactory sessionFactory) : base(config, sessionFactory)
+            SessionFactory sessionFactory) : base(config, sessionFactory)
         {
             _plugins = plugins;
             _model = model;
