@@ -3,8 +3,16 @@
 namespace Sir
 {
     /// <summary>
-    /// A boolean query,
+    /// A boolean query.
     /// </summary>
+    /// <example>
+    /// {
+    ///	        "or":{
+    ///		        "collection":"cc_wat",
+    ///		        "title":"prom dresses bride"
+    ///     }
+    /// }
+    /// </example>
     public class Query : BooleanStatement, IQuery
     {
         public IList<Term> Terms { get; }
@@ -192,6 +200,21 @@ namespace Sir
         }
     }
 
+    /// <summary>
+    /// A join query.
+    /// </summary>
+    /// <example>
+    /// {
+    ///        "join":"cc_wet,url",
+    ///        "query":
+    ///        {
+    ///	        "or":{
+    ///		        "collection":"cc_wat",
+    ///		        "title":"red dress"
+    ///         }
+    ///     }
+    /// }
+    /// </example>
     public class Join : IQuery
     {
         public Join(Query query, string collection, string primaryKey)
