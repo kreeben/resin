@@ -4,12 +4,12 @@ using System.IO;
 
 namespace Sir
 {
-    public class KeyValyeConfiguration : IConfigurationProvider
+    public class KeyValueConfiguration : IConfigurationProvider
     {
         private IDictionary<string, string> _doc;
         private readonly string _fileName;
 
-        public KeyValyeConfiguration(string fileName)
+        public KeyValueConfiguration(string fileName)
         {
             _doc = new Dictionary<string, string>();
             _fileName = Path.Combine(Directory.GetCurrentDirectory(), fileName);

@@ -107,7 +107,7 @@ namespace Sir.DbUtil
                 storedFieldNames,
                 indexedFieldNames);
 
-            using (var sessionFactory = new SessionFactory(new KeyValyeConfiguration("sir.ini"), model, logger))
+            using (var sessionFactory = new SessionFactory(new KeyValueConfiguration("sir.ini"), model, logger))
             {
                 sessionFactory.Truncate(collectionId);
 
@@ -288,7 +288,7 @@ namespace Sir.DbUtil
                 "title","description", "scheme", "host", "path", "query", "url"
             };
 
-            using (var sessionFactory = new SessionFactory(new KeyValyeConfiguration("sir.ini"), model, log))
+            using (var sessionFactory = new SessionFactory(new KeyValueConfiguration("sir.ini"), model, log))
             {
                 sessionFactory.Write(
                             new Job(
@@ -411,7 +411,7 @@ namespace Sir.DbUtil
             var take = int.Parse(args[3]);
             var collectionId = collection.ToHash();
 
-            using (var sessionFactory = new SessionFactory(new KeyValyeConfiguration("sir.ini"), model, log))
+            using (var sessionFactory = new SessionFactory(new KeyValueConfiguration("sir.ini"), model, log))
             {
                 using (var validateSession = sessionFactory.CreateValidateSession(collectionId))
                 using (var documents = new DocumentStreamSession(new DocumentReader(collectionId, sessionFactory)))
@@ -484,7 +484,7 @@ namespace Sir.DbUtil
             var collection = args[1];
             var collectionId = collection.ToHash();
 
-            using (var sessionFactory = new SessionFactory(new KeyValyeConfiguration("sir.ini"), model, log))
+            using (var sessionFactory = new SessionFactory(new KeyValueConfiguration("sir.ini"), model, log))
             {
                 sessionFactory.Truncate(collectionId);
             }
@@ -495,7 +495,7 @@ namespace Sir.DbUtil
             var collection = args[1];
             var collectionId = collection.ToHash();
 
-            using (var sessionFactory = new SessionFactory(new KeyValyeConfiguration("sir.ini"), model, log))
+            using (var sessionFactory = new SessionFactory(new KeyValueConfiguration("sir.ini"), model, log))
             {
                 sessionFactory.TruncateIndex(collectionId);
             }

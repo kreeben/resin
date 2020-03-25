@@ -20,7 +20,7 @@ namespace Sir.Search.Tests
                     .AddEventLog();
             });
 
-            _sessionFactory = new SessionFactory(new KeyValyeConfiguration("sir.ini"), new BocModel(), loggerFactory);
+            _sessionFactory = new SessionFactory(new KeyValueConfiguration("sir.ini"), new BocModel(), loggerFactory);
         }
 
         [TearDown]
