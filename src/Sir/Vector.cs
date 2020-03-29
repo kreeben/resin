@@ -13,6 +13,29 @@ namespace Sir
         public Vector<float> Value { get; private set; }
         public int ComponentCount { get; }
 
+        public IndexedVector(IList<float> values, Memory<char> data, int vectorWidth)
+        {
+            var tuples = new Tuple<int, float>[Math.Min(values.Count, vectorWidth)];
+            var i = 0;
+
+            foreach (var x in values)
+            {
+                if (i == (vectorWidth))
+                    break;
+
+                tuples[i] = new Tuple<int, float>(i, x);
+
+                i++;
+            }
+
+            Value = CreateVector.Sparse(
+                SparseVectorStorage<float>.OfIndexedEnumerable(vectorWidth, tuples));
+
+            ComponentCount = tuples.Length;
+
+            Data = data;
+        }
+
         public IndexedVector(SortedList<int, float> dictionary, Memory<char> data, int vectorWidth)
         {
             var tuples = new Tuple<int, float>[Math.Min(dictionary.Count, vectorWidth)];
