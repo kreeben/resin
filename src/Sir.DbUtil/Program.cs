@@ -11,8 +11,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Sir.Core;
-using Sir.Document;
 using Sir.Search;
 
 namespace Sir.DbUtil
@@ -52,15 +50,6 @@ namespace Sir.DbUtil
                 WriteWP(args, model, loggerFactory);
 
                 logger.LogInformation("write operation took {0}", fullTime.Elapsed);
-            }
-            else if (command == "validate")
-            {
-                // Ex: validate cc_wat 0 1000
-                var time = Stopwatch.StartNew();
-
-                Validate(args, model, loggerFactory);
-
-                logger.LogInformation("validate took {0}", time.Elapsed);
             }
             else if ((command == "slice"))
             {
@@ -401,28 +390,6 @@ namespace Sir.DbUtil
             {
                 fs.Read(buf);
                 target.Write(buf);
-            }
-        }
-
-        private static void Validate(string[] args, IStringModel model, ILoggerFactory log)
-        {
-            var collection = args[1];
-            var skip = int.Parse(args[2]);
-            var take = int.Parse(args[3]);
-            var collectionId = collection.ToHash();
-
-            using (var sessionFactory = new SessionFactory(new KeyValueConfiguration("sir.ini"), model, log))
-            {
-                using (var validateSession = sessionFactory.CreateValidateSession(collectionId))
-                using (var documents = new DocumentStreamSession(new DocumentReader(collectionId, sessionFactory)))
-                {
-                    foreach (var doc in documents.ReadDocs(skip, take))
-                    {
-                        validateSession.Validate(doc, "title");
-
-                        Console.WriteLine(doc["___docid"]);
-                    }
-                }
             }
         }
 

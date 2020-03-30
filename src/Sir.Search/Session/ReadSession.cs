@@ -169,35 +169,6 @@ namespace Sir.Search
             return first.Values;
         }
 
-        public void EnsureIsValid(Query query, long docId)
-        {
-            foreach (var term in query.Terms)
-            {
-                var columnReader = CreateColumnReader(term.CollectionId, term.KeyId);
-
-                if (columnReader != null)
-                {
-                    var hit = columnReader.ClosestMatch(term.Vector, _model);
-
-                    if (hit == null || hit.Score < _model.IdenticalAngle)
-                    {
-                        throw new DataMisalignedException($"\"{term}\" not found.");
-                    }
-
-                    var docIds = _postingsReader
-                        .ReadWithPredefinedScore(term.CollectionId, hit.Node.PostingsOffsets, _model.IdenticalAngle);
-
-                    if (!docIds.ContainsKey((term.CollectionId, docId)))
-                    {
-                        throw new DataMisalignedException(
-                            $"document {docId} not found in postings list for term \"{term}\".");
-                    }
-
-                    columnReader.Dispose();
-                }
-            }
-        }
-
         private ScoredResult MapReduceSort(Query query, int skip, int take)
         {
             var timer = Stopwatch.StartNew();
@@ -231,23 +202,26 @@ namespace Sir.Search
             if (query == null)
                 return;
 
-            Parallel.ForEach(query.AllTerms(), term =>
-            //foreach (var term in query.AllTerms())
+            Parallel.ForEach(query.All(), q =>
             {
-                var columnReader = CreateColumnReader(term.CollectionId, term.KeyId);
-
-                if (columnReader != null)
+                foreach (var term in q.Terms)
                 {
-                    var hit = columnReader.ClosestMatch(term.Vector, _model);
+                    var columnReader = CreateColumnReader(term.CollectionId, term.KeyId);
 
-                    if (hit != null)
+                    if (columnReader != null)
                     {
-                        term.Score = hit.Score;
-                        term.PostingsOffsets = hit.Node.PostingsOffsets;
-                    }
+                        var hit = columnReader.ClosestMatch(term.Vector, _model);
 
-                    columnReader.Dispose();
+                        if (hit != null)
+                        {
+                            term.Score = hit.Score;
+                            term.PostingsOffsets = hit.Node.PostingsOffsets;
+                        }
+
+                        columnReader.Dispose();
+                    }
                 }
+                
             });
         }
 

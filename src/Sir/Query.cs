@@ -60,12 +60,12 @@ namespace Sir
         {
             var dic = new HashSet<ulong>();
 
-            GetCollectionCount(dic);
+            GetNumOfCollections(dic);
 
             return dic.Count;
         }
 
-        public void GetCollectionCount(HashSet<ulong> dic)
+        public void GetNumOfCollections(HashSet<ulong> dic)
         {
             foreach (var term in Terms)
             {
@@ -74,41 +74,37 @@ namespace Sir
 
             if (And != null)
             {
-                And.GetCollectionCount(dic);
+                And.GetNumOfCollections(dic);
             }
             if (Or != null)
             {
-                Or.GetCollectionCount(dic);
+                Or.GetNumOfCollections(dic);
             }
             if (Not != null)
             {
-                Not.GetCollectionCount(dic);
+                Not.GetNumOfCollections(dic);
             }
         }
 
-        public IEnumerable<Term> AllTerms()
+        public IEnumerable<Query> All()
         {
-            var terms = new List<Term>();
-
-            foreach (var term in Terms)
-            {
-                terms.Add(term);
-            }
+            yield return this;
 
             if (And != null)
             {
-                terms.AddRange(And.AllTerms());
+                foreach (var q in And.All())
+                    yield return q;
             }
             if (Or != null)
             {
-                terms.AddRange(Or.AllTerms());
+                foreach (var q in Or.All())
+                    yield return q;
             }
             if (Not != null)
             {
-                terms.AddRange(Not.AllTerms());
+                foreach (var q in Not.All())
+                    yield return q;
             }
-
-            return terms;
         }
     }
 

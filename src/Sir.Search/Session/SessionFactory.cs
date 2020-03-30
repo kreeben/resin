@@ -442,16 +442,6 @@ namespace Sir.Search
                 _loggerFactory.CreateLogger<ReadSession>());
         }
 
-        public ValidateSession CreateValidateSession(ulong collectionId)
-        {
-            return new ValidateSession(
-                collectionId,
-                this,
-                Model,
-                Config,
-                _logger);
-        }
-
         public Stream CreateAsyncReadStream(string fileName, int bufferSize = 4096)
         {
             return File.Exists(fileName)
