@@ -21,6 +21,7 @@ namespace Sir.Search
         private readonly IStringModel _model;
         private readonly IPostingsReader _postingsReader;
         private readonly ConcurrentDictionary<ulong, DocumentReader> _streamReaders;
+
         private readonly ILogger<ReadSession> _logger;
 
         public ReadSession(
@@ -202,26 +203,28 @@ namespace Sir.Search
             if (query == null)
                 return;
 
+            //foreach (var q in query.All())
             Parallel.ForEach(query.All(), q =>
             {
-                foreach (var term in q.Terms)
+                //foreach (var term in q.Terms)
+                Parallel.ForEach(q.Terms, term =>
                 {
                     var columnReader = CreateColumnReader(term.CollectionId, term.KeyId);
 
                     if (columnReader != null)
                     {
-                        var hit = columnReader.ClosestMatch(term.Vector, _model);
-
-                        if (hit != null)
+                        using (columnReader)
                         {
-                            term.Score = hit.Score;
-                            term.PostingsOffsets = hit.Node.PostingsOffsets;
-                        }
+                            var hit = columnReader.ClosestMatch(term.Vector, _model);
 
-                        columnReader.Dispose();
+                            if (hit != null)
+                            {
+                                term.Score = hit.Score;
+                                term.PostingsOffsets = hit.Node.PostingsOffsets;
+                            }
+                        }
                     }
-                }
-                
+                });
             });
         }
 
@@ -262,7 +265,7 @@ namespace Sir.Search
                     _logger);
         }
 
-        public DocumentReader GetOrCreateDocumentReader(ulong collectionId)
+        public DocumentReader  GetOrCreateDocumentReader(ulong collectionId)
         {
             return _streamReaders.GetOrAdd(
                 collectionId,

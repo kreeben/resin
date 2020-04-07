@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -42,7 +41,7 @@ namespace Sir.VectorSpace
         public Hit ClosestMatch(IVector vector, IStringModel model)
         {
             var time = Stopwatch.StartNew();
-            var hits = new ConcurrentBag<Hit>();
+            var hits = new List<Hit>();
 
             foreach (var page in _pages)
             {
@@ -69,14 +68,6 @@ namespace Sir.VectorSpace
             }
 
             return best;
-        }
-
-        private IList<(long offset, long length)> GetAllPages(string pageFileName)
-        {
-            using (var ixpStream = _sessionFactory.CreateReadStream(pageFileName))
-            {
-                return new PageIndexReader(ixpStream).GetAll();
-            }
         }
 
         private Hit ClosestMatchInPage(
@@ -116,7 +107,15 @@ namespace Sir.VectorSpace
                 var cursorTerminator = BitConverter.ToInt64(block.Slice(sizeof(long) * 4));
                 var angle = model.CosAngle(queryVector, vecOffset, (int)componentCount, vectorFile);
 
-                if (angle > model.FoldAngle)
+                if (angle >= model.IdenticalAngle)
+                {
+                    best.Score = angle;
+                    var n = new VectorNode(postingsOffset);
+                    best.Node = n;
+
+                    break;
+                }
+                else if (angle > model.FoldAngle)
                 {
                     if (best == null || angle > best.Score)
                     {
@@ -198,6 +197,14 @@ namespace Sir.VectorSpace
             if (distance > 0)
             {
                 indexStream.Seek(distance, SeekOrigin.Current);
+            }
+        }
+
+        private IList<(long offset, long length)> GetAllPages(string pageFileName)
+        {
+            using (var ixpStream = _sessionFactory.CreateReadStream(pageFileName))
+            {
+                return new PageIndexReader(ixpStream).GetAll();
             }
         }
 
