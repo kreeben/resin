@@ -1,66 +1,97 @@
 ﻿@{
     Layout = "~/Views/_Layout.cshtml";
+    ViewBag.Title = "About Crawl Crawler";
 }
     <form action="/crawl/" method="post">
         <div class="blog-wrapper">
             <h2>About</h2>
-            <h3>Search expertise as a service</h3>
-            <p>At Crawl Crawler we offer search experts as a service. This page serves as a showcase of things we can do in the realms of search.</p>
-            <h3>Web search engine</h3>
             <p>
-                This site is a web search engine but we don't know what parts of the internet to index. 
-                That's why we host searchable document collections with your choice of data. 
-                We make sure you can always query it using either a web browser or HTTP client,
-                construct simple/complex queries spanning one or many collections using a easy-to-learn JSON query language,
-                slice it,
-                append to it,
-                and download the results of your searches as JSON.
+                <a href="/?collection=cc_wat">crawlcrawler.com</a> is a free, open, non-tracking search service created by search consultant marcuslager (at gailm'n'such).
+                It is a crawl crawler but functions very much like a web search engine only with a few more manual steps involved.
+                Allow me to explain.
+            </p>
+            <h3>Three collections</h3>
+            <p>
+                There are three collections.
+            </p>
+            <h4>First collection</h4>
+            <p>
+                The first collection is called "cc_wat" because it's created and refreshed when <strong>this service</strong>
+                analyzes Common Crawl's <a href="https://commoncrawl.org/the-data/get-started/#WAT-Format">WAT meta data repository</a>.
+                The documents in it contain the fields meta "title", meta "description", the "url" field
+                of a document as well as these URL segment fields:
+                "scheme", "host", "path" and "query".
+            </p>
+            <h4>Second collection</h4>
+            <p>
+                The second collection is called "cc_wet" and it's created and refreshed when <strong>you</strong> use your favorite
+                browser to click on "Enrich" from a search result page.
+                Your choice to enrich will be between having this service fetch the complete text extraction
+                of all pages in your search result, optionally considering the "skip" and "take" query string parameters,
+                from either Common Crawl's <a href="https://commoncrawl.org/the-data/get-started/#WET-Format">WET textual data repository</a>,
+                or from the WWW, analyze it and append to the secondary index.
+                Documents in the cc_wet collection contain the fields "title" and "description".
+            </p>
+            <h4>Your collection</h4>
+            <p>
+                The third collection (type) are the collections <strong>you</strong> create when you click
+                "Save as" from a search result page. You may save your search result as a new collection that we will host.
+                If you remember the name of your collection you may also append to it.
+                In fact, anyone who knows that name can both query and append to it.
+            </p>
+            <h3>Enrich search result</h3>
+            <p>
+                The actual text content that lives inside of a HTML document's body tag will not always have been
+                indexed by this search engine at the time of your query.
+                If that's the case then you'll see a "Enrich" link on the search result page.
+                Click "Enrich" then choose if you want us to fetch the textual content that Common Crawl extracted,
+                for all of the pages in your result, or from WWW.
+                We'll add that textual data to another of our publicly available indexes ("cc_wet").
+            </p>
+            <h3>Querying</h3>
+            <p>
+                Use the "collection" query string parameter to direct your queries towards one or more collections.
             </p>
             <p>
-                We crawl and index web pages, mostly <a href="https://commoncrawl.org/the-data/get-started/#WAT-Format">WAT</a> and
-                <a href="https://commoncrawl.org/the-data/get-started/#WET-Format">WET</a> files 
-                but also, <a href="https://commoncrawl.org/the-data/get-started/#WARC-Format">WARC</a> files and WWW resources, 
-                and we sometimes take on custom search solution projects for organisations that have great ideas but does not have enough time to implement them.
-            </p>
-            <h3>We host many indices</h3>
-            <p>
-                We provide a search index (<a href="/?collection=cc_wat">cc_wat</a>) over the meta data from <a href="https://commoncrawl.org/">Common Crawl's</a> data set.
-                You may use it to find and extract web page content from Common Crawl's wide web crawl sessions.
-                We're doing our very best to try to automate that whole process, for your convenience.
+                Use the "field" query string parameter to direct your queries towards one or more fields.
             </p>
             <p>
-                We also provide aonther search index (<a href="/?collection=cc_wet">cc_wet</a>) over the text content
-                of web pages from the Common Crawl data set. Anytime anyone extracts content from a Common Crawl WET file
-                via crawlcrawler.com, that data will end up in the public "cc_wet" search index, for everyone's convenience.
+                Replace "OR=OR" query string entry with "AND=AND" for stricter interpretation of your query.
             </p>
             <p>
-                We also host your indices. They may be slices from larger, public document collections 
-                or from data you've provided.
+                Page by using "skip" and "take".
             </p>
+            <h4>HTTP GET Accept:text/html</h4>
+            <h5>HTTPS GET /search/?field=title&field=description&q=embellished+sheath+indianapolis&OR=OR&skip=0&take=100&collection=cc_wat</h5>
             <p>
-                BTW, did you know you can search multiple indices in one query, like <a href="/?collection=cc_wat,cc_wet">this</a>?
+                Here's an example of a query that targets <a href="/Search?field=title&field=description&q=embellished+sheath+indianapolis&OR=OR&skip=0&take=100&collection=cc_wat&collection=yourcollection">cc_wat+cc_wet+your collection</a>.<br />
+                This query targets <a href="/Search?field=title&field=description&q=embellished+sheath+indianapolis&OR=OR&skip=0&take=100&collection=cc_wat&collection=cc_wet">cc_wat+cc_wet</a>.<br />
+                Here is a query that targets the <a href="/Search?field=title&field=description&q=embellished+sheath+indianapolis&OR=OR&skip=0&take=100&collection=cc_wat">cc_wat</a> collection.
             </p>
-            <h3>We provide a public API</h3>
-            <p>
-                We provide an API for humans/browsers as well as a restful HTTP API that you may use to query any
-                public index we host. These APIs also let you create your own data collections from slices of existing 
-                collections or from data that you've provided via the write API. 
-            </p>
-            <h3>We crawl WWW</h3>
-            <p>
-                We offer to web crawl, in exchange for a small fee. 
-            </p>
-            <h3>The convenience of web crawling with Crawl Crawler</h3>
-            <p>
-                <strong>Easy step one:</strong> search the public "cc_wat" Crawl Crawler index.
-                <br /><br /><strong>Very easy step two:</strong> from the search result, click "crawl", then let crawlcrawler fetch a snapshot 
-                of the web content by making HTTP requests on your behalf, to the original resources references in your 
-                search result. Now you have a searchable web index of your favorite content.
-            </p>
-            <p>On your request we'll also crawl WWW resources recurringly.</p>
+            <h4>HTTP GET Accept:application/json</h4>
+            <h5>HTTPS GET /query/?field=title&field=description&q=embellished+sheath+indianapolis&OR=OR&skip=0&take=100&collection=cc_wat</h5>
+            <h4>HTTP POST Accept:application/json</h4>
+            <p>HTTPS POST /query/?skip=0&take=100</p>
+            <pre>
+    {
+        "and":{
+            "collection":"cc_wat",
+            "host":"myfashion.com"
+        },
+        "and":{
+            "collection":"cc_wet",
+            "title":"prom dress wedding",
+            "description":"prom dress wedding"
+        },
+        "not":{
+            "collection":"cc_wat",
+            "path":"kids teens"
+        },
+    }
+            </pre>
             <h3>Technology</h3>
             <p>
-                We build <a href="https://github.com/kreeben/resin">Resin</a>, an open-source and extensible search engine.
+                We build <a href="https://github.com/kreeben/resin">Resin <sup>BETA</sup></a>, an open-source and extensible search engine.
             </p>
         </div>
     </form>

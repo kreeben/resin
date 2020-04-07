@@ -1,7 +1,7 @@
 ﻿@model IEnumerable<Sir.HttpServer.Controllers.SearchResultModel>
 
 @{
-    ViewData["Title"] = Context.Request.Query["q"] + " - ";
+    ViewBag.Title = Context.Request.Query["q"] + " - ";
     Layout = "~/Views/_Layout.cshtml";
 
     IList<Sir.HttpServer.Controllers.SearchResultModel> docs = Model == null ?

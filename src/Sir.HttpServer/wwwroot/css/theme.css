@@ -105,7 +105,7 @@ footer p {
     margin-top: 10px;
 }
 
-.pre {
+pre, .pre {
     background-color: #d4d4d4;
     padding: 0px 5px 5px 0px;
     margin-top: 5px;

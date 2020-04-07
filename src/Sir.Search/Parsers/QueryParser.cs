@@ -161,7 +161,7 @@ namespace Sir.Search
                             continue;
                         }
 
-                        var query = new Query(ParseTerms(collection, key, value, and, or, not), and, or, not);
+                        var query = new Query(terms, and, or, not);
 
                         if (root == null)
                         {

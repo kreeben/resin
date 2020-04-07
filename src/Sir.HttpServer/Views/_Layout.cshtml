@@ -6,20 +6,19 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width" />
-    <title>@ViewBag.Title@ViewBag.Collection - Crawl Crawler</title>
+    <title>@ViewBag.Title</title>
     <meta charset="UTF-8">
     <link rel="stylesheet" type="text/css" href="/css/theme.css">
 </head>
 <body>
     <div class="outer-container">
-        <div class="logo2"><a href="/?collection=cc_wat">Crawl Crawler <sup>Pre-release</sup></a></div>
+        <div class="logo2"><a href="/?collection=cc_wat">Crawl Crawler <sup>BETA</sup></a></div>
         @RenderBody()
     </div>
     <footer>
         <div>
             <p>
-                Independent, non-tracking search, powered by 
-                <a href="https://github.com/kreeben/resin" title="Resin Extensible Search Engine">Resin Extensible Search Engine.</a>
+                Free, open, non-tracking search powered by Common Crawl data, WWW and <a href="https://github.com/kreeben/resin" title="OSS">OSS.</a>
             </p>
             <p>
                 Coverage: @progress.ToString("0.##")% (@millionDocs.ToString("0.##")M documents).
