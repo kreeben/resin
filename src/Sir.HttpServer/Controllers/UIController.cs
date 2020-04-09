@@ -32,10 +32,10 @@ namespace Sir.HttpServer.Controllers
             ViewBag.DefaultCollection = Config.Get("default_collection");
 
             ViewBag.Collection = context.HttpContext.Request.Query.ContainsKey("collection") ?
-                context.HttpContext.Request.Query["collection"].ToString() :
-                ViewBag.DefaultCollection;
+                context.HttpContext.Request.Query["collection"].ToArray() :
+                new string[] { ViewBag.DefaultCollection };
 
-            var collectionId = ((string)ViewBag.Collection).ToHash();
+            var collectionId = ((string)ViewBag.DefaultCollection).ToHash();
             var dixFileName = Path.Combine(_sessionFactory.Dir, $"{collectionId}.dix");
 
             if (System.IO.File.Exists(dixFileName))

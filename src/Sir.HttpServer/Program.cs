@@ -21,12 +21,15 @@ namespace Sir.HttpServer
             Host.CreateDefaultBuilder(args)
             .ConfigureLogging(logging =>
             {
+                if (!Directory.Exists("AppData"))
+                    Directory.CreateDirectory("AppData");
+
                 logging.ClearProviders();
                 logging.AddDebug();
 
-                //if (!Directory.Exists("AppData"))
-                //    Directory.CreateDirectory("AppData");
-                //logging.AddFile("AppData/log-{Date}.txt");
+#if !DEBUG
+                logging.AddFile("AppData/sirhttpserver-log-{Date}.txt");
+#endif
             })
             .ConfigureWebHostDefaults(webBuilder =>
             {

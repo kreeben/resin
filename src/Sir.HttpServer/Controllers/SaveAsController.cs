@@ -8,7 +8,6 @@ namespace Sir.HttpServer.Controllers
     [Route("saveas")]
     public class SaveAsController : UIController
     {
-        private readonly JobQueue _queue;
         private readonly IStringModel _model;
         private readonly QueryParser _queryParser;
 
@@ -19,7 +18,6 @@ namespace Sir.HttpServer.Controllers
             QueryParser queryParser,
             SaveAsJobQueue queue) : base(config, sessionFactory)
         {
-            _queue = queue;
             _model = model;
             _queryParser = queryParser;
         }
@@ -32,11 +30,10 @@ namespace Sir.HttpServer.Controllers
 
         [HttpPost]
         public IActionResult Post(
-            string id, 
             string[] collection, 
             string[] field, 
-            string q, 
-            string job, 
+            string q,
+            string target,
             string and, 
             string or)
         {
@@ -44,9 +41,9 @@ namespace Sir.HttpServer.Controllers
             ViewBag.JobValidationError = null;
             ViewBag.TargetCollectionValidationError = null;
 
-            if (string.IsNullOrWhiteSpace(job))
+            if (string.IsNullOrWhiteSpace(target))
             {
-                ViewBag.JobValidationError = "Please select a job to execute.";
+                ViewBag.JobValidationError = "Please choose a collection name.";
                 isValid = false;
             }
 
@@ -55,27 +52,24 @@ namespace Sir.HttpServer.Controllers
                 ViewBag.Collection = collection;
                 ViewBag.Field = field;
                 ViewBag.Q = q;
-                ViewBag.Job = job;
 
                 return View("Index");
             }
 
-            var jobType = job.ToLower();
-
-            _queue.Enqueue(new SaveAsJob(
+            new SaveAsJob(
                 SessionFactory,
                 _queryParser,
                 _model,
                 SessionFactory.LoggerFactory.CreateLogger<SaveAsJob>(),
-                id, 
-                collection, 
-                field, 
-                q, 
-                job, 
-                and!=null, 
-                or!=null));
+                new System.Collections.Generic.HashSet<string>(field),
+                target,
+                collection,
+                field,
+                q,
+                and != null,
+                or != null).Execute();
 
-            return View(jobType);
+            return View(target);
         }
     }
 }

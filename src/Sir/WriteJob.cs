@@ -2,7 +2,7 @@
 
 namespace Sir
 {
-    public class Job
+    public class WriteJob
     {
         public IStringModel Model { get; }
         public ulong CollectionId { get; private set; }
@@ -10,7 +10,7 @@ namespace Sir
         public HashSet<string> StoredFieldNames { get; private set; }
         public HashSet<string> IndexedFieldNames { get; private set; }
 
-        public Job(
+        public WriteJob(
             ulong collectionId, 
             IEnumerable<IDictionary<string, object>> documents, 
             IStringModel model,

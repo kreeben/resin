@@ -3,9 +3,9 @@
 }
 @{ 
     var searchLink = $"{Context.Request.Path.Value.ToLower().Replace("/saveas", "/search")}{Context.Request.QueryString}";
-    var collection = (ViewBag.Collection ?? Context.Request.Query["collection"]).ToString();
+    var collections = ViewBag.Collection ?? Context.Request.Query["collection"].ToArray();
     var q = (ViewBag.Q ?? Context.Request.Query["q"]).ToString();
-    var field = (ViewBag.Field ?? Context.Request.Query["field"]).ToString();
+    var fields = (ViewBag.Field ?? Context.Request.Query["field"]).ToArray();
     var job = (string)ViewBag.Job;
 } 
     <form action="/saveas/@Context.Request.QueryString" method="post">
@@ -13,8 +13,8 @@
             <a href="@searchLink">&#8592; Back to result</a>
             <h2>Save search result as new index</h2>
             <p>
-            Name your collection carefully.
-            You will need to reference it by name anytime you wish to interact with it.
+                Name your collection carefully.
+                You will need to reference it by name anytime you wish to interact with it.
             </p>
             @if (ViewBag.TargetCollectionValidationError != null)
             {
@@ -27,8 +27,14 @@
             }
             <p><input type="submit" /></p>
             <input type="hidden" id="q" value="@q" />
-            <input type="hidden" id="field" value="@field" />
-            <input type="hidden" id="collection" value="@collection" />
+            @foreach (var field in fields)
+            {
+                <input type="hidden" id="field" value="@field" />
+            }
+            @foreach (var collection in collections)
+            {
+                <input type="hidden" id="collection" value="@collection" />
+            }
             <input type="hidden" id="id" value="@ViewBag.CrawlId" />
         </div>
     </form>

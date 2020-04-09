@@ -12,25 +12,38 @@
             </p>
             <h3>Three collections</h3>
             <p>
-                There are three collections.
+                There are three collections that you can query.
             </p>
             <h4>First collection</h4>
             <p>
-                The first collection is called "cc_wat" because it's created and refreshed when <strong>this service</strong>
-                analyzes Common Crawl's <a href="https://commoncrawl.org/the-data/get-started/#WAT-Format">WAT meta data repository</a>.
-                The documents in it contain the fields meta "title", meta "description", the "url" field
-                of a document as well as these URL segment fields:
+                The first collection is called "cc_wat" because it's created and refreshed when 
+                <strong>this service</strong> analyzes Common Crawl's 
+                <a href="https://commoncrawl.org/the-data/get-started/#WAT-Format">WAT meta data repository</a>.
+            </p>
+            <p>
+                Documents in this collection contain the queryable fields meta "title", meta "description",
+                the "url" field of a document as well as these URL segment fields:
                 "scheme", "host", "path" and "query".
             </p>
             <h4>Second collection</h4>
             <p>
-                The second collection is called "cc_wet" and it's created and refreshed when <strong>you</strong> use your favorite
-                browser to click on "Enrich" from a search result page.
+                The second collection is called "cc_wet" and it's created and refreshed when <strong>you</strong> 
+                use your favorite browser to click on <strong>"Enrich"</strong> from a search result page.
+            </p>
+            <p>
                 Your choice to enrich will be between having this service fetch the complete text extraction
                 of all pages in your search result, optionally considering the "skip" and "take" query string parameters,
-                from either Common Crawl's <a href="https://commoncrawl.org/the-data/get-started/#WET-Format">WET textual data repository</a>,
-                or from the WWW, analyze it and append to the secondary index.
-                Documents in the cc_wet collection contain the fields "title" and "description".
+                from (1) Common Crawl's <a href="https://commoncrawl.org/the-data/get-started/#WET-Format">WET textual data repository</a>,
+                or from (2) the WWW, then analyze that text and append it to the secondary index.
+            </p>
+            <p>
+                <i>
+                    This enrichment process will create a better search experience for the next person who uses
+                    crawlcrawler.com to search the web using a query similar to yours.
+                </i>
+            </p>
+            <p>
+                Documents in the cc_wet collection contain the queryable fields "title" and "description".
             </p>
             <h4>Your collection</h4>
             <p>
@@ -39,14 +52,16 @@
                 If you remember the name of your collection you may also append to it.
                 In fact, anyone who knows that name can both query and append to it.
             </p>
-            <h3>Enrich search result</h3>
+            <h3>Enrichment</h3>
             <p>
-                The actual text content that lives inside of a HTML document's body tag will not always have been
+                The actual text content of the documents in your search result,
+                that lives inside of a HTML document's body tag, will not always have been
                 indexed by this search engine at the time of your query.
-                If that's the case then you'll see a "Enrich" link on the search result page.
-                Click "Enrich" then choose if you want us to fetch the textual content that Common Crawl extracted,
-                for all of the pages in your result, or from WWW.
-                We'll add that textual data to another of our publicly available indexes ("cc_wet").
+                We might only have had time to index the meta data fields "title" and "description".
+                When that's the case you'll see an "Enrich" link on the search result page.
+                Click "Enrich" then choose if you want us to fetch the textual content for those documents,
+                for all of the pages in your result, from Common Crawl or from WWW. 
+                We'll add that textual data to our search engine, improving the search experience for everyone.
             </p>
             <h3>Querying</h3>
             <p>
@@ -89,9 +104,20 @@
         },
     }
             </pre>
+            <h3>Insert, append, update</h3>
+            <p>
+                You may create new collections that you can append and make updates to. 
+                In fact, you can append and make updates to any collection that you know by name.
+            </p>
+            <h4>HTTP POST Content-Type:application/json</h4>
+            <p>
+                The insert, append and update APIs are unstable at this time. 
+                As soon as they are reliable they will be documented here.
+            </p>
             <h3>Technology</h3>
             <p>
-                We build <a href="https://github.com/kreeben/resin">Resin <sup>BETA</sup></a>, an open-source and extensible search engine.
+                We build <a href="https://github.com/kreeben/resin">Resin <sup>BETA</sup></a>, 
+                an open-source and extensible search engine.
             </p>
         </div>
     </form>

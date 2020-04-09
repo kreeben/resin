@@ -24,12 +24,11 @@ namespace Sir.Search
         private readonly ConcurrentDictionary<string, IList<(long offset, long length)>> _pageInfo;
         private readonly ConcurrentDictionary<string, MemoryMappedFile> _mmfs;
         private ILogger<SessionFactory> _logger;
-        private readonly ILoggerFactory _loggerFactory;
 
         public string Dir { get; }
         public IConfigurationProvider Config { get; }
         public IStringModel Model { get; }
-        public ILoggerFactory LoggerFactory => _loggerFactory;
+        public ILoggerFactory LoggerFactory { get; }
 
         public SessionFactory(IConfigurationProvider config, IStringModel model, ILoggerFactory loggerFactory)
         {
@@ -47,7 +46,7 @@ namespace Sir.Search
             _pageInfo = new ConcurrentDictionary<string, IList<(long offset, long length)>>();
             _mmfs = new ConcurrentDictionary<string, MemoryMappedFile>();
             _logger = loggerFactory.CreateLogger<SessionFactory>();
-            _loggerFactory = loggerFactory;
+            LoggerFactory = loggerFactory;
             _keys = LoadKeys();
             _collectionAliases = LoadCollectionAliases();
 
@@ -56,7 +55,7 @@ namespace Sir.Search
 
         public ILogger<T> GetLogger<T>()
         {
-            return _loggerFactory.CreateLogger<T>();
+            return LoggerFactory.CreateLogger<T>();
         }
 
         public MemoryMappedFile OpenMMF(string fileName)
@@ -136,9 +135,32 @@ namespace Sir.Search
             _pageInfo.Clear();
         }
 
-        public void Write(Job job, WriteSession writeSession, IndexSession indexSession, int reportSize = 1000)
+        public void IndexOnly(ulong targetCollectionId, IEnumerable<IDictionary<string, object>> documents, HashSet<string> indexFieldNames)
         {
-            _logger.LogInformation($"writing job {job.CollectionId}");
+            using (var indexSession = CreateIndexSession(targetCollectionId))
+            {
+                foreach (var document in documents)
+                {
+                    var docId = (long)document["___docid"];
+                    var sourceCollectionId = (ulong)document["___collectionid"];
+
+                    //Parallel.ForEach(document, kv =>
+                    foreach (var kv in document)
+                    {
+                        if (indexFieldNames.Contains(kv.Key))
+                        {
+                            var keyId = GetKeyId(sourceCollectionId, kv.Key.ToHash());
+
+                            indexSession.Put(docId, keyId, kv.Value.ToString());
+                        }
+                    }//);
+                }
+            }
+        }
+
+        public void Write(WriteJob job, WriteSession writeSession, IndexSession indexSession, int reportSize = 1000)
+        {
+            _logger.LogInformation($"writing to collection {job.CollectionId}");
 
             var time = Stopwatch.StartNew();
 
@@ -181,10 +203,10 @@ namespace Sir.Search
                 }
             }
 
-            _logger.LogInformation($"prcessed job ({job.CollectionId}), in total: {time.Elapsed}");
+            _logger.LogInformation($"prcessed write job (collection {job.CollectionId}), time in total: {time.Elapsed}");
         }
 
-        public void Write(Job job, int reportSize = 1000)
+        public void Write(WriteJob job, int reportSize = 1000)
         {
             using (var writeSession = CreateWriteSession(job.CollectionId))
             using (var indexSession = CreateIndexSession(job.CollectionId))
@@ -193,7 +215,7 @@ namespace Sir.Search
             }
         }
 
-        public void Write(Job job, IndexSession indexSession, int reportSize)
+        public void Write(WriteJob job, IndexSession indexSession, int reportSize)
         {
             using (var writeSession = CreateWriteSession(job.CollectionId))
             {
@@ -217,7 +239,7 @@ namespace Sir.Search
                 using (var indexSession = CreateIndexSession(collectionId))
                 {
                     Write(
-                        new Job(
+                        new WriteJob(
                             collectionId, 
                             group, 
                             model, 
@@ -343,11 +365,11 @@ namespace Sir.Search
             }
         }
 
-        public void RegisterCollectionAlias(ulong collectionId, ulong originalCollectionId)
+        public void RegisterCollectionAlias(ulong targetCollectionId, ulong sourceCollectionId)
         {
-            if (!_collectionAliases.ContainsKey(collectionId))
+            if (!_collectionAliases.ContainsKey(targetCollectionId))
             {
-                _collectionAliases.GetOrAdd(collectionId, originalCollectionId);
+                _collectionAliases.GetOrAdd(targetCollectionId, sourceCollectionId);
 
                 var fileName = Path.Combine(Dir, "aliases.cmap");
 
@@ -355,17 +377,17 @@ namespace Sir.Search
                 {
                     Span<ulong> buf = new ulong[2];
 
-                    buf[0] = collectionId;
-                    buf[1] = originalCollectionId;
+                    buf[0] = targetCollectionId;
+                    buf[1] = sourceCollectionId;
 
                     stream.Write(MemoryMarshal.Cast<ulong, byte>(buf));
                 }
 
-                var keyMapFileName = Path.Combine(Dir, $"{collectionId}.kmap");
+                var keyMapFileName = Path.Combine(Dir, $"{targetCollectionId}.kmap");
 
                 if (!File.Exists(keyMapFileName))
                 {
-                    var originalKeyMapFileName = Path.Combine(Dir, $"{originalCollectionId}.kmap");
+                    var originalKeyMapFileName = Path.Combine(Dir, $"{sourceCollectionId}.kmap");
 
                     File.Copy(originalKeyMapFileName, keyMapFileName);
                 }
@@ -429,7 +451,7 @@ namespace Sir.Search
 
         public IndexSession CreateIndexSession(ulong collectionId)
         {
-            return new IndexSession(collectionId, this, Model, Config, _loggerFactory.CreateLogger<IndexSession>());
+            return new IndexSession(collectionId, this, Model, Config, LoggerFactory.CreateLogger<IndexSession>());
         }
 
         public IReadSession CreateReadSession()
@@ -439,7 +461,7 @@ namespace Sir.Search
                 Config,
                 Model,
                 new PostingsReader(this),
-                _loggerFactory.CreateLogger<ReadSession>());
+                LoggerFactory.CreateLogger<ReadSession>());
         }
 
         public Stream CreateAsyncReadStream(string fileName, int bufferSize = 4096)

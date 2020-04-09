@@ -6,7 +6,7 @@ namespace Sir.Search
     {
         protected abstract IList<(ulong, long)> Read(ulong collectionId, IList<long> postingsOffsets);
 
-        public void Reduce(Query mappedQuery, IDictionary<(ulong, long), double> result)
+        public void Reduce(IQuery mappedQuery, IDictionary<(ulong, long), double> result)
         {
             var queryResult = new Dictionary<(ulong, long), double>();
 

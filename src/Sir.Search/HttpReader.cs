@@ -65,35 +65,22 @@ namespace Sir.Search
             _logger.LogInformation($"divider {query.GetDivider()}");
 #endif
 
-            ReadResult result = null;
-
             using (var readSession = _sessionFactory.CreateReadSession())
             {
-                if (request.Query.ContainsKey("id") && request.Query.ContainsKey("collection"))
-                {
-                    var collectionId = request.Query["collection"].ToString().ToHash();
-                    var ids = request.Query["id"].ToDictionary(s => (collectionId, docId:long.Parse(s)), x => (double)1);
-                    var docs = readSession.ReadDocs(ids, query.GetDivider());
+                var result = readSession.Read(query, skip, take);
 
-                    result = new ReadResult { Query = query, Docs = docs, Total = docs.Count };
+                using (var mem = new MemoryStream())
+                {
+                    Serialize(result.Docs, mem);
+
+                    return new ResponseModel
+                    {
+                        MediaType = "application/json",
+                        Documents = result.Docs,
+                        Total = result.Total,
+                        Body = mem.ToArray()
+                    };
                 }
-                else
-                {
-                    result = readSession.Read(query, skip, take);
-                }
-            }
-
-            using (var mem = new MemoryStream())
-            {
-                Serialize(result.Docs, mem);
-
-                return new ResponseModel
-                {
-                    MediaType = "application/json",
-                    Documents = result.Docs,
-                    Total = result.Total,
-                    Body = mem.ToArray()
-                };
             }
         }
 

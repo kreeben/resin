@@ -89,7 +89,7 @@ namespace Sir.DbUtil
             var storedFieldNames = new HashSet<string> { "url" };
             var indexedFieldNames = new HashSet<string> { "description" };
 
-            var writeJob = new Job(
+            var writeJob = new WriteJob(
                 collectionId, 
                 ReadWetFile(fileName), 
                 model,
@@ -280,7 +280,7 @@ namespace Sir.DbUtil
             using (var sessionFactory = new SessionFactory(new KeyValueConfiguration("sir.ini"), model, log))
             {
                 sessionFactory.Write(
-                            new Job(
+                            new WriteJob(
                                 collectionId, 
                                 documents, 
                                 model,

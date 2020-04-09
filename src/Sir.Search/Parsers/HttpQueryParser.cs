@@ -1,12 +1,10 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Sir.Search
@@ -25,30 +23,23 @@ namespace Sir.Search
 
         public async Task<IQuery> ParseRequest(HttpRequest request)
         {
+            string[] select = request.Query["select"].ToArray();
+
             if (request.Method == "GET")
             {
-                if (!request.Query.ContainsKey("collection"))
-                {
-                    throw new InvalidOperationException("collection missing from query string");
-                }
-
-                string[] collections = request.Query["collection"].ToArray()
-                    .SelectMany(x=>x.Split(',', StringSplitOptions.RemoveEmptyEntries))
-                    .ToArray();
+                string[] collections = request.Query["collection"].ToArray();
                 var naturalLanguage = request.Query["q"].ToString();
-                string[] fields = request.Query["field"].ToArray()
-                    .SelectMany(x => x.Split(',', StringSplitOptions.RemoveEmptyEntries))
-                    .ToArray();
+                string[] fields = request.Query["field"].ToArray();
                 bool and = request.Query.ContainsKey("AND");
                 bool or = !and && request.Query.ContainsKey("OR");
 
-                return _parser.Parse(collections, naturalLanguage, fields, and, or);
+                return _parser.Parse(collections, naturalLanguage, fields, select, and, or);
             }
             else
             {
-                var jsonDocument = await DeserializeFromStream(request.Body);
+                var jsonQueryDocument = await DeserializeFromStream(request.Body);
 
-                var query = _parser.Parse(jsonDocument);
+                var query = _parser.Parse(jsonQueryDocument, select);
 
                 return query;
             }
@@ -63,17 +54,17 @@ namespace Sir.Search
             }
         }
 
-        public IQuery ParseFormattedString(string formattedQuery)
+        public IQuery ParseFormattedString(string formattedQuery, string[] select)
         {
             var document = JsonConvert.DeserializeObject<IDictionary<string, object>>(
                 formattedQuery, new JsonConverter[] { new DictionaryConverter() });
 
-            return ParseDictionary(document);
+            return ParseDictionary(document, select);
         }
 
-        public IQuery ParseDictionary(IDictionary<string, object> document)
+        public IQuery ParseDictionary(IDictionary<string, object> document, string[] select)
         {
-            return _parser.Parse(document);
+            return _parser.Parse(document, select);
         }
 
         private void DoParseQuery(Query query, IDictionary<string, object> result)
@@ -123,10 +114,7 @@ namespace Sir.Search
 
         public void ParseQuery(IQuery query, IDictionary<string, object> result)
         {
-            if (query is Query)
-                DoParseQuery((Query)query, result);
-            else
-                DoParseQuery(((Join)query).Query, result);
+            DoParseQuery((Query)query, result);
         }
     }
 

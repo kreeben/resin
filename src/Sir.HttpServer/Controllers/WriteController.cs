@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -20,8 +21,13 @@ namespace Sir.HttpServer.Controllers
 
         [HttpPost]
         [DisableRequestSizeLimit]
-        public IActionResult Post()
+        public IActionResult Post(string accessToken)
         {
+            if (!IsValidToken(accessToken))
+            {
+                return StatusCode((int)HttpStatusCode.MethodNotAllowed);
+            }
+
             if (string.IsNullOrWhiteSpace(Request.ContentType))
             {
                 throw new NotSupportedException();
@@ -51,6 +57,14 @@ namespace Sir.HttpServer.Controllers
 
                 throw ew;
             }
+        }
+
+        private bool IsValidToken(string accessToken)
+        {
+            if (string.IsNullOrWhiteSpace(accessToken))
+                return false;
+
+            return "Pruttapa1!".Equals(accessToken);
         }
     }
 }

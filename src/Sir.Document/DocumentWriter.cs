@@ -98,9 +98,9 @@ namespace Sir.Document
             return (keyId, valId);
         }
 
-        public long GetNextDocId()
+        public long IncrementDocId()
         {
-            return _docIx.GetNextDocId();
+            return _docIx.IncrementDocId();
         }
 
         public (long offset, int len, byte dataType) PutKey(object value)

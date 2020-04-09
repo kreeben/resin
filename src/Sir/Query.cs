@@ -16,17 +16,20 @@ namespace Sir
     public class Query : BooleanStatement, IQuery
     {
         public IList<Term> Terms { get; }
+        public HashSet<string> Select { get; }
         public Query And { get; set; }
         public Query Or { get; set; }
         public Query Not { get; set; }
 
         public Query(
-            IList<Term> terms, 
+            IList<Term> terms,
+            IEnumerable<string> select,
             bool and,
             bool or,
             bool not) : base(and, or, not)
         {
             Terms = terms;
+            Select = new HashSet<string>(select);
         }
 
         public int GetDivider()
@@ -211,27 +214,36 @@ namespace Sir
     ///     }
     /// }
     /// </example>
-    public class Join : IQuery
-    {
-        public Join(Query query, string collection, string primaryKey)
-        {
-            Query = query;
-            Collection = collection;
-            PrimaryKey = primaryKey;
-        }
+    //public class Join : IQuery
+    //{
+    //    public Join(Query query, string collection, string primaryKey)
+    //    {
+    //        Query = query;
+    //        Collection = collection;
+    //        PrimaryKey = primaryKey;
+    //    }
 
-        public string PrimaryKey { get;}
-        public string Collection { get; }
-        public Query Query { get; }
+    //    public string PrimaryKey { get;}
+    //    public string Collection { get; }
+    //    public Query Query { get; }
 
-        public int GetDivider()
-        {
-            return Query.GetDivider();
-        }
-    }
+    //    public int GetDivider()
+    //    {
+    //        return Query.GetDivider();
+    //    }
+    //}
 
     public interface IQuery
     {
+        bool IsIntersection { get; }
+        bool IsUnion { get; }
+        bool IsSubtraction { get; }
+        Query And { get; set; }
+        Query Or { get; set; }
+        Query Not { get; set; }
+        IList<Term> Terms { get; }
+        HashSet<string> Select { get; }
+        IEnumerable<Query> All();
         int GetDivider();
     }
 }

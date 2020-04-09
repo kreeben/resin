@@ -39,14 +39,11 @@ namespace Sir.Search
         {
             var docMap = new List<(long keyId, long valId)>();
 
-            Write("created", DateTime.Now.ToBinary(), docMap);
-            Write("collection", _collectionId, docMap);
-
             foreach (var key in document.Keys)
             {
                 var val = document[key];
 
-                if ((val == null) || (key != "collectionid" && !storedFieldNames.Contains(key)))
+                if ((val == null) || !storedFieldNames.Contains(key))
                 {
                     continue;
                 }
@@ -54,8 +51,11 @@ namespace Sir.Search
                 Write(key, val, docMap);
             }
 
+            Write("___created", DateTime.Now.ToBinary(), docMap);
+            Write("___collectionid", _collectionId, docMap);
+
             var docMeta = _streamWriter.PutDocumentMap(docMap);
-            var docId = _streamWriter.GetNextDocId();
+            var docId = _streamWriter.IncrementDocId();
 
             _streamWriter.PutDocumentAddress(docId, docMeta.offset, docMeta.length);
             

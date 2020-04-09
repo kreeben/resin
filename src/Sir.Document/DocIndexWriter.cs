@@ -31,7 +31,7 @@ namespace Sir.Document
         /// Get the next auto-incrementing doc id
         /// </summary>
         /// <returns>The next auto-incrementing doc id</returns>
-        public long GetNextDocId()
+        public long IncrementDocId()
         {
             var id = _stream.Length / BlockSize;
 

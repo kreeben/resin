@@ -3,9 +3,9 @@
 }
 @{ 
     var searchLink = $"{Context.Request.Path.Value.ToLower().Replace("/crawl", "/search")}{Context.Request.QueryString}";
-    var collection = (ViewBag.Collection ?? Context.Request.Query["collection"]).ToString();
+    var collections = (ViewBag.Collection ?? Context.Request.Query["collection"]).ToArray();
     var q = (ViewBag.Q ?? Context.Request.Query["q"]).ToString();
-    var field = (ViewBag.Field ?? Context.Request.Query["field"]).ToString();
+    var fields = (ViewBag.Field ?? Context.Request.Query["field"]).ToString();
     var job = (string)ViewBag.Job;
 } 
     <form action="/crawl/@Context.Request.QueryString" method="post">
@@ -14,7 +14,7 @@
             <h2>Enrich search result</h2>
             <p>
                 You may enrich this search result with even more text data from Common Crawl or the WWW
-                so that the next time you perform this query you'll get even more relevant hits. 
+                so that the next time you perform this query you'll get even more relevant hits.
             </p>
             @if (ViewBag.JobValidationError != null)
             {
@@ -40,8 +40,14 @@
             </p>
             <p><input type="submit" /></p>
             <input type="hidden" id="q" value="@q" />
-            <input type="hidden" id="field" value="@field" />
-            <input type="hidden" id="collection" value="@collection" />
+            @foreach (var field in fields)
+            {
+                <input type="hidden" id="field" value="@field" />
+            }
+            @foreach (var collection in collections)
+            {
+                <input type="hidden" id="collection" value="@collection" />
+            }
             <input type="hidden" id="id" value="@ViewBag.CrawlId" />
         </div>
     </form>

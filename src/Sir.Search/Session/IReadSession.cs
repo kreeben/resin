@@ -7,6 +7,10 @@ namespace Sir.Search
     {
         ReadResult Read(IQuery query, int skip, int take);
         IList<IDictionary<string, object>> ReadDocs(
-            IEnumerable<KeyValuePair<(ulong collectionId, long docId), double>> docs, int scoreDivider);
+            IEnumerable<KeyValuePair<(
+                ulong collectionId, long docId), double>> docs, 
+                int scoreDivider,
+                HashSet<string> select
+            );
     }
 }

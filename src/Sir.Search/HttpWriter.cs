@@ -35,7 +35,7 @@ namespace Sir.Search
                 foreach (var collection in collections)
                 {
                     _sessionFactory.Write(
-                        new Job(
+                        new WriteJob(
                             collection.ToHash(), 
                             documents, 
                             model,

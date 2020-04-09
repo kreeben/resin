@@ -1,5 +1,7 @@
 ﻿@{
-    var col = Context.Request.Query.ContainsKey("collection") ? Context.Request.Query["collection"].ToString() : "cc_wat";
+    var collections = Context.Request.Query.ContainsKey("collection")
+        ? Context.Request.Query["collection"].ToArray()
+        : new string[] { "cc_wat" };
     var query = Context.Request.Query["q"].ToString();
     var knownFields = Context.Request.Query["field"].ToArray()
                     .SelectMany(x => x.Split(',', StringSplitOptions.RemoveEmptyEntries))
@@ -20,35 +22,40 @@
 
 @using (Html.BeginRouteForm("default", new { controller = "Search" }, FormMethod.Get))
 {
-    <fieldset class="search-fields">
-        <legend>
-            @if (col == "cc_wat")
-            {
-            <span>
-                Search <a href="https://commoncrawl.org/the-data/get-started/#WAT-Format">WAT</a> meta-data enriched with 
-                <a href="https://commoncrawl.org/the-data/get-started/#WET-Format">WET</a> content from 
-                <a href="https://commoncrawl.org/">Common Crawl's</a> 
-                <a href="@ViewBag.CCTargetUrl">@ViewBag.CCTargetName crawl</a>.
-            </span>
-            }
-            else
-            {
-            <span>Search @col</span>;
-            }
-        </legend>
+    @if (collections.Contains("cc_wat"))
+    {
+        <fieldset class="search-fields">
+            <legend>
+                <span>
+                    Search <a href="https://commoncrawl.org/the-data/get-started/#WAT-Format">WAT</a> meta-data enriched with
+                    <a href="https://commoncrawl.org/the-data/get-started/#WET-Format">WET</a> content from
+                    <a href="https://commoncrawl.org/">Common Crawl's</a>
+                    <a href="@ViewBag.CCTargetUrl">@ViewBag.CCTargetName crawl</a>.
+                </span>
+            </legend>
 
-        @if (col == "cc_wat")
-        {
             <label><input type="checkbox" name="field" id="title" value="title" @(titleSelected ? "checked" : "") />title</label>
             <label><input type="checkbox" name="field" id="description" value="description" @(descriptionSelected ? "checked" : "") />description</label>
             <label><input type="checkbox" name="field" id="scheme" value="scheme" @(schemeSelected ? "checked" : "") />scheme</label>
             <label><input type="checkbox" name="field" id="host" value="host" @(hostSelected ? "checked" : "") />host</label>
             <label><input type="checkbox" name="field" id="path" value="path" @(pathSelected ? "checked" : "") />path</label>
             <label><input type="checkbox" name="field" id="query" value="query" @(querySelected ? "checked" : "") />query</label>
-        }
+            <label><input type="checkbox" name="field" id="url" value="url" @(urlSelected ? "checked" : "") />url</label>
+        </fieldset>
+    }
+    else
+    {
+        <fieldset class="search-fields">
+            <legend>
+                <span>
+                    Search
+                </span>
+            </legend>
 
-        <label><input type="checkbox" name="field" id="url" value="url" @(urlSelected ? "checked" : "") />url</label>
-    </fieldset>
+            <label><input type="checkbox" name="field" id="title" value="title" @(titleSelected ? "checked" : "") />title</label>
+            <label><input type="checkbox" name="field" id="description" value="description" @(descriptionSelected ? "checked" : "") />description</label>
+        </fieldset>
+    }
     <div class="input-wrapper">
         <div class="q">
             <input type="text" id="q" name="q" class="q" placeholder="Ask anything." value="@query" />
@@ -60,5 +67,11 @@
     <div style="clear:both;"></div>
     <input type="hidden" value="0" name="skip" id="skip" />
     <input type="hidden" value="100" name="take" id="take" />
-    <input type="hidden" value="@col" name="collection" id="collection" />
+    @foreach (var collection in collections)
+    {
+        <input type="hidden" value="@collection" name="collection" id="collection" />
+    }
+    <input type="hidden" value="title" name="select" id="select" />
+    <input type="hidden" value="description" name="select" id="select" />
+    <input type="hidden" value="url" name="select" id="select" />
 }

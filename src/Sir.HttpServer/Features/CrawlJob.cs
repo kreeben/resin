@@ -60,32 +60,41 @@ namespace Sir.HttpServer.Features
 
         private void FetchWetFile()
         {
-            var orignalQuery = _queryParser.Parse(Collection, Q, Field, and: And, or: Or);
+            var orignalQuery = _queryParser.Parse(
+                Collections, 
+                Q, 
+                Fields, 
+                new string[] {"filename"},
+                and: And, 
+                or: Or);
 
             using (var readSession = _sessionFactory.CreateReadSession())
             {
                 var originalResult = readSession.Read(orignalQuery, 0, int.MaxValue).Docs
                     .ToDictionary(x => (long)x["___docid"]);
 
-                var wetFiles = new SortedList<string, object>();
+                var wetFileIds = new SortedList<string, object>();
                 ReadResult wetRecords = null;
                 var wetCollectionId = "cc_wet".ToHash();
 
                 foreach (var doc in originalResult.Values)
                 {
-                    var wetFileName = ((string)doc["filename"]).Replace("/warc", "/wet").Replace(".gz", ".wet.gz");
+                    var wetFileId = ((string)doc["filename"]).Replace("/warc", "/wet").Replace(".gz", ".wet.gz");
 
-                    wetFiles.TryAdd(wetFileName, null);
+                    wetFileIds.TryAdd(wetFileId, null);
                 }
 
                 using (var client = new WebClient())
                 {
-                    foreach (var warcId in wetFiles.Keys)
+                    foreach (var warcId in wetFileIds.Keys)
                     {
                         var wetQuery = _queryParser.Parse(
-                            new string[] { "cc_wet" },
-                            warcId,
-                            new string[] { "warcid" }, and: true, or: false);
+                            collections: new string[] { "cc_wet" },
+                            q: warcId,
+                            fields: new string[] { "warcid" }, 
+                            select: new string[] { "warcid" },
+                            and: true, 
+                            or: false);
 
                         if (wetQuery != null)
                         {
@@ -110,7 +119,7 @@ namespace Sir.HttpServer.Features
 
                             var time = Stopwatch.StartNew();
 
-                            var writeJob = new Job(
+                            var writeJob = new WriteJob(
                                 wetCollectionId,
                                 ReadWetFile(localFileName, warcId),
                                 _model,
@@ -122,9 +131,12 @@ namespace Sir.HttpServer.Features
                             _logger.LogInformation($"wet file write job took {time.Elapsed}");
 
                             wetQuery = _queryParser.Parse(
-                                new string[] { "cc_wet" },
-                                warcId,
-                                new string[] { "warcid" }, and: true, or: false);
+                                collections: new string[] { "cc_wet" },
+                                q: warcId,
+                                fields: new string[] { "warcid" }, 
+                                select: new string[] {"title"},
+                                and: true, 
+                                or: false);
 
                             wetRecords = readSession.Read(wetQuery, 0, 1);
                         }
