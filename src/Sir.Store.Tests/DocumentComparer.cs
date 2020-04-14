@@ -6,7 +6,7 @@ namespace Sir.Search.Tests
     {
         public bool Equals(IDictionary<string, object> x, IDictionary<string, object> y)
         {
-            return (long)x["___docid"] == (long)y["___docid"];
+            return (long)x[SystemFields.DocumentId] == (long)y[SystemFields.DocumentId];
         }
 
         public int GetHashCode(IDictionary<string, object> obj)

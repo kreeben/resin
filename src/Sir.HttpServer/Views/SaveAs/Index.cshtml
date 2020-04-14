@@ -5,7 +5,7 @@
     var searchLink = $"{Context.Request.Path.Value.ToLower().Replace("/saveas", "/search")}{Context.Request.QueryString}";
     var collections = ViewBag.Collection ?? Context.Request.Query["collection"].ToArray();
     var q = (ViewBag.Q ?? Context.Request.Query["q"]).ToString();
-    var fields = (ViewBag.Field ?? Context.Request.Query["field"]).ToArray();
+    var fields = ViewBag.Field ?? Context.Request.Query["field"].ToArray();
     var job = (string)ViewBag.Job;
 } 
     <form action="/saveas/@Context.Request.QueryString" method="post">

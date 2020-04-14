@@ -13,7 +13,7 @@ namespace Sir.Search
     /// <summary>
     /// Read session targeting a single collection.
     /// </summary>
-    public class ReadSession : IDisposable, IReadSession
+    public class ReadSession : DocumentStreamSession, IDisposable, IReadSession
     {
         private readonly SessionFactory _sessionFactory;
         private readonly IConfigurationProvider _config;
@@ -28,7 +28,7 @@ namespace Sir.Search
             IConfigurationProvider config,
             IStringModel model,
             IPostingsReader postingsReader,
-            ILogger<ReadSession> logger)
+            ILogger<ReadSession> logger) : base(sessionFactory)
         {
             _sessionFactory = sessionFactory;
             _config = config;
@@ -131,10 +131,14 @@ namespace Sir.Search
             else
                 count = Math.Min(sortedByScore.Count - (index), take);
 
-            return new ScoredResult { SortedDocuments = sortedByScore.GetRange(index, count), Total = sortedByScore.Count };
+            return new ScoredResult 
+            { 
+                SortedDocuments = sortedByScore.GetRange(index, count), 
+                Total = sortedByScore.Count 
+            };
         }
 
-        public IList<IDictionary<string, object>> ReadDocs(
+        private IList<IDictionary<string, object>> ReadDocs(
             IEnumerable<KeyValuePair<(ulong collectionId, long docId), double>> docIds,
             int scoreDivider,
             HashSet<string> select)
@@ -142,31 +146,9 @@ namespace Sir.Search
             var result = new List<IDictionary<string, object>>();
             var timer = Stopwatch.StartNew();
 
-            foreach (var dkvp in docIds)
+            foreach (var d in docIds)
             {
-                var streamReader = GetOrCreateDocumentReader(dkvp.Key.collectionId);
-                var docInfo = streamReader.GetDocumentAddress(dkvp.Key.docId);
-                var docMap = streamReader.GetDocumentMap(docInfo.offset, docInfo.length);
-                var doc = new Dictionary<string, object>();
-
-                for (int i = 0; i < docMap.Count; i++)
-                {
-                    var kvp = docMap[i];
-                    var kInfo = streamReader.GetAddressOfKey(kvp.keyId);
-                    var key = (string)streamReader.GetKey(kInfo.offset, kInfo.len, kInfo.dataType);
-
-                    if (select.Contains(key))
-                    {
-                        var vInfo = streamReader.GetAddressOfValue(kvp.valId);
-                        var val = streamReader.GetValue(vInfo.offset, vInfo.len, vInfo.dataType);
-
-                        doc[key] = val;
-                    }
-                }
-
-                doc["___docid"] = dkvp.Key.docId;
-                doc["___collectionid"] = dkvp.Key.collectionId;
-                doc["___score"] = (dkvp.Value / scoreDivider) * 100;
+                var doc = ReadDoc(d.Key, select, (d.Value/scoreDivider)*100);
 
                 result.Add(doc);
             }
@@ -190,20 +172,9 @@ namespace Sir.Search
                     _logger);
         }
 
-        public DocumentReader  GetOrCreateDocumentReader(ulong collectionId)
+        public override void Dispose()
         {
-            return _streamReaders.GetOrAdd(
-                collectionId,
-                new DocumentReader(collectionId, _sessionFactory)
-                );
-        }
-
-        public void Dispose()
-        {
-            foreach (var reader in _streamReaders.Values)
-            {
-                reader.Dispose();
-            }
+            base.Dispose();
 
             _postingsReader.Dispose();
         }

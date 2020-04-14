@@ -47,10 +47,10 @@ namespace Sir.HttpServer.Features
             try
             {
                 var query = _queryParser.Parse(
-                    Collections, 
-                    Q, 
-                    Fields, 
-                    new string[] {"title", "description"},
+                    collections: Collections, 
+                    q: Q, 
+                    fields: Fields, 
+                    select: new string[] {"title", "description"},
                     and: And, 
                     or: Or);
 
@@ -60,7 +60,7 @@ namespace Sir.HttpServer.Features
                 {
                     var documents = readSession.Read(query, 0, int.MaxValue).Docs;
 
-                    _sessionFactory.IndexOnly(
+                    _sessionFactory.SaveAs(
                             targetCollectionId,
                             documents,
                             _indexFieldNames);

@@ -135,14 +135,17 @@ namespace Sir.Search
             _pageInfo.Clear();
         }
 
-        public void IndexOnly(ulong targetCollectionId, IEnumerable<IDictionary<string, object>> documents, HashSet<string> indexFieldNames)
+        public void SaveAs(
+            ulong targetCollectionId, 
+            IEnumerable<IDictionary<string, object>> documents,
+            HashSet<string> indexFieldNames)
         {
             using (var indexSession = CreateIndexSession(targetCollectionId))
             {
                 foreach (var document in documents)
                 {
-                    var docId = (long)document["___docid"];
-                    var sourceCollectionId = (ulong)document["___collectionid"];
+                    var docId = (long)document[SystemFields.DocumentId];
+                    var sourceCollectionId = (ulong)document[SystemFields.CollectionId];
 
                     //Parallel.ForEach(document, kv =>
                     foreach (var kv in document)
@@ -231,7 +234,7 @@ namespace Sir.Search
             int reportSize = 1000
             )
         {
-            foreach (var group in documents.GroupBy(d => (string)d["___collectionid"]))
+            foreach (var group in documents.GroupBy(d => (string)d[SystemFields.CollectionId]))
             {
                 var collectionId = group.Key.ToHash();
 
@@ -434,9 +437,9 @@ namespace Sir.Search
             }
         }
 
-        public DocumentStreamSession CreateDocumentStreamSession(ulong collectionId)
+        public DocumentStreamSession CreateDocumentStreamSession()
         {
-            return new DocumentStreamSession(new DocumentReader(collectionId, this));
+            return new DocumentStreamSession(this);
         }
 
         public WriteSession CreateWriteSession(ulong collectionId)

@@ -43,16 +43,25 @@ namespace Sir.Search
             {
                 var val = document[key];
 
-                if ((val == null) || !storedFieldNames.Contains(key))
+                if ((val != null) && (storedFieldNames.Contains(key) || key.StartsWith("___")))
+                {
+                    Write(key, val, docMap);
+                }
+                else
                 {
                     continue;
                 }
-
-                Write(key, val, docMap);
             }
 
-            Write("___created", DateTime.Now.ToBinary(), docMap);
-            Write("___collectionid", _collectionId, docMap);
+            object collectionId;
+
+            if (!document.TryGetValue(SystemFields.CollectionId, out collectionId))
+            {
+                collectionId = _collectionId;
+            }
+
+            Write(SystemFields.Created, DateTime.Now.ToBinary(), docMap);
+            Write(SystemFields.CollectionId, collectionId, docMap);
 
             var docMeta = _streamWriter.PutDocumentMap(docMap);
             var docId = _streamWriter.IncrementDocId();

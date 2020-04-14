@@ -27,7 +27,7 @@
                 var uri = new Uri(prefix + url);
                 var host = uri.Host.ToString();
                 var title = item.Document.ContainsKey("title") ? item.Document["title"].ToString() : "Unknown title";
-                var score = (double)item.Document["___score"];
+                var score = (double)item.Document[Sir.Search.SystemFields.Score];
                 var warcFilename = item.Document.ContainsKey("filename") ? item.Document["filename"].ToString() : "";
                 var wetFileName = warcFilename.Replace("/warc", "/wet").Replace(".gz", ".wet.gz");
                 var wetUrlFileName = "https://commoncrawl.s3.amazonaws.com/" + Html.Raw(wetFileName);

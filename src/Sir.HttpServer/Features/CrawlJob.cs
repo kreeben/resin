@@ -71,7 +71,7 @@ namespace Sir.HttpServer.Features
             using (var readSession = _sessionFactory.CreateReadSession())
             {
                 var originalResult = readSession.Read(orignalQuery, 0, int.MaxValue).Docs
-                    .ToDictionary(x => (long)x["___docid"]);
+                    .ToDictionary(x => (long)x[SystemFields.DocumentId]);
 
                 var wetFileIds = new SortedList<string, object>();
                 ReadResult wetRecords = null;

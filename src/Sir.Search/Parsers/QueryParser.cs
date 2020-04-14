@@ -17,7 +17,13 @@ namespace Sir.Search
             _log = _sessionFactory.GetLogger<QueryParser>();
         }
 
-        public IQuery Parse(string[] collections, string q, string[] fields, IEnumerable<string> select, bool and, bool or)
+        public IQuery Parse(
+            string[] collections,
+            string q, 
+            string[] fields, 
+            IEnumerable<string> select, 
+            bool and, 
+            bool or)
         {
             var root = new Dictionary<string, object>();
             var cursor = root;
