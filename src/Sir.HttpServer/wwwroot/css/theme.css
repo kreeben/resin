@@ -36,12 +36,14 @@ a.result-link:visited {
 }
 
 a.warc-link {
-    color: black;
+    color: gray;
+    text-decoration: none;
     padding-right: 3px;
 }
 
 a.warc-link:visited {
-    color: black;
+    color: gray;
+    text-decoration: none;
 }
 
 a:visited h1 {
@@ -292,7 +294,7 @@ div.buttons {
     margin-left: 0px;
     margin-bottom: 0px;
     margin-top: 15px;
-    font-size: 9pt;
+    font-size: 10pt;
     color: black;
 }
 
