@@ -114,8 +114,7 @@ namespace Sir.Search
             while (operation != null)
             {
                 string[] collections = null;
-                string key = null;
-                string value = null;
+                var kvps = new List<(string key, string value)>();
                 dynamic next = null;
 
                 foreach (var kvp in operation)
@@ -145,14 +144,13 @@ namespace Sir.Search
                     }
                     else
                     {
-                        key = kvp.Key;
-                        value = (string)kvp.Value;
+                        kvps.Add((kvp.Key, kvp.Value));
                     }
                 }
 
                 operation = next;
 
-                if (value == null)
+                if (kvps.Count == 0)
                 {
                     continue;
                 }
@@ -160,24 +158,27 @@ namespace Sir.Search
                 {
                     foreach (var collection in collections ?? parentCollections)
                     {
-                        var terms = ParseTerms(collection, key, value, and, or, not);
-
-                        if (terms.Count == 0)
+                        foreach (var kvp in kvps)
                         {
-                            continue;
-                        }
+                            var terms = ParseTerms(collection, kvp.key, kvp.value, and, or, not);
 
-                        var query = new Query(terms, select, and, or, not);
+                            if (terms.Count == 0)
+                            {
+                                continue;
+                            }
 
-                        if (root == null)
-                        {
-                            root = cursor = query;
-                        }
-                        else
-                        {
-                            cursor.Or = query;
+                            var query = new Query(terms, select, and, or, not);
 
-                            cursor = query;
+                            if (root == null)
+                            {
+                                root = cursor = query;
+                            }
+                            else
+                            {
+                                cursor.Or = query;
+
+                                cursor = query;
+                            }
                         }
                     }
                 }
