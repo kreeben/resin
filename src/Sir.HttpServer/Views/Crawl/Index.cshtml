@@ -3,10 +3,12 @@
 }
 @{ 
     var searchLink = $"{Context.Request.Path.Value.ToLower().Replace("/crawl", "/search")}{Context.Request.QueryString}";
-    var collections = (ViewBag.Collection ?? Context.Request.Query["collection"]).ToArray();
+    var collections = ViewBag.Collection ?? Context.Request.Query["collection"].ToArray();
     var q = (ViewBag.Q ?? Context.Request.Query["q"]).ToString();
     var fields = (ViewBag.Field ?? Context.Request.Query["field"]).ToString();
     var job = (string)ViewBag.Job;
+
+    ViewBag.Title = $"Enrich - {q} - Crawl Crawler";
 } 
     <form action="/crawl/@Context.Request.QueryString" method="post">
         <div class="blog-wrapper">

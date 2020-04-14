@@ -1,12 +1,14 @@
 ﻿@using Sir.HttpServer;
 @{
     Layout = "~/Views/_Layout.cshtml";
-     ViewBag.Title = "Download WET";
 }
 @{ 
     var query = Context.Request.Query.ToStringExcept("fileName");
     var searchLink = $"{Context.Request.Path.Value.ToLower().Replace("/wet", "/search")}?{query}";
     var fileName = Context.Request.Query["fileName"].First().ToString();
+    var q = (ViewBag.Q ?? Context.Request.Query["q"]).ToString();
+
+    ViewBag.Title = $"Download WET - {q} - Crawl Crawler";
 }
     <form action="/crawl/" method="get">
         <div class="blog-wrapper">

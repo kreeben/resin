@@ -7,6 +7,8 @@
     var q = (ViewBag.Q ?? Context.Request.Query["q"]).ToString();
     var fields = ViewBag.Field ?? Context.Request.Query["field"].ToArray();
     var job = (string)ViewBag.Job;
+
+    ViewBag.Title = $"Save as - {q} - Crawl Crawler";
 } 
     <form action="/saveas/@Context.Request.QueryString" method="post">
         <div class="blog-wrapper">
