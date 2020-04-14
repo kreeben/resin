@@ -63,9 +63,9 @@ namespace Sir.Search
 
             timer.Restart();
 
-            var scoredResult = new Dictionary<(ulong, long), double>();
+            IDictionary<(ulong, long), double> scoredResult = new Dictionary<(ulong, long), double>();
 
-            _postingsReader.Reduce(query, scoredResult);
+            _postingsReader.Reduce(query, ref scoredResult);
 
             _logger.LogInformation("reducing took {0}", timer.Elapsed);
 

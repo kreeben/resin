@@ -6,11 +6,11 @@ namespace Sir.Search
     {
         protected abstract IList<(ulong, long)> Read(ulong collectionId, IList<long> postingsOffsets);
 
-        public void Reduce(IQuery mappedQuery, IDictionary<(ulong, long), double> result)
+        public void Reduce(IQuery query, ref IDictionary<(ulong, long), double> result)
         {
             var queryResult = new Dictionary<(ulong, long), double>();
 
-            foreach (var term in mappedQuery.Terms)
+            foreach (var term in query.Terms)
             {
                 if (term.PostingsOffsets == null)
                     continue;
@@ -84,7 +84,7 @@ namespace Sir.Search
                 }
             }
 
-            if (mappedQuery.IsIntersection)
+            if (query.IsIntersection)
             {
                 if (result.Count == 0)
                 {
@@ -111,7 +111,7 @@ namespace Sir.Search
                 }
 
             }
-            else if (mappedQuery.IsUnion)
+            else if (query.IsUnion)
             {
                 if (result.Count == 0)
                 {
@@ -148,17 +148,17 @@ namespace Sir.Search
                 }
             }
 
-            if (mappedQuery.And != null)
+            if (query.And != null)
             {
-                Reduce(mappedQuery.And, result);
+                Reduce(query.And, ref result);
             }
-            if (mappedQuery.Or != null)
+            if (query.Or != null)
             {
-                Reduce(mappedQuery.Or, result);
+                Reduce(query.Or, ref result);
             }
-            if (mappedQuery.Not != null)
+            if (query.Not != null)
             {
-                Reduce(mappedQuery.Not, result);
+                Reduce(query.Not, ref result);
             }
         }
     }
