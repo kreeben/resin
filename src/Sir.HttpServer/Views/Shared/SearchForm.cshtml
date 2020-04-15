@@ -1,7 +1,7 @@
 ﻿@{
     var collections = Context.Request.Query.ContainsKey("collection")
-        ? Context.Request.Query["collection"].ToArray()
-        : new string[] { "cc_wat" };
+        ? Context.Request.Query["collection"].ToArray().SelectMany(s=>s.Split(',', StringSplitOptions.RemoveEmptyEntries))
+        : (string[])ViewBag.DefaultCollection;
     var query = Context.Request.Query["q"].ToString();
     var knownFields = Context.Request.Query["field"].ToArray()
                     .SelectMany(x => x.Split(',', StringSplitOptions.RemoveEmptyEntries))
@@ -22,7 +22,7 @@
 
 @using (Html.BeginRouteForm("default", new { controller = "Search" }, FormMethod.Get))
 {
-    @if (collections.Contains("cc_wat"))
+    @if (collections.Contains("cc_wat") && collections.Contains("cc_wet"))
     {
         <fieldset class="search-fields">
             <legend>
