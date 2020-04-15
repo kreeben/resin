@@ -37,6 +37,7 @@ namespace Sir.HttpServer.Controllers
             string[] select,
             string q,
             string target,
+            string truncate,
             string and, 
             string or,
             int skip,
@@ -66,21 +67,23 @@ namespace Sir.HttpServer.Controllers
                 return View("Index");
             }
 
-            new SaveAsJob(
-                sessionFactory: SessionFactory,
-                queryParser: _queryParser,
-                model: _model,
-                logger: SessionFactory.LoggerFactory.CreateLogger<SaveAsJob>(),
-                target: target,
-                collections: collection,
-                fields: field,
-                select: select,
-                q: q,
-                and: and != null,
-                or: or != null,
-                skip: skip,
-                take: take)
-                    .Execute();
+            new SaveAsJob
+                (
+                    sessionFactory: SessionFactory,
+                    queryParser: _queryParser,
+                    model: _model,
+                    logger: SessionFactory.LoggerFactory.CreateLogger<SaveAsJob>(),
+                    target: target,
+                    collections: collection,
+                    fields: field,
+                    select: select,
+                    q: q,
+                    and: and != null,
+                    or: or != null,
+                    skip: skip,
+                    take: take,
+                    truncate != null
+                ).Execute();
 
             ViewBag.Target = target;
 

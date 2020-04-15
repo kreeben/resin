@@ -14,20 +14,24 @@
         <div class="blog-wrapper">
             <a href="@searchLink">&#8592; Back to result</a>
             <h2>Save search result</h2>
-            <p>You may save this search result in a new collection or append to one that you know by name.</p>
             <p>
-                Name your collection carefully, if you are creating a new one. 
-                You will need to reference it by name anytime you wish to interact with it.
+                You may save this search result as a new collection or append to one that you know by name. 
+                Select "Truncate" to delete all data from the collection before writing to it.
             </p>
             @if (ViewBag.TargetCollectionValidationError != null)
             {
                 <div class="validation-error">@ViewBag.TargetCollectionValidationError</div>
             }
-            <p><input type="text" placeholder="Collection name" name="target" /></p>
             @if (ViewBag.JobValidationError != null)
             {
                 <div class="validation-error">@ViewBag.JobValidationError</div>
             }
+            <p>
+                <input type="text" placeholder="Collection name" name="target" />
+            </p>
+            <p>
+                <label><input type="checkbox" id="truncate" name="truncate" value="truncate" /> Truncate</label>
+            </p>
             <p><input type="submit" /></p>
             <input type="hidden" id="q" value="@q" />
             @foreach (var field in fields)

@@ -100,7 +100,7 @@ namespace Sir.Search
 
             _pageInfo.Clear();
 
-            _keys.Clear();
+            _keys.Remove(collectionId, out _);
 
             _logger.LogInformation($"truncated collection {collectionId} ({count} files)");
         }

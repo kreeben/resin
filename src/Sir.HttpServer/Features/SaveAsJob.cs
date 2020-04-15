@@ -23,6 +23,7 @@ namespace Sir.HttpServer.Features
         private readonly int _skip;
         private readonly int _take;
         private readonly string[] _select;
+        private readonly bool _truncate;
 
         public SaveAsJob(
             SessionFactory sessionFactory,
@@ -37,7 +38,8 @@ namespace Sir.HttpServer.Features
             bool and, 
             bool or,
             int skip,
-            int take) 
+            int take,
+            bool truncate) 
             : base(collections, fields, q, and, or)
         {
             _indexFieldNames = new HashSet<string>(select);
@@ -49,6 +51,7 @@ namespace Sir.HttpServer.Features
             _skip = skip;
             _take = take;
             _select = select;
+            _truncate = truncate;
         }
 
         public override void Execute()
@@ -76,6 +79,11 @@ namespace Sir.HttpServer.Features
                 foreach (var d in documents)
                 {
                     d[SystemFields.CollectionId] = c;
+                }
+
+                if (_truncate)
+                {
+                    _sessionFactory.Truncate(targetCollectionId);
                 }
                 
                 using (var documentWriter = new DocumentWriter(targetCollectionId, _sessionFactory))
