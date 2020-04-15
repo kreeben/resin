@@ -10,15 +10,14 @@
         public bool And { get; }
         public bool Or { get; }
 
-        public BaseJob(string[] collection, string[] field, string q, bool and, bool or)
+        public BaseJob(string[] collections, string[] fields, string q, bool and, bool or)
         {
-            Collections = collection;
-            Fields = field;
+            Collections = collections;
+            Fields = fields;
             Q = q;
             And = and;
             Or = or;
         }
-
 
         public override string ToString()
         {

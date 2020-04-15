@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Sir.HttpServer.Features;
 using Sir.Search;
+using System.Collections.Generic;
 
 namespace Sir.HttpServer.Controllers
 {
@@ -10,6 +11,7 @@ namespace Sir.HttpServer.Controllers
     {
         private readonly IStringModel _model;
         private readonly QueryParser _queryParser;
+        private static readonly HashSet<string> _reservedCollections = new HashSet<string> { "cc_wat", "cc_wet" };
 
         public SaveAsController(
             IConfigurationProvider config,
@@ -32,10 +34,13 @@ namespace Sir.HttpServer.Controllers
         public IActionResult Post(
             string[] collection, 
             string[] field, 
+            string[] select,
             string q,
             string target,
             string and, 
-            string or)
+            string or,
+            int skip,
+            int take)
         {
             bool isValid = true;
             ViewBag.JobValidationError = null;
@@ -44,6 +49,11 @@ namespace Sir.HttpServer.Controllers
             if (string.IsNullOrWhiteSpace(target))
             {
                 ViewBag.JobValidationError = "Please choose a collection name.";
+                isValid = false;
+            }
+            else if (_reservedCollections.Contains(target))
+            {
+                ViewBag.JobValidationError = "That collection is read-only. Please choose a valid collection name.";
                 isValid = false;
             }
 
@@ -57,19 +67,24 @@ namespace Sir.HttpServer.Controllers
             }
 
             new SaveAsJob(
-                SessionFactory,
-                _queryParser,
-                _model,
-                SessionFactory.LoggerFactory.CreateLogger<SaveAsJob>(),
-                new System.Collections.Generic.HashSet<string>(field),
-                target,
-                collection,
-                field,
-                q,
-                and != null,
-                or != null).Execute();
+                sessionFactory: SessionFactory,
+                queryParser: _queryParser,
+                model: _model,
+                logger: SessionFactory.LoggerFactory.CreateLogger<SaveAsJob>(),
+                target: target,
+                collections: collection,
+                fields: field,
+                select: select,
+                q: q,
+                and: and != null,
+                or: or != null,
+                skip: skip,
+                take: take)
+                    .Execute();
 
-            return View(target);
+            ViewBag.Target = target;
+
+            return View("Saved");
         }
     }
 }

@@ -138,27 +138,14 @@ namespace Sir.Search
         public void SaveAs(
             ulong targetCollectionId, 
             IEnumerable<IDictionary<string, object>> documents,
-            HashSet<string> indexFieldNames)
+            HashSet<string> indexFieldNames,
+            HashSet<string> storeFieldNames,
+            IStringModel model,
+            int reportSize = 1000)
         {
-            using (var indexSession = CreateIndexSession(targetCollectionId))
-            {
-                foreach (var document in documents)
-                {
-                    var docId = (long)document[SystemFields.DocumentId];
-                    var sourceCollectionId = (ulong)document[SystemFields.CollectionId];
+            var job = new WriteJob(targetCollectionId, documents, model, storeFieldNames, indexFieldNames);
 
-                    //Parallel.ForEach(document, kv =>
-                    foreach (var kv in document)
-                    {
-                        if (indexFieldNames.Contains(kv.Key))
-                        {
-                            var keyId = GetKeyId(sourceCollectionId, kv.Key.ToHash());
-
-                            indexSession.Put(docId, keyId, kv.Value.ToString());
-                        }
-                    }//);
-                }
-            }
+            Write(job, reportSize);
         }
 
         public void Write(WriteJob job, WriteSession writeSession, IndexSession indexSession, int reportSize = 1000)

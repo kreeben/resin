@@ -1,0 +1,18 @@
+﻿@{
+    Layout = "~/Views/_Layout.cshtml";
+}
+@{
+    var searchLink = $"{Context.Request.Path.Value.ToLower().Replace("/saveas", "/search")}{Context.Request.QueryString}";
+    var collections = ViewBag.Collection ?? Context.Request.Query["collection"].ToArray();
+    var q = (ViewBag.Q ?? Context.Request.Query["q"]).ToString();
+    var fields = ViewBag.Field ?? Context.Request.Query["field"].ToArray();
+    var job = (string)ViewBag.Job;
+
+    ViewBag.Title = $"Saved - {ViewBag.Target} - Crawl Crawler";
+}
+    <div class="blog-wrapper">
+        <h2>Search result was appended to @ViewBag.Target</h2>
+        <p>
+            Search <a href="/?collection=@ViewBag.Target">xxx</a>.
+        </p>
+    </div>

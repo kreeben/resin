@@ -25,16 +25,6 @@ namespace Sir.Search
             _streamWriter.Dispose();
         }
 
-        public long EnsureKeyExists(string key)
-        {
-            return _streamWriter.EnsureKeyExists(key);
-        }
-
-        /// <summary>
-        /// Fields prefixed with "_" will not be indexed.
-        /// Fields prefixed with "__" will not be stored.
-        /// </summary>
-        /// <returns>Document ID</returns>
         public long Write(IDictionary<string, object> document, HashSet<string> storedFieldNames)
         {
             var docMap = new List<(long keyId, long valId)>();
@@ -43,7 +33,7 @@ namespace Sir.Search
             {
                 var val = document[key];
 
-                if ((val != null) && (storedFieldNames.Contains(key) || key.StartsWith("___")))
+                if (val != null && storedFieldNames.Contains(key))
                 {
                     Write(key, val, docMap);
                 }
@@ -58,6 +48,13 @@ namespace Sir.Search
             if (!document.TryGetValue(SystemFields.CollectionId, out collectionId))
             {
                 collectionId = _collectionId;
+            }
+
+            object sourceDocId;
+
+            if (document.TryGetValue(SystemFields.DocumentId, out sourceDocId))
+            {
+                Write(SystemFields.DocumentId, (long)sourceDocId, docMap);
             }
 
             Write(SystemFields.Created, DateTime.Now.ToBinary(), docMap);

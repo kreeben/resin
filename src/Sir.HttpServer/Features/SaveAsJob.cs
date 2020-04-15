@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using Sir.Document;
 using Sir.Search;
 
 namespace Sir.HttpServer.Features
@@ -19,27 +20,35 @@ namespace Sir.HttpServer.Features
         private readonly IStringModel _model;
         private readonly HashSet<string> _indexFieldNames;
         private readonly string _target;
+        private readonly int _skip;
+        private readonly int _take;
+        private readonly string[] _select;
 
         public SaveAsJob(
             SessionFactory sessionFactory,
             QueryParser queryParser,
             IStringModel model,
             ILogger<SaveAsJob> logger,
-            HashSet<string> indexFieldNames,
             string target,
-            string[] collection, 
-            string[] field, 
+            string[] collections,
+            string[] fields,
+            string[] select,
             string q, 
             bool and, 
-            bool or) 
-            : base(collection, field, q, and, or)
+            bool or,
+            int skip,
+            int take) 
+            : base(collections, fields, q, and, or)
         {
-            _indexFieldNames = indexFieldNames;
+            _indexFieldNames = new HashSet<string>(select);
             _sessionFactory = sessionFactory;
             _queryParser = queryParser;
             _logger = logger;
             _model = model;
             _target = target;
+            _skip = skip;
+            _take = take;
+            _select = select;
         }
 
         public override void Execute()
@@ -50,28 +59,44 @@ namespace Sir.HttpServer.Features
                     collections: Collections, 
                     q: Q, 
                     fields: Fields, 
-                    select: new string[] {"title", "description"},
+                    select: _select,
                     and: And, 
                     or: Or);
 
                 var targetCollectionId = _target.ToHash();
+                IEnumerable<IDictionary<string, object>> documents;
 
                 using (var readSession = _sessionFactory.CreateReadSession())
                 {
-                    var documents = readSession.Read(query, 0, int.MaxValue).Docs;
-
-                    _sessionFactory.SaveAs(
-                            targetCollectionId,
-                            documents,
-                            _indexFieldNames);
+                    documents = readSession.Read(query, _skip, _take).Docs;
                 }
 
+                //TODO: Remove this when cc_wat is rebuilt.
+                var c = "cc_wat".ToHash();
+                foreach (var d in documents)
+                {
+                    d[SystemFields.CollectionId] = c;
+                }
+                
+                using (var documentWriter = new DocumentWriter(targetCollectionId, _sessionFactory))
+                {
+                    foreach (var field in _indexFieldNames)
+                    {
+                        documentWriter.EnsureKeyExists(field);
+                    }
+                }
+
+                _sessionFactory.SaveAs(
+                        targetCollectionId,
+                        documents,
+                        _indexFieldNames,
+                        new HashSet<string>(),
+                        _model);
             }
             catch (Exception ex)
             {
                 _logger.LogError($"error processing {this} {ex}");
             }
         }
-
     }
 }

@@ -48,6 +48,7 @@ namespace Sir.Search
             var docMap = streamReader.GetDocumentMap(docInfo.offset, docInfo.length);
             var indexCollectionId = docId.collectionId;
             ulong? sourceCollectionId = null;
+            long? sourceDocId = null;
             var doc = new Dictionary<string, object>();
 
             for (int i = 0; i < docMap.Count; i++)
@@ -56,29 +57,32 @@ namespace Sir.Search
                 var kInfo = streamReader.GetAddressOfKey(kvp.keyId);
                 var key = (string)streamReader.GetKey(kInfo.offset, kInfo.len, kInfo.dataType);
 
-                if (key == SystemFields.CollectionId)
-                {
-                    var docCollectionId = (ulong)doc[SystemFields.CollectionId];
-
-                    if (docCollectionId != indexCollectionId)
-                    {
-                        sourceCollectionId = docCollectionId;
-                        break;
-                    }
-                }
-
                 if (key.StartsWith("___") || select.Contains(key))
                 {
                     var vInfo = streamReader.GetAddressOfValue(kvp.valId);
                     var val = streamReader.GetValue(vInfo.offset, vInfo.len, vInfo.dataType);
 
                     doc[key] = val;
+
+                    if (key == SystemFields.CollectionId)
+                    {
+                        var docCollectionId = (ulong)val;
+
+                        if (docCollectionId != indexCollectionId)
+                        {
+                            sourceCollectionId = docCollectionId;
+                        }
+                    }
+                    else if (key == SystemFields.DocumentId)
+                    {
+                        sourceDocId = (long)val;
+                    }
                 }
             }
 
             if (sourceCollectionId.HasValue)
             {
-                return ReadDoc((sourceCollectionId.Value, docId.docId), select, score);
+                return ReadDoc((sourceCollectionId.Value, sourceDocId.Value), select, score);
             }
 
             doc[SystemFields.DocumentId] = docId.docId;

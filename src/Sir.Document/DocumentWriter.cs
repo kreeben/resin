@@ -78,6 +78,8 @@ namespace Sir.Document
                         var keyInfo = PutKey(keyStr);
 
                         keyId = PutKeyInfo(keyInfo.offset, keyInfo.len, keyInfo.dataType);
+
+                        // store key mapping
                         _sessionFactory.RegisterKeyMapping(_collectionId, keyHash, keyId);
                     }
                 }

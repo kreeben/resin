@@ -24,7 +24,7 @@ namespace Sir.HttpServer.Controllers
 
         [HttpGet("/search/")]
         [HttpPost("/search/")]
-        public async Task<IActionResult> Index(string q, string collection)
+        public async Task<IActionResult> Index(string q)
         {
             if (string.IsNullOrWhiteSpace(q)) return View();
 
