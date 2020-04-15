@@ -66,8 +66,6 @@ namespace Sir.Search
             {
                 yield return new GraphInfo(ix.Key, ix.Value);
             }
-
-            yield break;
         }
 
         public void Flush()

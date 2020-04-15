@@ -22,12 +22,10 @@ namespace Sir.Search
 
         protected override IList<(ulong, long)> Read(ulong collectionId, IList<long> offsets)
         {
-            var collectionRef = _sessionFactory.GetCollectionReference(collectionId);
-
             var list = new List<(ulong, long)>();
 
             foreach (var postingsOffset in offsets)
-                GetPostingsFromStream(collectionRef, postingsOffset, list);
+                GetPostingsFromStream(collectionId, postingsOffset, list);
 
             return list;
         }

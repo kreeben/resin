@@ -35,13 +35,15 @@ namespace Sir.HttpServer.Controllers
 
         [HttpPost]
         public IActionResult Post(
-            string id, 
+            string crawlid, 
             string[] collection, 
             string[] field, 
             string q, 
             string job, 
             string and, 
-            string or)
+            string or,
+            int skip,
+            int take)
         {
             bool isValid = true;
             ViewBag.JobValidationError = null;
@@ -63,16 +65,23 @@ namespace Sir.HttpServer.Controllers
                 return View("Index");
             }
 
-            var jobType = job.ToLower();
-
             _queue.Enqueue(new CrawlJob(
                 SessionFactory,
                 _queryParser,
                 _model,
                 SessionFactory.LoggerFactory.CreateLogger<CrawlJob>(),
-                id, collection, field, q, job, and!=null, or!=null));
+                crawlid, 
+                collection, 
+                field, 
+                q, 
+                job, 
+                and!=null, 
+                or!=null,
+                skip,
+                take
+            ));
 
-            return View(jobType);
+            return RedirectToAction(job, "Status", new { crawlid });
         }
     }
 }

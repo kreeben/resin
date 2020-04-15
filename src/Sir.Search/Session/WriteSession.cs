@@ -68,9 +68,14 @@ namespace Sir.Search
             return docId;
         }
 
+        public long EnsureKeyExists(string key)
+        {
+            return _streamWriter.EnsureKeyExists(key);
+        }
+
         private void Write(string key, object val, IList<(long, long)> docMap)
         {
-            var keyId = _streamWriter.EnsureKeyExists(key);
+            var keyId = EnsureKeyExists(key);
 
             // store k/v
             var kvmap = _streamWriter.Put(keyId, val, out _);

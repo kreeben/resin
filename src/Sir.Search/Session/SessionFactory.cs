@@ -10,7 +10,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
-using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace Sir.Search
 {
@@ -19,7 +19,6 @@ namespace Sir.Search
     /// </summary>
     public class SessionFactory : IDisposable, ISessionFactory
     {
-        private ConcurrentDictionary<ulong, ulong> _collectionAliases;
         private ConcurrentDictionary<ulong, ConcurrentDictionary<ulong, long>> _keys;
         private readonly ConcurrentDictionary<string, IList<(long offset, long length)>> _pageInfo;
         private readonly ConcurrentDictionary<string, MemoryMappedFile> _mmfs;
@@ -48,7 +47,6 @@ namespace Sir.Search
             _logger = loggerFactory.CreateLogger<SessionFactory>();
             LoggerFactory = loggerFactory;
             _keys = LoadKeys();
-            _collectionAliases = LoadCollectionAliases();
 
             _logger.LogInformation($"initiated in {time.Elapsed}");
         }
@@ -156,44 +154,47 @@ namespace Sir.Search
 
             using (var indexer = new ProducerConsumerQueue<(long docId, IDictionary<string, object> document)>(1, document =>
             {
-                foreach (var kv in document.document)
+                Parallel.ForEach(document.document, kv =>
+                //foreach (var kv in document.document)
                 {
                     if (job.IndexedFieldNames.Contains(kv.Key) && kv.Value != null)
                     {
-                        var keyId = GetKeyId(job.CollectionId, kv.Key.ToHash());
+                        var keyId = writeSession.EnsureKeyExists(kv.Key);
 
                         indexSession.Put(document.docId, keyId, kv.Value.ToString());
                     }
-                }
-            }))
-            using (var writer = new ProducerConsumerQueue<IDictionary<string, object>>(1, document =>
-            {
-                var docId = writeSession.Write(document, job.StoredFieldNames);
-
-                indexer.Enqueue((docId, document));
+                });
             }))
             {
-                var batchNo = 0;
-
-                foreach (var batch in job.Documents.Batch(reportSize))
+                using (var writer = new ProducerConsumerQueue<IDictionary<string, object>>(1, document =>
                 {
-                    var batchTime = Stopwatch.StartNew();
+                    var docId = writeSession.Write(document, job.StoredFieldNames);
 
-                    foreach (var document in batch)
+                    indexer.Enqueue((docId, document));
+                }))
+                {
+                    var batchNo = 0;
+
+                    foreach (var batch in job.Documents.Batch(reportSize))
                     {
-                        writer.Enqueue(document);
+                        var batchTime = Stopwatch.StartNew();
+
+                        foreach (var document in batch)
+                        {
+                            writer.Enqueue(document);
+                        }
+
+                        var info = indexSession.GetIndexInfo();
+                        var t = batchTime.Elapsed.TotalMilliseconds;
+                        var docsPerSecond = (int)(reportSize / t * 1000);
+                        var debug = string.Join('\n', info.Info.Select(x => x.ToString()));
+
+                        _logger.LogInformation($"batch {++batchNo}\n{debug}\n{docsPerSecond} docs/s \n write queue {writer.Count}\n index queue {indexer.Count}");
                     }
-
-                    var info = indexSession.GetIndexInfo();
-                    var t = batchTime.Elapsed.TotalMilliseconds;
-                    var docsPerSecond = (int)(reportSize / t * 1000);
-                    var debug = string.Join('\n', info.Info.Select(x => x.ToString()));
-
-                    _logger.LogInformation($"batch {++batchNo}\n{debug}\n{docsPerSecond} docs/s \n write queue {writer.Count}\n index queue {indexer.Count}");
                 }
             }
 
-            _logger.LogInformation($"prcessed write job (collection {job.CollectionId}), time in total: {time.Elapsed}");
+            _logger.LogInformation($"processed write job (collection {job.CollectionId}), time in total: {time.Elapsed}");
         }
 
         public void Write(WriteJob job, int reportSize = 1000)
@@ -268,33 +269,6 @@ namespace Sir.Search
         public void Refresh()
         {
             _keys = LoadKeys();
-            _collectionAliases = LoadCollectionAliases();
-        }
-
-        public ConcurrentDictionary<ulong, ulong> LoadCollectionAliases()
-        {
-            var timer = Stopwatch.StartNew();
-            var aliases = new Dictionary<ulong, ulong>();
-            var fileName = Path.Combine(Dir, "aliases.cmap");
-
-            using (var stream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite))
-            {
-                Span<byte> buf = new byte[sizeof(ulong)*2];
-                var read = stream.Read(buf);
-
-                while (read > 0)
-                {
-                    var data = MemoryMarshal.Cast<byte, ulong>(buf);
-
-                    aliases.Add(data[0], data[1]);
-
-                    read = stream.Read(buf);
-                }
-            }
-
-            _logger.LogInformation($"loaded {aliases.Count} collection ID -> original collection ID mappings into memory in {timer.Elapsed}");
-
-            return new ConcurrentDictionary<ulong, ulong>(aliases);
         }
 
         public ConcurrentDictionary<ulong, ConcurrentDictionary<ulong, long>> LoadKeys()
@@ -353,47 +327,6 @@ namespace Sir.Search
                     stream.Write(BitConverter.GetBytes(keyHash), 0, sizeof(ulong));
                 }
             }
-        }
-
-        public void RegisterCollectionAlias(ulong targetCollectionId, ulong sourceCollectionId)
-        {
-            if (!_collectionAliases.ContainsKey(targetCollectionId))
-            {
-                _collectionAliases.GetOrAdd(targetCollectionId, sourceCollectionId);
-
-                var fileName = Path.Combine(Dir, "aliases.cmap");
-
-                using (var stream = CreateAppendStream(fileName))
-                {
-                    Span<ulong> buf = new ulong[2];
-
-                    buf[0] = targetCollectionId;
-                    buf[1] = sourceCollectionId;
-
-                    stream.Write(MemoryMarshal.Cast<ulong, byte>(buf));
-                }
-
-                var keyMapFileName = Path.Combine(Dir, $"{targetCollectionId}.kmap");
-
-                if (!File.Exists(keyMapFileName))
-                {
-                    var originalKeyMapFileName = Path.Combine(Dir, $"{sourceCollectionId}.kmap");
-
-                    File.Copy(originalKeyMapFileName, keyMapFileName);
-                }
-            }
-        }
-
-        public ulong GetCollectionReference(ulong collectionId)
-        {
-            ulong alias;
-
-            if (!_collectionAliases.TryGetValue(collectionId, out alias))
-            {
-                return collectionId;
-            }
-
-            return alias;
         }
 
         public long GetKeyId(ulong collectionId, ulong keyHash)

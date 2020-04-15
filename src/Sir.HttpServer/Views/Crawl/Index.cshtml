@@ -24,19 +24,19 @@
             }
             <p>
                 <label>
-                    <input type="radio" name="job" value="ccc" @Html.Raw((job == "cc") ? "checked" : "") />
+                    <input type="radio" name="job" value="CCC" @Html.Raw((job == "CCC") ? "checked" : "") />
                     Fetch and index web content from <strong>Common Crawl's</strong> December 2019 crawl.
                 </label>
             </p>
             <p>
                 <label>
-                    <input type="radio" disabled="disabled" name="job" value="wc" @Html.Raw((job == "wc") ? "checked" : "") />
+                    <input type="radio" disabled="disabled" name="job" value="wc" @Html.Raw((job == "WC") ? "checked" : "") />
                     Fetch and index up-to-date web content from <strong>WWW</strong> (coming soon).
                 </label>
             </p>
             <p>
                 <label>
-                    <input type="radio" disabled="disabled" name="job" value="rwc" @Html.Raw((job == "rwc") ? "checked" : "") />
+                    <input type="radio" disabled="disabled" name="job" value="rwc" @Html.Raw((job == "RWC") ? "checked" : "") />
                     Fetch and index up-to-date web content from <strong>WWW, recurringly, at a very reasonable fee</strong> (coming soon).
                 </label>
             </p>
@@ -50,6 +50,6 @@
             {
                 <input type="hidden" id="collection" value="@collection" />
             }
-            <input type="hidden" id="id" value="@ViewBag.CrawlId" />
+            <input type="hidden" name="crawlid" id="crawlid" value="@ViewBag.CrawlId" />
         </div>
     </form>

@@ -15,8 +15,6 @@ namespace Sir
         Stream CreateAsyncReadStream(string fileName, int bufferSize = 4096);
         Stream CreateReadStream(string fileName, int bufferSize = 4096, FileOptions fileOptions = FileOptions.RandomAccess);
         void RegisterKeyMapping(ulong collectionId, ulong keyHash, long keyId);
-        void RegisterCollectionAlias(ulong collectionId, ulong originalCollectionId);
-        ulong GetCollectionReference(ulong collectionId);
         bool TryGetKeyId(ulong collectionId, ulong keyHash, out long keyId);
         void Write(WriteJob job, int reportSize);
     }

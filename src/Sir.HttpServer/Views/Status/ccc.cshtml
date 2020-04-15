@@ -1,0 +1,16 @@
+﻿@{
+    Layout = "~/Views/_Layout.cshtml";
+    ViewBag.Title = "Crawl status - Crawl Crawler";
+}
+    <form action="/crawl/@Context.Request.QueryString" method="post">
+        <div class="blog-wrapper">
+            <h2>Status</h2>
+            <h3>@ViewBag.Header</h3>
+            <p>@ViewBag.Message</p>
+
+            @if (!(bool)ViewBag.IsDone)
+            {
+                <p><a href="/status/ccc?crawlid=@ViewBag.CrawlId">Refresh status</a></p>
+            }
+        </div>
+    </form>

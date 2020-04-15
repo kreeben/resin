@@ -20,6 +20,8 @@ namespace Sir.HttpServer.Features
         private readonly IStringModel _model;
         private readonly HashSet<string> _wetStoredFieldNames;
         private readonly HashSet<string> _wetIndexedFieldNames;
+        private readonly int _skip;
+        private readonly int _take;
 
         public CrawlJob(
             SessionFactory sessionFactory,
@@ -32,22 +34,26 @@ namespace Sir.HttpServer.Features
             string q, 
             string job, 
             bool and, 
-            bool or) 
+            bool or,
+            int skip,
+            int take) 
             : base(id, collection, field, q, job, and, or)
         {
             _sessionFactory = sessionFactory;
             _queryParser = queryParser;
             _logger = logger;
             _model = model;
-            _wetStoredFieldNames = new HashSet<string> { "url", "description" };
-            _wetIndexedFieldNames = new HashSet<string> { "url", "warcid" };
+            _wetStoredFieldNames = new HashSet<string> { "url", "title", "description" };
+            _wetIndexedFieldNames = new HashSet<string> { "title", "description" };
+            _skip = skip;
+            _take = take;
         }
 
         public override void Execute()
         {
             try
             {
-                if (Job == "ccc")
+                if (Job == "CCC")
                 {
                     FetchWetFile();
                 }
@@ -70,7 +76,7 @@ namespace Sir.HttpServer.Features
 
             using (var readSession = _sessionFactory.CreateReadSession())
             {
-                var originalResult = readSession.Read(orignalQuery, 0, int.MaxValue).Docs
+                var originalResult = readSession.Read(orignalQuery, _skip, _take).Docs
                     .ToDictionary(x => (long)x[SystemFields.DocumentId]);
 
                 var wetFileIds = new SortedList<string, object>();
@@ -86,7 +92,8 @@ namespace Sir.HttpServer.Features
 
                 using (var client = new WebClient())
                 {
-                    foreach (var warcId in wetFileIds.Keys)
+                    //TODO: Remove "take"
+                    foreach (var warcId in wetFileIds.Keys.Take(1))
                     {
                         var wetQuery = _queryParser.Parse(
                             collections: new string[] { "cc_wet" },
@@ -122,30 +129,15 @@ namespace Sir.HttpServer.Features
                             var writeJob = new WriteJob(
                                 wetCollectionId,
                                 ReadWetFile(localFileName, warcId),
-                                _model,
+                                new FuzzyBocModel(),
                                 _wetStoredFieldNames,
                                 _wetIndexedFieldNames);
 
                             _sessionFactory.Write(writeJob, reportSize: 1000);
 
                             _logger.LogInformation($"wet file write job took {time.Elapsed}");
-
-                            wetQuery = _queryParser.Parse(
-                                collections: new string[] { "cc_wet" },
-                                q: warcId,
-                                fields: new string[] { "warcid" }, 
-                                select: new string[] {"title"},
-                                and: true, 
-                                or: false);
-
-                            wetRecords = readSession.Read(wetQuery, 0, 1);
                         }
                     }
-                }
-
-                if (wetRecords == null || wetRecords.Total == 0)
-                {
-                    throw new DataMisalignedException();
                 }
             }
         }
