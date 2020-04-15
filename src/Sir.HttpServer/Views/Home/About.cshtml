@@ -4,36 +4,58 @@
 }
     <form action="/crawl/" method="post">
         <div class="blog-wrapper">
-            <h2>About</h2>
+            <h4>About</h4>
+            <h2>Crawlcrawling</h2>
             <p>
-                A crawl crawler is a search engine that utilizes indices that may be enriched with more data 
-                by fetching it from already crawled data or from WWW.
+                Exploring, enriching, refreshing, slicing (<i>crawlcrawling</i>)
+                is a lot like regular web search only with a few more manual steps.
+                First you explore, then you enrich, sometimes you refresh, in some cases you slice, then you repeat.
+            </p>
+            <h4>(1) Explore</h4>
+            <p>
+                Perform a web search as you always do, with a browser, a textbox, a submit button,
+                or use the HTTP API to express your question in JSON and create complex,
+                nested boolean statements that target multiple collections, specify which document fields to include
+                in the result, then fetch it as JSON.
+            </p>
+            <h4>(2) Enrich</h4>
+            <p>
+                Crawl Crawler's search indices may be enriched online and by anyone from the crowd.
+                On your request Crawl Crawler will fetch and associate more data to a slice of the documents in its indices
+                by querying repositories of already crawled but not yet indexed data,
+                or by fetching it directly from WWW.
             </p>
             <p>
-                With Crawl Crawler you may search WAT meta-data enriched with textual data from Common Crawl's WET crawl and WWW.
+                With Crawl Crawler you may search <a href="https://commoncrawl.org/the-data/get-started/#WAT-Format">WAT</a>
+                meta-data that might not have become enriched yet, not from any textual extracts in Common Crawl's
+                <a href="https://commoncrawl.org/the-data/get-started/#WET-Format">WET</a> crawl and not from WWW.
+                That's when you see the "Enrich" link on the search result page and it means you can associate more data to the result.
             </p>
             <p>
-                Enrichment will create a better search experience when the next person visit
-                Crawl Crawler to search the web using a query similar to yours.
+                Enrichment creates a better search experience for the next person visiting
+                Crawl Crawler, who are in search of information within the same topic as you were
+                and who are using a query similar to yours.
             </p>
+            <h4>(3) Refresh</h4>
             <p>
-                This service, <a href="/?collection=cc_wat">crawlcrawler.com</a>, is a <strong>free, open, non-tracking</strong> web based service
-                created by search consultant Marcus Lager *.
-                It's a lot like regular web search, only with a few more manual steps involved.
+                On the search result page, once the documents from a search result are enriched
+                you will see a "Refresh" link instead of the enrichment link.
+                Click it to fetch updated enrichment data from either Common Crawl or WWW.
             </p>
-            <p>Crawl Crawler is free of any dependance on or affiliation with any dominant market player. It is built using OSS. It will not track you.</p>
+            <h4>(4) Slice</h4>
             <p>
-                *) marcuslager (at gailm'n'such)
+                Search results may span multiple collections. You may save the result ("slice") as a named collection.
+                When you've done so you can target your slice in a query much more easily.
             </p>
-            <h3>Three collections</h3>
+            <h3>Instructions</h3>
             <p>
-                There are three document collections that you may query.
+                There are three (types of) collections here that you may interact with.
             </p>
             <h4>First collection</h4>
             <p>
-                The first collection is called <strong>"cc_wat"</strong>. It is maintained by Crawl Crawler and
-                is a product of analyzing Common Crawl's
-                <a href="https://commoncrawl.org/the-data/get-started/#WAT-Format">WAT meta data repository</a>.
+                The first collection is public read-only and is called <strong>"cc_wat"</strong>.
+                It is maintained by Crawl Crawler and
+                it is a product of analyzing Common Crawl's WAT meta data repository.
             </p>
             <p>
                 Documents in this collection contain the queryable fields "title", "description",
@@ -41,54 +63,46 @@
             </p>
             <h4>Second collection</h4>
             <p>
-                The second collection is called <strong>"cc_wet"</strong>. It will be appended to when you
-                use your favorite browser to click on <strong>"Enrich"</strong> from a search result page.
+                The second collection is also public read-only and is called <strong>"cc_wet"</strong>.
+                Data fetched from Common Crawl or WWW will be added to it when you use your favorite browser to click on "Enrich"
+                from a search result page and become refreshed, i.e. updated with more current data, when you click on "Refresh".
             </p>
             <p>
-                Enrichment data can come from two sources. Crawl Crawler will fetch the complete text extraction
-                of all pages in your search result
-                from either (1) Common Crawl's <a href="https://commoncrawl.org/the-data/get-started/#WET-Format">WET textual data repository</a>,
-                or from (2) the WWW, then analyze that text and append the indices to the secondary collection.
-            </p>
-            <p>
-                Documents in the cc_wet collection contain the queryable fields "title" and "description".
+                Documents in the cc_wet collection contain the queryable field "description"
+                that equals all text within the original document's body HTML element, and "url".
             </p>
             <h4>Third collection</h4>
             <p>
-                The third collection (type) are collections you create when you click
-                "Save as" from a search result page or when you create and append to custom collections.
-                Anyone who knows the name of a collection can both query and append to it.
+                The third collection type are collections you create when you click
+                "Save as" from a search result page.
+                Anyone who knows the name of such a collection can both query it, append to it and refresh it.
             </p>
-            <h3>Querying</h3>
-            <i>
-                The actual text content that lives inside of a HTML document's body tag will not always have been
-                indexed by this search engine at the time of your query for all of the documents in your search result.
-                We might have only had time to index the "title" and "description" meta data fields.
-                When that's the case and you see an "Enrich" link on the search result page, go ahead and click it.
-                Everybody will be better off from it.
-            </i>
+            <h4>Querying</h4>
             <p>
                 Use one or more "collection" query string parameters to direct your queries towards one or more collections.
             </p>
             <p>
-                Use one or more "field" query string parameters to direct your queries towards one or more fields.
+                Use one or more "field" parameters to direct your queries towards one or more fields.
             </p>
             <p>
-                Use one or more "select" query string parameters to define which document fields to include in your search result.
+                Use one or more "select" parameters to define which document fields to include in your search result.
             </p>
             <p>
                 Replace "OR=OR" query string entry with "AND=AND" for stricter interpretation of your query.
             </p>
             <p>
-                Page by using "skip" and "take".
+                Page by using "skip" and "take" parameters.
             </p>
-            <h4>HTTP API</h4>
-            <h5>Query with HTTP GET Accept:application/json</h5>
+            <h5>HTTP GET Accept:application/json</h5>
             <p>
                 HTTPS GET /query/?field=title&field=description&q=embellished+sheath&OR=OR&skip=0&take=100&collection=cc_wat&select=title<br />
                 Accept: application/json
             </p>
-            <h5>JSON Query with HTTP POST Accept:application/json</h5>
+            <h5>JSON Query with HTTP POST</h5>
+            <p>
+                Define "skip", "take" and "select" parameters in the query string.
+                Include your JSON query in the body of the request.
+            </p>
             <p>
                 HTTPS POST /query/?skip=0&take=100&select=title<br />
                 Content-Type:application/json <br />
@@ -102,7 +116,6 @@
         },
         "or":{
             "collection":"cc_wet",
-            "title":"prom dress wedding",
             "description":"prom dress wedding"
         },
         "not":{
@@ -111,20 +124,81 @@
         },
     }
             </pre>
-            <h4>Insert, append, update</h4>
             <p>
-                You may create new collections that you may query and append to.
-                In fact, you can query and append to any collection that you know by name.
+                There can be only one "and", "or" and "not" top-level field per JSON object
+                but there is no limit to the nesting depth other than one you set for yourself:
+
+            </p>
+            <pre>
+    {
+        "or":{
+            "collection":"cc_wet",
+            "description":"prom",
+            "or":{
+                "collection":"cc_wet",
+                "description":"dress",
+                "or":{
+                    "collection":"cc_wet",
+                    "description":"wedding"
+                }
+            }
+        }
+    }
+            </pre>
+            <h3>Insert, append, update</h3>
+            <p>
+                You may create new collections and query, append to and update any public read-write enabled collection you know by name.
             </p>
             <h5>HTTP POST Content-Type:application/json</h5>
             <p>
                 The insert, append and update HTTP APIs are unstable at this time.
                 As soon as they become reliable they will be documented here.
             </p>
+            <h3>User privacy</h3>
+            <p>
+                Crawl Crawler will not show you ads nor place cookies on your device.
+                Crawl Crawler will not track you by any means.
+                For security purposes and <a href="/toc">for a limited time</a> Crawl Crawler will keep a record of your IP address.
+            </p>
+            <h3>No data privacy</h3>
+            <p>By way of nature no document collection hosted by Crawl Crawler is private and all document collections are public.</p>
+            <h3>Free as in freedom</h3>
+            <p>
+                Crawl Crawler is free of any affiliation with any dominant, or submissive (for that matter),
+                search player.
+                Not that there would be anything wrong with being so. We're just not.
+            </p>
+            <p>
+                Crawl Crawler is built exclusively on OSS that you are free to run on your premises.
+            </p>
+            <p>
+                Crawl Crawler's indices are generated from analyzing common data.
+                The courtesy of the people who make their data common, i.e. the owners of the web sites that
+                the documents in Common Crawl's crawl repositories originate from, as well as the courtesy
+                of Common Crawl the organisation, is extended to Crawl Crawler's users without corruption,
+                as long as you use this data fairly and responsibly.
+                Before contemplating publishing any of it remember, there are copyright laws to adhere to.
+            </p>
+            <p>
+                You are free to use the Crawl Crawler GUI to query for data.
+                You are equally free to use the Crawl Crawler HTTP API to query for data.
+            </p>
+            <h3>Not free as in beer</h3>
+            <p>
+                This service is mostly free as in beer but after the BETA period and for certain tasks,
+                such as recurringly refreshing a document collection,
+                or a slice of it, with textual content from WWW,
+                there will be a small, quite reasonable fee involved.
+            </p>
             <h3>Technology</h3>
             <p>
                 We build <a href="https://github.com/didyougogo/commoncrawlcrawler/">Resin <sup>BETA</sup></a>,
                 an open-source and extensible search engine.
+            </p>
+            <h3>Offered with great but perfectly benign intentions, to all.</h3>
+            <p>
+                This web based service was created, developed and is being maintained by e-commerce solutions architect
+                and search handy-man, Marcus Lager from Helsingborg, Sweden.
             </p>
         </div>
     </form>

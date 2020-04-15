@@ -315,3 +315,10 @@ div.buttons {
 .toolbar{
     margin-top:5px;
 }
+
+.splash {
+    background-color: lightgoldenrodyellow;
+    border: 1px solid black;
+    padding: 2px 2px 2px 2px;
+    font-size: 10pt;
+}

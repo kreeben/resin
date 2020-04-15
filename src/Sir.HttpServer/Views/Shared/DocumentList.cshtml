@@ -14,8 +14,8 @@
         <span>@docs.Count hits of @ViewData["total"] in @ViewData["time_ms"] ms.</span>
         <div class="toolbar">
             <a href="@jsonDownloadLink" title="Use a HTTP client to GET result as Content-Type application/json">Download</a> as JSON.
-            <a href="@saveAsLink" title="Save as new index">Save as</a> new index.
-            <a href="@crawlLink" title="Make this index richer with information">Enrich</a>.
+            <a href="@saveAsLink" title="Save as document view">Save as</a> document view.
+            <a href="@crawlLink" title="Make this document collection richer with information">Enrich</a>.
         </div>
     </div>
     <div class="result-list">
@@ -28,12 +28,12 @@
                 var host = uri.Host.ToString();
                 var title = item.Document.ContainsKey("title") ? item.Document["title"].ToString() : "Unknown title";
                 var score = (double)item.Document[Sir.Search.SystemFields.Score];
-                var warcFilename = item.Document.ContainsKey("filename") ? item.Document["filename"].ToString() : "";
-                var wetFileName = warcFilename.Replace("/warc", "/wet").Replace(".gz", ".wet.gz");
-                var wetUrlFileName = "https://commoncrawl.s3.amazonaws.com/" + Html.Raw(wetFileName);
-                var warcUrlFileName = "https://commoncrawl.s3.amazonaws.com/" + Html.Raw(warcFilename);
-                var wetUrl = "/wet" + Context.Request.QueryString + "&fileName=" + wetUrlFileName;
-                var warcUrl = "/warc" + Context.Request.QueryString + "&fileName=" + warcUrlFileName;
+                var warcFilename = item.Document.ContainsKey("filename") ? item.Document["filename"].ToString() : null;
+                var wetFileName = warcFilename == null ? null : warcFilename.Replace("/warc", "/wet").Replace(".gz", ".wet.gz");
+                var wetUrlFileName = wetFileName == null ? null : "https://commoncrawl.s3.amazonaws.com/" + Html.Raw(wetFileName);
+                var warcUrlFileName = warcFilename == null ? null : "https://commoncrawl.s3.amazonaws.com/" + Html.Raw(warcFilename);
+                var wetUrl = wetUrlFileName == null ? null : "/wet" + Context.Request.QueryString + "&fileName=" + wetUrlFileName;
+                var warcUrl = warcUrlFileName == null ? null : "/warc" + Context.Request.QueryString + "&fileName=" + warcUrlFileName;
                 <li>
                     <div class="document-header">
                         <span><a class="result-link" href="@Html.Raw(uri.ToString())">@Html.Raw(title)</a></span>
@@ -41,12 +41,18 @@
                     <div class="document-body">
                         <span class="medium-text">@Html.Raw(host)</span><br />
                         <span class="medium-text">@score.ToString("N2")%</span><br />
-                        <span class="medium-text">
-                            <a class="warc-link" href="@wetUrl">WET</a>                        
-                        </span>
-                        <span class="medium-text">
-                            <a class="warc-link" href="@warcUrl">WARC</a>
-                        </span>
+                        @if (wetUrl != null)
+                        {
+                            <span class="medium-text">
+                                <a class="warc-link" href="@wetUrl">WET</a>
+                            </span>
+                        }
+                        @if (warcUrl != null)
+                        {
+                            <span class="medium-text">
+                                <a class="warc-link" href="@warcUrl">WARC</a>
+                            </span>
+                        }
                     </div>
                 </li>
             }
