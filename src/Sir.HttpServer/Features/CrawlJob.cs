@@ -15,7 +15,6 @@ namespace Sir.HttpServer.Features
     {
         private readonly SessionFactory _sessionFactory;
         private readonly QueryParser _queryParser;
-        private readonly IReadSession _readSession;
         private readonly ILogger<CrawlJob> _logger;
         private readonly IStringModel _model;
         private readonly HashSet<string> _wetStoredFieldNames;
@@ -55,7 +54,7 @@ namespace Sir.HttpServer.Features
             {
                 if (Job == "CCC")
                 {
-                    FetchWetFile();
+                    DownloadAndIndexWetFile();
                 }
             }
             catch (Exception ex)
@@ -64,20 +63,20 @@ namespace Sir.HttpServer.Features
             }
         }
 
-        private void FetchWetFile()
+        private void DownloadAndIndexWetFile()
         {
-            var orignalQuery = _queryParser.Parse(
+            var originalQuery = _queryParser.Parse(
                 Collections, 
                 Q, 
                 Fields, 
-                new string[] {"filename"},
+                new string[] {"filename", "title", "url"},
                 and: And, 
                 or: Or);
 
             using (var readSession = _sessionFactory.CreateReadSession())
             {
-                var originalResult = readSession.Read(orignalQuery, _skip, _take).Docs
-                    .ToDictionary(x => (long)x[SystemFields.DocumentId]);
+                var originalResult = readSession.Read(originalQuery, _skip, _take).Docs
+                    .ToDictionary(x => (string)x["url"]);
 
                 var wetFileIds = new SortedList<string, object>();
                 ReadResult wetRecords = null;
@@ -128,8 +127,13 @@ namespace Sir.HttpServer.Features
 
                             var writeJob = new WriteJob(
                                 wetCollectionId,
-                                ReadWetFile(localFileName, warcId),
-                                new FuzzyBocModel(),
+                                ReadWetFile(localFileName, warcId)
+                                    .Select(d=>
+                                    {
+                                        d["title"] = originalResult[(string)d["url"]]["title"];
+                                        return d;
+                                    }),
+                                new BocModel(),
                                 _wetStoredFieldNames,
                                 _wetIndexedFieldNames);
 
