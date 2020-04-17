@@ -11,7 +11,6 @@ namespace Sir.HttpServer.Features
         private readonly ProducerConsumerQueue<AsyncJob> _queue;
         private readonly ILogger _logger;
         private readonly HashSet<string> _enquedIds;
-        private readonly HashSet<string> _processedIds;
 
         public JobQueue(
             ILogger<JobQueue> logger)
@@ -19,7 +18,6 @@ namespace Sir.HttpServer.Features
             _queue = new ProducerConsumerQueue<AsyncJob>(1, DispatchJob);
             _logger = logger;
             _enquedIds = new HashSet<string>();
-            _processedIds = new HashSet<string>();
         }
 
         public void Enqueue(AsyncJob job)
@@ -37,7 +35,7 @@ namespace Sir.HttpServer.Features
 
         public bool IsProcessed(string id)
         {
-            return _processedIds.Contains(id);
+            return !IsQueued(id);
         }
 
         private void DispatchJob(AsyncJob job)
