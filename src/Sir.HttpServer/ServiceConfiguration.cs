@@ -12,7 +12,7 @@ namespace Sir.HttpServer
         public static void RegisterComponents(
             IServiceCollection services, PluginsCollection plugins, IServiceProvider container)
         {
-            services.AddSingleton(typeof(CrawlJobQueue));
+            services.AddSingleton(typeof(JobQueue));
             services.AddSingleton(typeof(SaveAsJobQueue));
         }
 

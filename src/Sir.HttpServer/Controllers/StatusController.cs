@@ -18,7 +18,7 @@ namespace Sir.HttpServer.Controllers
             SessionFactory sessionFactory,
             IStringModel model,
             QueryParser queryParser,
-            CrawlJobQueue queue) : base(config, sessionFactory)
+            JobQueue queue) : base(config, sessionFactory)
         {
             _queue = queue;
             _model = model;
@@ -28,25 +28,25 @@ namespace Sir.HttpServer.Controllers
         [HttpGet("ccc")]
         public IActionResult CCC(string crawlid)
         {
-            string header;
-            string message;
-
-            if (_queue.IsQueued(crawlid) && !_queue.IsProcessed(crawlid))
+            if (crawlid is null)
             {
-                header = "Downloading and indexing WET file...";
-                message = "";
-                ViewBag.IsDone = false;
-            }
-            else
-            {
-                header = $"Downloading and indexing WET file is done!";
-                message = "cc_wet has been enriched.";
-                ViewBag.IsDone = true;
+                throw new ArgumentNullException(nameof(crawlid));
             }
 
-            ViewBag.Header = $"{header}";
-            ViewBag.Message = $"{message}";
             ViewBag.CrawlId = crawlid;
+
+            var status = _queue.GetStatus(crawlid);
+
+            if (status != null)
+            {
+                ViewBag.DownloadStatus = Math.Min(100, Convert.ToInt32(status["download"]));
+                ViewBag.IndexStatus = Math.Min(100, Convert.ToInt32(status["index"]));
+            }
+
+            if (status == null || (ViewBag.DownloadStatus == 100 && ViewBag.IndexStatus == 100))
+            {
+                return View("ccc_done");
+            }
 
             return View();
         }

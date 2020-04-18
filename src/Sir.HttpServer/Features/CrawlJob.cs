@@ -6,6 +6,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using Microsoft.Extensions.Logging;
 using Sir.Search;
 
@@ -46,6 +47,9 @@ namespace Sir.HttpServer.Features
             _wetIndexedFieldNames = new HashSet<string> { "title", "description" };
             _skip = skip;
             _take = take;
+
+            Status["download"] = 0;
+            Status["index"] = 0;
         }
 
         public override void Execute()
@@ -65,11 +69,13 @@ namespace Sir.HttpServer.Features
 
         private void DownloadAndIndexWetFile()
         {
+            var writePayload = new List<IDictionary<string, object>>();
+
             var originalQuery = _queryParser.Parse(
                 Collections, 
                 Q, 
                 Fields, 
-                new string[] {"filename", "title", "url"},
+                select: new string[] {"filename", "title", "url"},
                 and: And, 
                 or: Or);
 
@@ -87,63 +93,129 @@ namespace Sir.HttpServer.Features
                     var wetFileId = ((string)doc["filename"]).Replace("/warc", "/wet").Replace(".gz", ".wet.gz");
 
                     wetFileIds.TryAdd(wetFileId, null);
+
+                    //TODO: remove break
+                    break;
                 }
 
-                using (var client = new WebClient())
+                foreach (var warcId in wetFileIds.Keys)
                 {
-                    //TODO: Remove "take"
-                    foreach (var warcId in wetFileIds.Keys.Take(1))
+                    var wetQuery = _queryParser.Parse(
+                        collections: new string[] { "cc_wet" },
+                        q: warcId,
+                        fields: new string[] { "filename" },
+                        select: new string[] { "filename" },
+                        and: true,
+                        or: false);
+
+                    if (wetQuery != null)
                     {
-                        var wetQuery = _queryParser.Parse(
-                            collections: new string[] { "cc_wet" },
-                            q: warcId,
-                            fields: new string[] { "warcid" }, 
-                            select: new string[] { "warcid" },
-                            and: true, 
-                            or: false);
+                        wetRecords = readSession.Read(wetQuery, 0, 1);
+                    }
 
-                        if (wetQuery != null)
+                    if (wetRecords == null || wetRecords.Total == 0)
+                    {
+                        var localFileName = Path.Combine(_sessionFactory.Dir, "wet", warcId);
+                        var tmpFileName = Path.Combine(_sessionFactory.Dir, "tmp", Id, warcId);
+
+                        if (!File.Exists(tmpFileName) || !File.Exists(localFileName))
                         {
-                            wetRecords = readSession.Read(wetQuery, 0, 1);
-                        }
-
-                        if (wetRecords == null || wetRecords.Total == 0)
-                        {
-                            var localFileName = Path.Combine(_sessionFactory.Dir, "wet", warcId);
-
-                            if (!File.Exists(localFileName))
+                            if (!Directory.Exists(Path.GetDirectoryName(tmpFileName)))
                             {
-                                if (!Directory.Exists(Path.GetDirectoryName(localFileName)))
-                                {
-                                    Directory.CreateDirectory(Path.GetDirectoryName(localFileName));
-                                }
-
-                                var remoteFileName = $"https://commoncrawl.s3.amazonaws.com/{warcId}";
-
-                                client.DownloadFile(remoteFileName, localFileName);
+                                Directory.CreateDirectory(Path.GetDirectoryName(tmpFileName));
                             }
 
-                            var time = Stopwatch.StartNew();
+                            var remoteFileName = $"https://commoncrawl.s3.amazonaws.com/{warcId}";
+                            const double payloadSize = 150000000;
 
-                            var writeJob = new WriteJob(
-                                wetCollectionId,
-                                ReadWetFile(localFileName, warcId)
-                                    .Select(d=>
+                            using (var client = new WebClient())
+                            {
+                                var state = new State { Completed = false };
+                                client.DownloadFileCompleted += Client_DownloadFileCompleted; ;
+                                client.DownloadFileAsync(new Uri(remoteFileName), tmpFileName, state);
+
+                                while (!state.Completed)
+                                {
+                                    try
                                     {
-                                        d["title"] = originalResult[(string)d["url"]]["title"];
-                                        return d;
-                                    }),
-                                new BocModel(),
-                                _wetStoredFieldNames,
-                                _wetIndexedFieldNames);
+                                        if (File.Exists(tmpFileName))
+                                        {
+                                            var fi = new FileInfo(tmpFileName);
 
-                            _sessionFactory.Write(writeJob, reportSize: 1000);
+                                            if (fi.Length > 0)
+                                            {
+                                                var status = (fi.Length / (payloadSize * wetFileIds.Count)) * 100;
 
-                            _logger.LogInformation($"wet file write job took {time.Elapsed}");
+                                                Status["download"] = status;
+                                            }
+                                        }
+                                    }
+                                    catch { }
+                                    finally
+                                    {
+                                        Thread.Sleep(1000);
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!File.Exists(localFileName))
+                        {
+                            try
+                            {
+                                File.Copy(tmpFileName, localFileName);
+                                Directory.Delete(Path.GetDirectoryName(tmpFileName), recursive: true);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Could not copy/delete wet file.");
+                            }
+                        }
+
+                        foreach (var document in ReadWetFile(localFileName, warcId))
+                        {
+                            IDictionary<string, object> originalDoc;
+                            var key = (string)document["url"];
+
+                            if (originalResult.TryGetValue(key, out originalDoc))
+                            {
+                                document["title"] = originalDoc["title"];
+                                writePayload.Add(document);
+                            }
                         }
                     }
                 }
+
+                Status["download"] = 100;
+
+                if (writePayload.Count > 0)
+                {
+                    var time = Stopwatch.StartNew();
+
+                    var writeJob = new WriteJob(
+                        wetCollectionId,
+                        writePayload,
+                        new BocModel(),
+                        _wetStoredFieldNames,
+                        _wetIndexedFieldNames);
+
+                    _sessionFactory.Write(writeJob, reportSize: 1000);
+
+                    Status["index"] = 100;
+
+                    _logger.LogInformation($"wet file write job took {time.Elapsed}");
+                }
             }
+        }
+
+        private void Client_DownloadFileCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
+        {
+            ((State)e.UserState).Completed = true;
+        }
+
+        private class State
+        {
+            public bool Completed { get; set; }
         }
 
         private static IEnumerable<IDictionary<string, object>> ReadWetFile(string fileName, string warcId)
@@ -176,7 +248,7 @@ namespace Sir.HttpServer.Features
                     {
                         { "url", url},
                         { "description", content.ToString() },
-                        { "warcid", warcId }
+                        { "filename", warcId }
                     };
 
                         content = new StringBuilder();

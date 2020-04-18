@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Sir.Core;
@@ -6,36 +7,38 @@ using Sir.Core;
 namespace Sir.HttpServer.Features
 {
 
-    public abstract class JobQueue : IDisposable
+    public class JobQueue : IDisposable
     {
         private readonly ProducerConsumerQueue<AsyncJob> _queue;
         private readonly ILogger _logger;
-        private readonly HashSet<string> _enquedIds;
+        private readonly ConcurrentDictionary<string, AsyncJob> _enqueued;
 
         public JobQueue(
             ILogger<JobQueue> logger)
         {
             _queue = new ProducerConsumerQueue<AsyncJob>(1, DispatchJob);
             _logger = logger;
-            _enquedIds = new HashSet<string>();
+            _enqueued = new ConcurrentDictionary<string, AsyncJob>();
         }
 
         public void Enqueue(AsyncJob job)
         {
-            if (_enquedIds.Add(job.Id))
+            if (_enqueued.TryAdd(job.Id, job))
             {
                 _queue.Enqueue(job);
             }
         }
 
-        public bool IsQueued(string id)
+        public IDictionary<string, object> GetStatus(string id)
         {
-            return _enquedIds.Contains(id);
-        }
+            AsyncJob job;
 
-        public bool IsProcessed(string id)
-        {
-            return !IsQueued(id);
+            if (!_enqueued.TryGetValue(id, out job))
+            {
+                return null;
+            }
+
+            return job.Status;
         }
 
         private void DispatchJob(AsyncJob job)
@@ -44,7 +47,7 @@ namespace Sir.HttpServer.Features
             {
                 job.Execute();
 
-                _enquedIds.Remove(job.Id);
+                _enqueued.Remove(job.Id, out _);
             }
             catch (Exception ex)
             {

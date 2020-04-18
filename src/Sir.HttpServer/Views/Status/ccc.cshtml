@@ -1,16 +1,20 @@
 ﻿@{
-    Layout = "~/Views/_Layout.cshtml";
-    ViewBag.Title = "Crawl status - Crawl Crawler";
+    Layout = "~/Views/_LayoutAutoRefresh.cshtml";
+    ViewBag.Title = $"Crawl status - {ViewBag.CrawlId} - Crawl Crawler";
 }
     <form action="/crawl/@Context.Request.QueryString" method="post">
         <div class="blog-wrapper">
             <h2>Status</h2>
-            <h3>@ViewBag.Header</h3>
-            <p>@ViewBag.Message</p>
+            <h3>Processing crawl job ID @ViewBag.CrawlId</h3>
+            <h4>Downloading</h4>
+            <div style="border: solid 1px black;">
+                <div style="background-color:green;width:@ViewBag.DownloadStatus%;">@ViewBag.DownloadStatus%</div>
+            </div>
+            <h4>Indexing</h4>
+            <div style="border: solid 1px black;">
+                <div style="background-color:green;width:@ViewBag.IndexStatus%;">@ViewBag.IndexStatus%</div>
+            </div>
 
-            @if (!(bool)ViewBag.IsDone)
-            {
-                <p><a href="/status/ccc?crawlid=@ViewBag.CrawlId">Refresh status</a></p>
-            }
+            <p><a href="/status/ccc?crawlid=@ViewBag.CrawlId">Refresh status</a></p>
         </div>
     </form>

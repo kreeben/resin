@@ -18,7 +18,7 @@ namespace Sir.HttpServer.Controllers
             SessionFactory sessionFactory,
             IStringModel model,
             QueryParser queryParser,
-            CrawlJobQueue queue) : base(config, sessionFactory)
+            JobQueue queue) : base(config, sessionFactory)
         {
             _queue = queue;
             _model = model;
