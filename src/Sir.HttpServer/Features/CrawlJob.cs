@@ -43,8 +43,8 @@ namespace Sir.HttpServer.Features
             _queryParser = queryParser;
             _logger = logger;
             _model = model;
-            _wetStoredFieldNames = new HashSet<string> { "url", "title", "description" };
-            _wetIndexedFieldNames = new HashSet<string> { "title", "description" };
+            _wetStoredFieldNames = new HashSet<string> { "url", "description" };
+            _wetIndexedFieldNames = new HashSet<string> { "description" };
             _skip = skip;
             _take = take;
 
@@ -75,17 +75,18 @@ namespace Sir.HttpServer.Features
                 Collections, 
                 Q, 
                 Fields, 
-                select: new string[] {"filename", "title", "url"},
+                select: new string[] {"url", "filename"},
                 and: And, 
                 or: Or);
 
             using (var readSession = _sessionFactory.CreateReadSession())
             {
-                var originalResult = readSession.Read(originalQuery, _skip, _take).Docs
+                var originalResult = readSession.Read(originalQuery, _skip, _take)
+                    .Docs
                     .ToDictionary(x => (string)x["url"]);
 
                 var wetFileIds = new SortedList<string, object>();
-                ReadResult wetRecords = null;
+                ReadResult wetResult = null;
                 var wetCollectionId = "cc_wet".ToHash();
 
                 foreach (var doc in originalResult.Values)
@@ -98,11 +99,11 @@ namespace Sir.HttpServer.Features
                     break;
                 }
 
-                foreach (var warcId in wetFileIds.Keys)
+                foreach (var fileName in wetFileIds.Keys)
                 {
                     var wetQuery = _queryParser.Parse(
                         collections: new string[] { "cc_wet" },
-                        q: warcId,
+                        q: fileName,
                         fields: new string[] { "filename" },
                         select: new string[] { "filename" },
                         and: true,
@@ -110,28 +111,28 @@ namespace Sir.HttpServer.Features
 
                     if (wetQuery != null)
                     {
-                        wetRecords = readSession.Read(wetQuery, 0, 1);
+                        wetResult = readSession.Read(wetQuery, 0, 1);
                     }
 
-                    if (wetRecords == null || wetRecords.Total == 0)
+                    if (wetResult == null || wetResult.Total == 0)
                     {
-                        var localFileName = Path.Combine(_sessionFactory.Dir, "wet", warcId);
-                        var tmpFileName = Path.Combine(_sessionFactory.Dir, "tmp", Id, warcId);
+                        var localFileName = Path.Combine(_sessionFactory.Dir, "wet", fileName);
+                        var tmpFileName = Path.Combine(_sessionFactory.Dir, "tmp", Id, fileName);
 
-                        if (!File.Exists(tmpFileName) || !File.Exists(localFileName))
+                        if (!File.Exists(localFileName))
                         {
                             if (!Directory.Exists(Path.GetDirectoryName(tmpFileName)))
                             {
                                 Directory.CreateDirectory(Path.GetDirectoryName(tmpFileName));
                             }
 
-                            var remoteFileName = $"https://commoncrawl.s3.amazonaws.com/{warcId}";
+                            var remoteFileName = $"https://commoncrawl.s3.amazonaws.com/{fileName}";
                             const double payloadSize = 150000000;
 
                             using (var client = new WebClient())
                             {
                                 var state = new State { Completed = false };
-                                client.DownloadFileCompleted += Client_DownloadFileCompleted; ;
+                                client.DownloadFileCompleted += Client_DownloadFileCompleted;
                                 client.DownloadFileAsync(new Uri(remoteFileName), tmpFileName, state);
 
                                 while (!state.Completed)
@@ -163,23 +164,22 @@ namespace Sir.HttpServer.Features
                         {
                             try
                             {
-                                File.Copy(tmpFileName, localFileName);
-                                Directory.Delete(Path.GetDirectoryName(tmpFileName), recursive: true);
+                                File.Move(tmpFileName, localFileName);
+                                Directory.Delete(Path.GetDirectoryName(tmpFileName));
                             }
                             catch (Exception ex)
                             {
-                                _logger.LogError(ex, "Could not copy/delete wet file.");
+                                _logger.LogError(ex, "Could not move tmp wet file.");
                             }
                         }
 
-                        foreach (var document in ReadWetFile(localFileName, warcId))
+                        foreach (var document in ReadWetFile(localFileName, fileName))
                         {
                             IDictionary<string, object> originalDoc;
                             var key = (string)document["url"];
 
                             if (originalResult.TryGetValue(key, out originalDoc))
                             {
-                                document["title"] = originalDoc["title"];
                                 writePayload.Add(document);
                             }
                         }

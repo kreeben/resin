@@ -20,11 +20,6 @@ namespace Sir.Search
             _streamWriter = streamWriter;
         }
 
-        public void Dispose()
-        {
-            _streamWriter.Dispose();
-        }
-
         public long Write(IDictionary<string, object> document, HashSet<string> storedFieldNames)
         {
             var docMap = new List<(long keyId, long valId)>();
@@ -68,11 +63,6 @@ namespace Sir.Search
             return docId;
         }
 
-        public long EnsureKeyExists(string key)
-        {
-            return _streamWriter.EnsureKeyExists(key);
-        }
-
         private void Write(string key, object val, IList<(long, long)> docMap)
         {
             var keyId = EnsureKeyExists(key);
@@ -82,6 +72,16 @@ namespace Sir.Search
 
             // store refs to k/v pair
             docMap.Add(kvmap);
+        }
+
+        public long EnsureKeyExists(string key)
+        {
+            return _streamWriter.EnsureKeyExists(key);
+        }
+
+        public void Dispose()
+        {
+            _streamWriter.Dispose();
         }
     }
 }
