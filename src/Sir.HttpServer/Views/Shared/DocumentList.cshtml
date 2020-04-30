@@ -27,7 +27,7 @@
                 var uri = new Uri(prefix + url);
                 var host = uri.Host.ToString();
                 var title = item.Document.ContainsKey("title") ? item.Document["title"].ToString() : "Unknown title";
-                var score = (double)item.Document[Sir.Search.SystemFields.Score];
+                var score = (double)item.Document[Sir.Search.SystemFields.Score] * 100;
                 var warcFilename = item.Document.ContainsKey("filename") ? item.Document["filename"].ToString() : null;
                 var wetFileName = warcFilename == null ? null : warcFilename.Replace("/warc", "/wet").Replace(".gz", ".wet.gz");
                 var wetUrlFileName = wetFileName == null ? null : "https://commoncrawl.s3.amazonaws.com/" + Html.Raw(wetFileName);
@@ -40,7 +40,7 @@
                     </div>
                     <div class="document-body">
                         <span class="medium-text">@Html.Raw(host)</span><br />
-                        <span class="medium-text">@score.ToString("N2")</span><br />
+                        <span class="medium-text">@score.ToString("N0")%</span><br />
                         @if (wetUrl != null)
                         {
                             <span class="medium-text">
