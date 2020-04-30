@@ -1,7 +1,7 @@
 ﻿body {
     padding: 0px 0px 0px 0px;
     margin: 0px 10px 0px 10px;
-    font-family: sans-serif;
+    font-family: Arial, sans-serif;
     font-size: medium;
 }
 
@@ -26,8 +26,16 @@ a {
     color: orangered;
 }
 
+a.document-subtitle {
+    color: black;
+}
+
+    a.document-subtitle:visited {
+        color: black;
+    }
+
 a.result-link {
-    font-size: 10pt;
+    font-size: 12pt;
     color: mediumblue;
 }
 
@@ -36,15 +44,16 @@ a.result-link:visited {
 }
 
 a.warc-link {
-    color: gray;
+    color: black;
     text-decoration: none;
     padding-right: 3px;
 }
 
-a.warc-link:visited {
-    color: gray;
-    text-decoration: none;
-}
+    a.warc-link:visited {
+        color: black;
+        text-decoration: none;
+        padding-right: 3px;
+    }
 
 a:visited h1 {
 }
@@ -59,13 +68,13 @@ p {
 }
 
 ul {
-    padding: 10px 5px 0px 0px;
+    padding: 0px 5px 0px 0px;
     margin: 0px 0px 0px 0px;
     list-style-type: none;
 }
 
 li {
-    font-size: 10pt;
+    font-size: 12pt;
 }
 
 .outer-container {
@@ -81,7 +90,7 @@ li {
 
 .result-list {
     margin-right: 5px;
-    margin-top: 7px;
+    margin-top: 15px;
 }
 
 footer {
@@ -128,8 +137,8 @@ div.upvote {
 
 .document-body {
     margin-left: 0px;
-    margin-bottom: 13px;
-    margin-top: 3px;
+    margin-bottom: 10px;
+    margin-top: 0px;
 }
 
 input[type="text"].q {
@@ -293,8 +302,8 @@ div.buttons {
 
 .toolbar-wrapper {
     margin-left: 0px;
-    margin-bottom: 0px;
-    margin-top: 15px;
+    margin-bottom: 10px;
+    margin-top: 20px;
     font-size: 10pt;
     color: black;
 }
