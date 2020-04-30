@@ -25,10 +25,10 @@
     <fieldset class="search-fields">
         <legend>
             <span>
-                Search <input type="checkbox" name="collection" id="collection" value="cc_wat" @(collections.Contains("cc_wat") ? "checked" : "") />WAT 
-                meta-data <a href="/about">enriched</a> with textual data from Common Crawl's
-                <input type="checkbox" name="collection" id="collection" value="cc_wet" @(collections.Contains("cc_wet") ? "checked" : "") />WET
-                <a href="@ViewBag.CCTargetUrl">repository</a> and WWW.
+                Search <label><input type="checkbox" name="collection" id="collection" value="cc_wat" @(collections.Contains("cc_wat") ? "checked" : "") />WAT</label>
+                meta-data <a href="/about">enriched</a> with textual data from <a href="@ViewBag.CCTargetUrl">Common Crawl's</a> 
+                <label><input type="checkbox" name="collection" id="collection" value="cc_wet" @(collections.Contains("cc_wet") ? "checked" : "") />WET</label>
+                repository and WWW.
             </span>
         </legend>
 
