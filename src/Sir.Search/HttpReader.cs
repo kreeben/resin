@@ -62,7 +62,6 @@ namespace Sir.Search
             _httpQueryParser.ParseQuery(query, debug);
 
             _logger.LogInformation(JsonConvert.SerializeObject(debug));
-            _logger.LogInformation($"divider {query.GetDivider()}");
 #endif
 
             using (var readSession = _sessionFactory.CreateReadSession())

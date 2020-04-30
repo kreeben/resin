@@ -24,7 +24,11 @@ namespace Sir.Search
             }
         }
 
-        public IEnumerable<IDictionary<string, object>> ReadDocs(ulong collectionId, HashSet<string> select, int skip = 0, int take = int.MaxValue)
+        public IEnumerable<IDictionary<string, object>> ReadDocs(
+            ulong collectionId, 
+            HashSet<string> select, 
+            int skip = 0, 
+            int take = int.MaxValue)
         {
             var documentReader = GetOrCreateDocumentReader(collectionId);
             var docCount = documentReader.DocumentCount();
@@ -57,7 +61,7 @@ namespace Sir.Search
                 var kInfo = streamReader.GetAddressOfKey(kvp.keyId);
                 var key = (string)streamReader.GetKey(kInfo.offset, kInfo.len, kInfo.dataType);
 
-                if (key.StartsWith("___") || select.Contains(key))
+                if (select.Contains(key) || key.StartsWith("___"))
                 {
                     var vInfo = streamReader.GetAddressOfValue(kvp.valId);
                     var val = streamReader.GetValue(vInfo.offset, vInfo.len, vInfo.dataType);

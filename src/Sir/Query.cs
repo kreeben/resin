@@ -32,28 +32,21 @@ namespace Sir
             Select = new HashSet<string>(select);
         }
 
-        public int GetDivider()
-        {
-            var terms = GetTermCount();
-            var collections = GetCollectionCount();
-            return terms / collections;
-        }
-
-        public int GetTermCount()
+        public int TotalNumberOfTerms()
         {
             var count = Terms.Count;
 
             if (And != null)
             {
-                count += And.GetTermCount();
+                count += And.TotalNumberOfTerms();
             }
             if (Or != null)
             {
-                count += Or.GetTermCount();
+                count += Or.TotalNumberOfTerms();
             }
             if (Not != null)
             {
-                count += Not.GetTermCount();
+                count += Not.TotalNumberOfTerms();
             }
 
             return count;
@@ -244,6 +237,6 @@ namespace Sir
         IList<Term> Terms { get; }
         HashSet<string> Select { get; }
         IEnumerable<Query> All();
-        int GetDivider();
+        int TotalNumberOfTerms();
     }
 }
