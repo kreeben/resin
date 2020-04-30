@@ -196,7 +196,7 @@ h3.querystats {
 }
 
 .search-fields {
-    font-size: 10pt;
+    font-size: 9pt;
     border: none;
     width: 90%;
     margin-left: 1px;
@@ -304,8 +304,13 @@ div.buttons {
     margin-left: 0px;
     margin-bottom: 10px;
     margin-top: 20px;
-    font-size: 10pt;
     color: black;
+    font-size:10pt;
+}
+
+div.toolbar-wrapper span{
+    font-size: 9pt;
+
 }
 
 .blog-wrapper {
@@ -323,7 +328,7 @@ div.buttons {
 }
 
 .toolbar{
-    margin-top:5px;
+    margin-top:15px;
 }
 
 .splash {
