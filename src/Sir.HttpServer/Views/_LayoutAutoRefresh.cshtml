@@ -1,6 +1,6 @@
 ﻿@{
-    var progress = (double)ViewBag.DocumentCount / ((long)56000 * 44000) * 100;
-    var millionDocs = (double)ViewBag.DocumentCount/1000000;
+    var progress = ViewBag.DocumentCount == null ? 0 : (double)ViewBag.DocumentCount / ((long)56000 * 44000) * 100;
+    var millionDocs = ViewBag.DocumentCount == null ? 0 : (double)ViewBag.DocumentCount/1000000;
 }
 <!DOCTYPE html>
 <html>

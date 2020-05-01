@@ -97,8 +97,15 @@ namespace Sir.HttpServer
             }
             catch (Exception e)
             {
+                var dir = Path.Combine(Directory.GetCurrentDirectory(), "log");
+
+                if (!Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+
                 File.AppendAllText(
-                    Path.Combine(Directory.GetCurrentDirectory(), "log", "sir.httpserver.log.txt"), 
+                    Path.Combine(dir, "sir.httpserver.log.txt"), 
                     $"{Environment.NewLine}{DateTime.Now} {e}{Environment.NewLine}");
 
                 throw;
