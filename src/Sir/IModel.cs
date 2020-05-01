@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 
 namespace Sir
 {
@@ -31,5 +32,6 @@ namespace Sir
     {
         double CosAngle(IVector vec1, IVector vec2);
         double CosAngle(IVector vector, long vectorOffset, int componentCount, Stream vectorStream);
+        double CosAngle(IVector vector, long vectorOffset, int componentCount, MemoryMappedViewAccessor vectorView);
     }
 }

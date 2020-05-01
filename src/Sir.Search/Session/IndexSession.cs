@@ -78,7 +78,7 @@ namespace Sir.Search
             foreach (var column in _index)
             {
                 using (var indexStream = _sessionFactory.CreateAppendStream(Path.Combine(_sessionFactory.Dir, $"{_collectionId}.{column.Key}.ix")))
-                using (var columnWriter = new ColumnWriter(_collectionId, column.Key, indexStream))
+                using (var columnWriter = new ColumnStreamWriter(_collectionId, column.Key, indexStream))
                 using (var pageIndexWriter = new PageIndexWriter(_sessionFactory.CreateAppendStream(Path.Combine(_sessionFactory.Dir, $"{_collectionId}.{column.Key}.ixtp"))))
                 {
                     var size = columnWriter.CreatePage(column.Value, _vectorStream, _postingsStream, pageIndexWriter);

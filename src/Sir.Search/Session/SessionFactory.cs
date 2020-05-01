@@ -48,7 +48,23 @@ namespace Sir.Search
             LoggerFactory = loggerFactory;
             _keys = LoadKeys();
 
-            _logger.LogInformation($"initiated in {time.Elapsed}");
+            _logger.LogInformation($"loaded keys in {time.Elapsed}");
+
+            time.Restart();
+
+            foreach (var fileName in Directory.GetFiles(Dir, "*.ix"))
+            {
+                OpenMMF(fileName);
+            }
+
+            foreach (var fileName in Directory.GetFiles(Dir, "*.vec"))
+            {
+                OpenMMF(fileName);
+            }
+
+            _logger.LogInformation($"opened MMFs in {time.Elapsed}");
+
+            _logger.LogInformation($"sessionfactory is initiated.");
         }
 
         public ILogger<T> GetLogger<T>()

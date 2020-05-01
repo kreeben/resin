@@ -209,7 +209,7 @@ namespace Sir.Search
             if (!File.Exists(ixFileName))
                 return null;
 
-            return new ColumnReader(
+            return new ColumnStreamReader(
                     collectionId,
                     keyId,
                     _sessionFactory,

@@ -3,6 +3,7 @@ using Sir.VectorSpace;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 
 namespace Sir.Search
@@ -107,6 +108,34 @@ namespace Sir.Search
             var dotSelf2 = otherVector.DotProduct(otherVector);
 
             return (dotProduct / (Math.Sqrt(dotSelf1) * Math.Sqrt(dotSelf2)));
+        }
+
+        public double CosAngle(IVector vector, long vectorOffset, int componentCount, MemoryMappedViewAccessor vectorView)
+        {
+            var otherVector = DeserializeVector(vectorOffset, componentCount, vectorView);
+
+            var dotProduct = vector.Value.DotProduct(otherVector.Value);
+            var dotSelf1 = vector.Value.DotProduct(vector.Value);
+            var dotSelf2 = otherVector.Value.DotProduct(otherVector.Value);
+
+            return (dotProduct / (Math.Sqrt(dotSelf1) * Math.Sqrt(dotSelf2)));
+        }
+
+        private IndexedVector DeserializeVector(long vectorOffset, int componentCount, MemoryMappedViewAccessor vectorView)
+        {
+            var index = new int[componentCount];
+            var values = new float[componentCount];
+            var read = vectorView.ReadArray(vectorOffset, index, 0, index.Length);
+
+            if (read < componentCount)
+                throw new Exception("bad data");
+
+            read = vectorView.ReadArray(vectorOffset + componentCount * sizeof(int), values, 0, values.Length);
+
+            if (read < componentCount)
+                throw new Exception("bad data");
+
+            return new IndexedVector(index, values, VectorWidth, null);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 
 namespace Sir
 {
@@ -17,5 +18,6 @@ namespace Sir
         void RegisterKeyMapping(ulong collectionId, ulong keyHash, long keyId);
         bool TryGetKeyId(ulong collectionId, ulong keyHash, out long keyId);
         void Write(WriteJob job, int reportSize);
+        MemoryMappedFile OpenMMF(string fileName);
     }
 }

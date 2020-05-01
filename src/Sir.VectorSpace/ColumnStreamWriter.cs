@@ -3,14 +3,14 @@ using System.IO;
 
 namespace Sir.VectorSpace
 {
-    public class ColumnWriter : IDisposable
+    public class ColumnStreamWriter : IDisposable
     {
         private readonly long _keyId;
         private readonly ulong _collectionId;
         private static readonly object _indexFileSync = new object();
         private readonly Stream _ixStream;
 
-        public ColumnWriter(
+        public ColumnStreamWriter(
             ulong collectionId, 
             long keyId,
             Stream indexStream)

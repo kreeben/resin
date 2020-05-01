@@ -1,24 +1,27 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.MemoryMappedFiles;
+using System.Threading.Tasks;
 
 namespace Sir.VectorSpace
 {
     /// <summary>
     /// Index bitmap reader. Each block is a <see cref="Sir.Search.VectorNode"/>.
     /// </summary>
-    public class ColumnReader : IColumnReader
+    public class ColumnMmfReader : IColumnReader
     {
         private readonly ISessionFactory _sessionFactory;
         private readonly ILogger _logger;
         private readonly ulong _collectionId;
         private readonly Stream _vectorFile;
-        private readonly Stream _ixFile;
+        private readonly MemoryMappedFile _ixFile;
         private readonly IList<(long offset, long length)> _pages;
 
-        public ColumnReader(
+        public ColumnMmfReader(
             ulong collectionId,
             long keyId,
             ISessionFactory sessionFactory,
@@ -32,10 +35,8 @@ namespace Sir.VectorSpace
             var ixFileName = Path.Combine(_sessionFactory.Dir, string.Format("{0}.{1}.ix", _collectionId, keyId));
 
             _vectorFile = _sessionFactory.CreateReadStream(vectorFileName);
-            _ixFile = _sessionFactory.CreateReadStream(ixFileName);
-
-            _pages = GetAllPages(
-                Path.Combine(_sessionFactory.Dir, $"{_collectionId}.{keyId}.ixtp"));
+            _ixFile = _sessionFactory.OpenMMF(ixFileName);
+            _pages = GetAllPages(Path.Combine(_sessionFactory.Dir, $"{_collectionId}.{keyId}.ixtp"));
         }
 
         public Hit ClosestMatch(IVector vector, IStringModel model)
@@ -45,7 +46,7 @@ namespace Sir.VectorSpace
 
             foreach (var page in _pages)
             {
-                var hit = ClosestMatchInPage(vector, model, page.offset);
+                var hit = ClosestMatchInPage(vector, model, page.offset, page.length);
 
                 if (hit != null)
                     hits.Add(hit);
@@ -71,40 +72,48 @@ namespace Sir.VectorSpace
         }
 
         private Hit ClosestMatchInPage(
-        IVector vector, IStringModel model, long pageOffset)
+        IVector vector, IStringModel model, long pageOffset, long pageLength)
         {
-            _ixFile.Seek(pageOffset, SeekOrigin.Begin);
+            var time = Stopwatch.StartNew();
 
-            var hit = ClosestMatchInSegment(
-                    vector,
-                    _ixFile,
-                    _vectorFile,
-                    model);
-
-            if (hit.Score > 0)
+            using (var indexView = _ixFile.CreateViewAccessor(pageOffset, pageLength))
             {
-                return hit;
-            }
+                _logger.LogInformation($"creating index view took {time.Elapsed}");
 
-            return null;
+                var hit = ClosestMatchInSegment(
+                                    vector,
+                                    indexView,
+                                    _vectorFile,
+                                    model);
+
+                if (hit.Score > 0)
+                {
+                    return hit;
+                }
+
+                return null;
+            }
         }
 
         private Hit ClosestMatchInSegment(
             IVector queryVector,
-            Stream indexFile,
+            MemoryMappedViewAccessor indexView,
             Stream vectorFile,
             IModel model)
         {
-            Span<byte> block = stackalloc byte[VectorNode.BlockSize];
             var best = new Hit();
-            var read = indexFile.Read(block);
+            long viewPosition = 0;
+            var block = new long[VectorNode.BlockSize/sizeof(long)];
+
+            var read = indexView.ReadArray(viewPosition, block, 0, block.Length);
+            viewPosition += VectorNode.BlockSize;
 
             while (read > 0)
             {
-                var vecOffset = BitConverter.ToInt64(block.Slice(0));
-                var postingsOffset = BitConverter.ToInt64(block.Slice(sizeof(long)));
-                var componentCount = BitConverter.ToInt64(block.Slice(sizeof(long) * 2));
-                var cursorTerminator = BitConverter.ToInt64(block.Slice(sizeof(long) * 4));
+                var vecOffset = block[0];
+                var postingsOffset = block[1];
+                var componentCount = block[2];
+                var cursorTerminator = block[4];
                 var angle = model.CosAngle(queryVector, vecOffset, (int)componentCount, vectorFile);
 
                 if (angle >= model.IdenticalAngle)
@@ -135,7 +144,8 @@ namespace Sir.VectorSpace
                         // There exists either a left and a right child or just a left child.
                         // Either way, we want to go left and the next node in bitmap is the left child.
 
-                        read = indexFile.Read(block);
+                        read = indexView.ReadArray(viewPosition, block, 0, block.Length);
+                        viewPosition += VectorNode.BlockSize;
                     }
                     else
                     {
@@ -164,16 +174,18 @@ namespace Sir.VectorSpace
                         // Next node in bitmap is the left child. 
                         // To find cursor's right child we must skip over the left tree.
 
-                        SkipTree(indexFile);
+                        SkipTree(indexView, ref viewPosition);
 
-                        read = indexFile.Read(block);
+                        read = indexView.ReadArray(viewPosition, block, 0, block.Length);
+                        viewPosition += VectorNode.BlockSize;
                     }
                     else if (cursorTerminator == 2)
                     {
                         // Next node in bitmap is the right child,
                         // which is good because we want to go right.
 
-                        read = indexFile.Read(block);
+                        read = indexView.ReadArray(viewPosition, block, 0, block.Length);
+                        viewPosition += VectorNode.BlockSize;
                     }
                     else
                     {
@@ -187,17 +199,15 @@ namespace Sir.VectorSpace
             return best;
         }
 
-        private void SkipTree(Stream indexStream)
+        private void SkipTree(MemoryMappedViewAccessor indexView, ref long offset)
         {
-            Span<byte> buf = stackalloc byte[VectorNode.BlockSize];
-            var read = indexStream.Read(buf);
-            var weight = BitConverter.ToInt64(buf.Slice(sizeof(long) * 3));
+            var weight = indexView.ReadInt64(offset + sizeof(long) + sizeof(long) + sizeof(long));
+
+            offset += VectorNode.BlockSize;
+
             var distance = weight * VectorNode.BlockSize;
 
-            if (distance > 0)
-            {
-                indexStream.Seek(distance, SeekOrigin.Current);
-            }
+            offset += distance;
         }
 
         private IList<(long offset, long length)> GetAllPages(string pageFileName)
@@ -210,8 +220,6 @@ namespace Sir.VectorSpace
 
         public void Dispose()
         {
-            _vectorFile.Dispose();
-            _ixFile.Dispose();
         }
     }
 }
