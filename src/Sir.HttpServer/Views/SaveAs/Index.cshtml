@@ -13,9 +13,10 @@
     <form action="/saveas/@Context.Request.QueryString" method="post">
         <div class="blog-wrapper">
             <a href="@searchLink">&#8592; Back to result</a>
-            <h2>Save search result</h2>
+            <h2>Save result as...</h2>
             <p>
-                You may save this search result as a new collection or append to one that you know by name. 
+                You may save your result as a new collection. 
+                You may also append your result to an existing collection, one that you know by name.
                 Select "Truncate" to delete all data from the collection before writing to it.
             </p>
             @if (ViewBag.TargetCollectionValidationError != null)
@@ -31,6 +32,9 @@
             </p>
             <p>
                 <label><input type="checkbox" id="truncate" name="truncate" value="truncate" /> Truncate</label>
+            </p>
+            <p>
+                <input type="password" disabled="disabled" placeholder="Password" name="secret" /><span>(Password protection coming soon.)</span>
             </p>
             <p><input type="submit" /></p>
             <input type="hidden" id="q" value="@q" />
