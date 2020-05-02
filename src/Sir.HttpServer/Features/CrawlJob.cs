@@ -164,12 +164,19 @@ namespace Sir.HttpServer.Features
                         {
                             try
                             {
+                                var localDir = Path.GetDirectoryName(localFileName);
+
+                                if (!Directory.Exists(localDir))
+                                {
+                                    Directory.CreateDirectory(localDir);
+                                }
+
                                 File.Move(tmpFileName, localFileName);
                                 Directory.Delete(Path.GetDirectoryName(tmpFileName));
                             }
                             catch (Exception ex)
                             {
-                                _logger.LogError(ex, "Could not move tmp wet file.");
+                                _logger.LogError(ex, ex.Message);
                             }
                         }
 
