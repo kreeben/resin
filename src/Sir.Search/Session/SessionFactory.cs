@@ -8,7 +8,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -21,7 +20,6 @@ namespace Sir.Search
     {
         private ConcurrentDictionary<ulong, ConcurrentDictionary<ulong, long>> _keys;
         private readonly ConcurrentDictionary<string, IList<(long offset, long length)>> _pageInfo;
-        private readonly ConcurrentDictionary<string, MemoryMappedFile> _mmfs;
         private ILogger<SessionFactory> _logger;
 
         public string Dir { get; }
@@ -43,26 +41,11 @@ namespace Sir.Search
             }
 
             _pageInfo = new ConcurrentDictionary<string, IList<(long offset, long length)>>();
-            _mmfs = new ConcurrentDictionary<string, MemoryMappedFile>();
             _logger = loggerFactory.CreateLogger<SessionFactory>();
             LoggerFactory = loggerFactory;
             _keys = LoadKeys();
 
             _logger.LogInformation($"loaded keys in {time.Elapsed}");
-
-            time.Restart();
-
-            foreach (var fileName in Directory.GetFiles(Dir, "*.ix"))
-            {
-                OpenMMF(fileName);
-            }
-
-            foreach (var fileName in Directory.GetFiles(Dir, "*.vec"))
-            {
-                OpenMMF(fileName);
-            }
-
-            _logger.LogInformation($"opened MMFs in {time.Elapsed}");
 
             _logger.LogInformation($"sessionfactory is initiated.");
         }
@@ -70,26 +53,6 @@ namespace Sir.Search
         public ILogger<T> GetLogger<T>()
         {
             return LoggerFactory.CreateLogger<T>();
-        }
-
-        public MemoryMappedFile OpenMMF(string fileName)
-        {
-            var mapName = fileName.Replace(":", "").Replace("\\", "_");
-
-            try
-            {
-                return _mmfs.GetOrAdd(mapName, x =>
-                {
-                    return MemoryMappedFile.CreateFromFile(fileName, FileMode.Open, mapName, 0, MemoryMappedFileAccess.ReadWrite);
-                });
-            }
-            catch
-            {
-                return _mmfs.GetOrAdd(mapName, x =>
-                {
-                    return MemoryMappedFile.OpenExisting(mapName);
-                });
-            }
         }
 
         public long GetDocCount(string collection)
@@ -449,8 +412,6 @@ namespace Sir.Search
 
         public void Dispose()
         {
-            foreach (var file in _mmfs.Values)
-                file.Dispose();
         }
     }
 }
