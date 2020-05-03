@@ -48,6 +48,10 @@ namespace Sir.HttpServer.Controllers
             bool isValid = true;
             ViewBag.JobValidationError = null;
             ViewBag.TargetCollectionValidationError = null;
+            ViewBag.Collection = collection;
+            ViewBag.Field = field;
+            ViewBag.Q = q;
+            ViewBag.Job = job;
 
             if (string.IsNullOrWhiteSpace(job))
             {
@@ -57,11 +61,6 @@ namespace Sir.HttpServer.Controllers
 
             if (!isValid)
             {
-                ViewBag.Collection = collection;
-                ViewBag.Field = field;
-                ViewBag.Q = q;
-                ViewBag.Job = job;
-
                 return View("Index");
             }
 
