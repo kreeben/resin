@@ -35,8 +35,14 @@
                 var warcUrlFileName = warcFilename == null ? null : "https://commoncrawl.s3.amazonaws.com/" + Html.Raw(warcFilename);
                 var wetUrl = wetUrlFileName == null ? null : "/wet" + Context.Request.QueryString + "&fileName=" + wetUrlFileName;
                 var warcUrl = warcUrlFileName == null ? null : "/warc" + Context.Request.QueryString + "&fileName=" + warcUrlFileName;
+                var isEnriched = item.Document.ContainsKey("description") && item.Document["description"] is object[];
+
                 <li>
                     <div class="document-header">
+                        @if (isEnriched)
+                        {
+                            <span style="color:orangered;">&star;</span>
+                        }
                         <span><a class="result-link" href="@Html.Raw(uri.ToString())">@Html.Raw(title)</a></span>
                     </div>
                     <div class="document-body">
