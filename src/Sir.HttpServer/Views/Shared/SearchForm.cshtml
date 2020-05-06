@@ -3,20 +3,21 @@
         ? Context.Request.Query["collection"].ToArray().SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries))
         : (string[])ViewBag.DefaultCollection;
     var query = Context.Request.Query["q"].ToString();
-    var knownFields = Context.Request.Query["field"].ToArray()
+    var fields = Context.Request.Query["field"].ToArray()
                     .SelectMany(x => x.Split(',', StringSplitOptions.RemoveEmptyEntries))
                     .ToArray();
-    var titleSelected = knownFields.Contains("title");
-    var descriptionSelected = knownFields.Contains("description");
-    var schemeSelected = knownFields.Contains("scheme");
-    var hostSelected = knownFields.Contains("host");
-    var pathSelected = knownFields.Contains("path");
-    var querySelected = knownFields.Contains("query");
-    var urlSelected = knownFields.Contains("url");
+    var titleSelected = fields.Contains("title");
+    var descriptionSelected = fields.Contains("description");
+    var schemeSelected = fields.Contains("scheme");
+    var hostSelected = fields.Contains("host");
+    var pathSelected = fields.Contains("path");
+    var querySelected = fields.Contains("query");
+    var urlSelected = fields.Contains("url");
 
     if (!descriptionSelected && !schemeSelected && !hostSelected && !pathSelected && !querySelected && !urlSelected)
     {
         titleSelected = true;
+        descriptionSelected = true;
     }
 }
 
