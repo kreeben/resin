@@ -2,11 +2,14 @@
     Layout = "~/Views/_Layout.cshtml";
     ViewBag.Title = "Crawl Crawler";
 }
-
+@{
+    var progress = ViewBag.DocumentCount == null ? 0 : (double)ViewBag.DocumentCount / ((long)56000 * 44000) * 100;
+    var millionDocs = ViewBag.DocumentCount == null ? 0 : (double)ViewBag.DocumentCount / 1000000;
+}
     <p class="splash">
         Hi beta tester,
-        just in case, here are the <a title="" href="./about">instructions</a>.
-        Indices were built from analyzing ~1% of Common Crawl's December 2019 crawl (~26M documents).
+        these are <a title="" href="./about#instructions">instructions</a>.
+        Indices were built from analyzing ~@progress.ToString("0.##")% of Common Crawl's December 2019 crawl (~@millionDocs.ToString("0.##")M documents).
     </p>
 <p>
 

@@ -4,56 +4,31 @@
 }
     <form action="/crawl/" method="post">
         <div class="blog-wrapper">
-            <h4>About</h4>
+            <h3>About</h3>
             <h2>What is Crawl Crawler?</h2>
             <p>
-                Exploring, enriching, refreshing, slicing, or <i>crawl crawling</i>,
-                is a lot like regular web search only with a few more manual steps.
+                Crawl Crawler is as much of a data collector for both private and corporate data hungry text expeditions as it is plain ol' ads-free, non-tracking, keyword-based WWW search.
             </p>
             <p>
-                First you explore, then you enrich, sometimes you refresh, in some cases you slice, then you repeat.
-            </p>
-            <h4>(1) Explore</h4>
-            <p>
-                Perform a web search as you always do, with a browser, a textbox, a submit button,
-                or use the HTTP API to express your question in JSON and create complex,
-                nested boolean statements that target multiple collections, specify which document fields to include
-                in the result, then fetch it as JSON.
-            </p>
-            <h4>(2) Enrich</h4>
-            <p>
-                Crawl Crawler's search indices may be enriched online and by anyone.
-                On your request Crawl Crawler will fetch and associate more data to a slice of the documents in its indices
-                by querying repositories of already crawled but not yet indexed data,
-                or by fetching it directly from WWW.
+                Crawl Crawler gives you the ability to reach into five grand sources of data: the Common Crawl meta-data, text, and HTML repositories, WWW, and the data that you provide. Crawl Crawler will not index all of that until you ask it to, so in the beginning the coverage will be weak. In great haste, though, full-text indices will be wipped up for most which is important because the more you use Crawl Crawler the wider, deeper and more current its indices become, in real time.
             </p>
             <p>
-                With Crawl Crawler you may search <a href="https://commoncrawl.org/the-data/get-started/#WAT-Format">WAT</a>
-                meta-data that might not have become enriched yet, not from any textual extracts in Common Crawl's
-                <a href="https://commoncrawl.org/the-data/get-started/#WET-Format">WET</a> crawl and not from WWW.
-                That's when you see the "Enrich" link on the search result page and it means you can associate more data to the result.
+                You may interact with Crawl Crawler through a responsive web GUI as well as through a HTTP API.
             </p>
             <p>
-                Enrichment creates a better search experience for the next person visiting
-                Crawl Crawler, who are in search of information within the same topic as you were
-                and who are using a query similar to yours.
+                Use Crawl Crawler to:
+                <ul>
+                    <li>execute queries that target all of its indices, some of them or one of them</li>
+                    <li>enrich your search results in a guided process where you connect meta-data with full text extracts and raw HTML from Common Crawl or WWW to give you a better search experience next time you search for the same topic</li>
+                    <li>build web site features and apps. For example, instead of implementing a search engine for your ecommerce site you use Crawl Crawler's Always Free HTTP Query API. If your site is not already indexed you simply ask Crawl Crawler to do it periodically and, bada-bing bada-bang, you have site-wide search.</li>
+                </ul>
+                Crawl Crawler is mostly free as in beer. However, some operations, such as when it periodically refreshes a slice of one of its search indices, are accompanied by a small, almost tiny, fee.
             </p>
-            <h4>(3) Refresh</h4>
-            <p>
-                On the search result page, once the documents from a search result are enriched
-                you will see a "Refresh" link instead of the enrichment link.
-                Click it to fetch updated enrichment data from either Common Crawl or WWW.
-            </p>
-            <h4>(4) Slice</h4>
-            <p>
-                Search results may span multiple collections. You may save the result ("slice") as a named collection.
-                When you've done so you can target your slice in a query much more easily.
-            </p>
-            <h3>Instructions</h3>
+            <a name="instructions"></a><h2>Instructions</h2>
             <p>
                 There are three (types of) collections here that you may interact with.
             </p>
-            <h4>First collection</h4>
+            <h3>First collection</h3>
             <p>
                 The first collection is public read-only and is called <strong>"cc_wat"</strong>.
                 It is maintained by Crawl Crawler and
@@ -63,7 +38,7 @@
                 Documents in this collection contain the queryable fields "title", "description",
                 the "url" and these URL segment fields: "scheme", "host", "path" and "query".
             </p>
-            <h4>Second collection</h4>
+            <h3>Second collection</h3>
             <p>
                 The second collection is also public read-only and is called <strong>"cc_wet"</strong>.
                 Data fetched from Common Crawl or WWW will be added to it when you use your favorite browser to click on "Enrich"
@@ -73,13 +48,13 @@
                 Documents in the cc_wet collection contain the queryable field "description"
                 that equals all text within the original document's body HTML element, and "url".
             </p>
-            <h4>Third collection</h4>
+            <h3>Third collection</h3>
             <p>
                 The third collection type are slices. They are collections you create when you click
                 <strong>"Save as"</strong> from a search result page.
                 Anyone who knows the name of such a collection can both query it, append to it and refresh it.
             </p>
-            <h4>Querying</h4>
+            <h3>Querying</h3>
             <h5>Hacking the URL</h5>
             <p>
                 Specify one or more keywords in the "q" query string parameter.
@@ -151,7 +126,7 @@
         }
     }
             </pre>
-            <h3>Insert, append, update</h3>
+            <h2>Insert, append, update</h2>
             <p>
                 You may create new collections and query, append to and update any public read-write enabled collection you know by name.
             </p>
@@ -160,15 +135,15 @@
                 The insert, append and update HTTP APIs are unstable at this time.
                 As soon as they become reliable they will be documented here.
             </p>
-            <h3>User privacy</h3>
+            <h2>User privacy</h2>
             <p>
                 Crawl Crawler will not show you ads nor place cookies on your device.
                 Crawl Crawler will not track you by any means.
                 For security purposes and <a href="/toc">for a limited time</a> Crawl Crawler will keep a record of your IP address.
             </p>
-            <h3>No data privacy</h3>
+            <h2>No data privacy</h2>
             <p>No document collection hosted by Crawl Crawler is private and all document collections are public.</p>
-            <h3>Free as in freedom</h3>
+            <h2>Free as in freedom</h2>
             <p>
                 Crawl Crawler is free of any affiliation with any dominant, or submissive (for that matter),
                 search player.
@@ -181,19 +156,19 @@
                 You are free to use the Crawl Crawler GUI to query for data.
                 You are equally free to use the Crawl Crawler HTTP API to query for data.
             </p>
-            <h3>Not free as in beer</h3>
+            <h2>Not free as in beer</h2>
             <p>
                 This service is mostly free as in beer but after the BETA period and for certain tasks,
                 such as recurringly refreshing a document collection,
                 or a slice of it, with textual content from WWW,
                 there will be a small, quite reasonable fee involved.
             </p>
-            <h3>Technology</h3>
+            <h2>Technology</h2>
             <p>
                 We build <a href="https://github.com/didyougogo/commoncrawlcrawler/">Resin <sup>BETA</sup></a>,
                 an open-source and extensible search engine.
             </p>
-            <h3>Created by</h3>
+            <h2>Created by</h2>
             <p>
                 This web based service was created by e-commerce solutions architect
                 and search handy-man, Marcus Lager from Helsingborg, Sweden.
