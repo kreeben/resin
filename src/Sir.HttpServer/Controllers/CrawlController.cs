@@ -38,6 +38,7 @@ namespace Sir.HttpServer.Controllers
             string crawlid, 
             string[] collection, 
             string[] field, 
+            string[] select,
             string q, 
             string job, 
             string and, 
@@ -80,7 +81,18 @@ namespace Sir.HttpServer.Controllers
                 take
             ));
 
-            return RedirectToAction(job, "Status", new { crawlid });
+            return RedirectToAction(job, "Status", new 
+            { 
+                crawlid,
+                collection,
+                field,
+                select,
+                q,
+                and = (and != null ? "AND" : null),
+                or = (or != null ? "OR" : null),
+                skip,
+                take
+            });
         }
     }
 }

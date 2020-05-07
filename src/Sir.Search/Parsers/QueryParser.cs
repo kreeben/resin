@@ -144,7 +144,10 @@ namespace Sir.Search
                     }
                     else
                     {
-                        kvps.Add((kvp.Key, kvp.Value));
+                        var keys = ((string)kvp.Key).Split(',', System.StringSplitOptions.RemoveEmptyEntries);
+
+                        foreach (var k in keys)
+                            kvps.Add((k, kvp.Value));
                     }
                 }
 

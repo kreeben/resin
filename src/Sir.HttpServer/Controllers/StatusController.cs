@@ -26,7 +26,8 @@ namespace Sir.HttpServer.Controllers
         }
 
         [HttpGet("ccc")]
-        public IActionResult CCC(string crawlid)
+        public IActionResult CCC(
+            string crawlid)
         {
             if (crawlid is null)
             {

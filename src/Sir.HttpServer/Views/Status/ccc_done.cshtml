@@ -1,9 +1,16 @@
-﻿@{
+﻿@using Sir.HttpServer;
+@{
     Layout = "~/Views/_Layout.cshtml";
     ViewBag.Title = "Crawl status - Crawl Crawler";
 }
-    <form action="/crawl/@Context.Request.QueryString" method="post">
-        <div class="blog-wrapper">
-            <h2>Crawl job ID @ViewBag.CrawlId has been processed.</h2>
-        </div>
-    </form>
+<form action="/crawl/@Context.Request.QueryString" method="post">
+    <div class="blog-wrapper">
+        <h2>Crawl job has been processed.</h2>
+        <p>
+            ID: @ViewBag.CrawlId
+        </p>
+        <p>
+            Try your <a href="/search?@Context.Request.Query.ToStringExcept("crawlid")">query</a> once again.
+        </p>
+    </div>
+</form>

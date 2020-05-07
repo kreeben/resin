@@ -6,7 +6,7 @@
     var collections = ViewBag.Collection ?? Context.Request.Query["collection"].ToArray();
     var q = (ViewBag.Q ?? Context.Request.Query["q"]).ToString();
     var fields = (ViewBag.Field ?? Context.Request.Query["field"]).ToString();
-    var job = (string)ViewBag.Job;
+    var job = (string)ViewBag.Job??"CCC";
 
     ViewBag.Title = $"Enrich - {q} - Crawl Crawler";
 } 
@@ -49,6 +49,10 @@
             @foreach (var collection in collections)
             {
                 <input type="hidden" id="collection" value="@collection" />
+            }
+            @foreach (var field in Context.Request.Query["select"].ToArray())
+            {
+                <input type="hidden" id="select" value="@field" />
             }
             <input type="hidden" name="crawlid" id="crawlid" value="@ViewBag.CrawlId" />
         </div>

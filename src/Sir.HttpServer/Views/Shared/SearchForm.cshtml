@@ -3,9 +3,12 @@
         ? Context.Request.Query["collection"].ToArray().SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries))
         : (string[])ViewBag.DefaultCollection;
     var query = Context.Request.Query["q"].ToString();
-    var fields = Context.Request.Query["field"].ToArray()
+    var fieldArray = Context.Request.Query.ContainsKey("field")
+        ? Context.Request.Query["field"].ToArray()
                     .SelectMany(x => x.Split(',', StringSplitOptions.RemoveEmptyEntries))
-                    .ToArray();
+                    .ToArray()
+        : (string[])ViewBag.DefaultFields;
+    var fields = new HashSet<string>(fieldArray);
     var titleSelected = fields.Contains("title");
     var descriptionSelected = fields.Contains("description");
     var schemeSelected = fields.Contains("scheme");
@@ -14,11 +17,11 @@
     var querySelected = fields.Contains("query");
     var urlSelected = fields.Contains("url");
 
-    if (!descriptionSelected && !schemeSelected && !hostSelected && !pathSelected && !querySelected && !urlSelected)
-    {
-        titleSelected = true;
-        descriptionSelected = true;
-    }
+    //if (!titleSelected && !descriptionSelected && !schemeSelected && !hostSelected && !pathSelected && !querySelected && !urlSelected)
+    //{
+    //    titleSelected = true;
+    //    descriptionSelected = true;
+    //}
 }
 
 @using (Html.BeginRouteForm("default", new { controller = "Search" }, FormMethod.Get))
@@ -26,10 +29,9 @@
     <fieldset class="search-fields">
         <legend>
             <span>
-                Search <label><input type="checkbox" name="collection" id="collection" value="cc_wat" @(collections.Contains("cc_wat") ? "checked" : "") />WAT</label>
-                meta-data <a href="/about">enriched</a> with textual data from <a href="@ViewBag.CCTargetUrl">Common Crawl's</a> 
-                <label><input type="checkbox" name="collection" id="collection" value="cc_wet" @(collections.Contains("cc_wet") ? "checked" : "") />WET</label>
-                repository and WWW.
+                Search <a href="@ViewBag.CCTargetUrl">Common Crawl's</a> 
+                <label><input type="checkbox" name="collection" id="collection" value="cc_wat" @(collections.Contains("cc_wat") ? "checked" : "") />WAT meta-data</label>, 
+                <label><input type="checkbox" name="collection" id="collection" value="cc_wet" @(collections.Contains("cc_wet") ? "checked" : "") />WET text extracts and WWW</label>.
             </span>
         </legend>
 

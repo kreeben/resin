@@ -30,7 +30,7 @@ namespace Sir.HttpServer.Controllers
             ViewBag.CCTargetUrl = Config.Get("cc_target_url");
             ViewBag.CCTargetName = Config.Get("cc_target_name");
             ViewBag.DefaultCollection = Config.Get("default_collection").Split(',', System.StringSplitOptions.RemoveEmptyEntries);
-
+            ViewBag.DefaultFields = Config.Get("default_fields").Split(',', System.StringSplitOptions.RemoveEmptyEntries);
             ViewBag.Collection = context.HttpContext.Request.Query.ContainsKey("collection") ?
                 context.HttpContext.Request.Query["collection"].ToArray() :
                 ViewBag.DefaultCollection;
