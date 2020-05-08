@@ -85,7 +85,7 @@
                 Include your JSON query in the body of the request.
             </p>
             <p>
-                HTTPS POST /query/?skip=0&take=100&select=title<br />
+                HTTP POST /query/?skip=0&take=100&select=title<br />
                 Content-Type:application/json <br />
                 Accept: application/json
             </p>
@@ -106,9 +106,11 @@
     }
             </pre>
             <p>
-                There can be only one "and", "or" and "not" top-level field per JSON object
-                but there is no limit to the nesting depth other than one you set for yourself:
-
+                There can be no more than one "and", "or" and "not" top-level field per JSON object.
+            </p>
+            <p>
+                If child terms target the same collection as their parent, then you need to specify collection only once. 
+                There is no limit to the nesting depth other than one you set for yourself:
             </p>
             <pre>
     {
@@ -116,10 +118,8 @@
             "collection":"cc_wet",
             "description":"prom",
             "or":{
-                "collection":"cc_wet",
                 "description":"dress",
                 "or":{
-                    "collection":"cc_wet",
                     "description":"wedding"
                 }
             }
