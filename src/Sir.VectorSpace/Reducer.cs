@@ -6,7 +6,7 @@ namespace Sir.Search
     {
         protected abstract IList<(ulong, long)> Read(ulong collectionId, IList<long> postingsOffsets);
 
-        public void Reduce(IQuery query, ref IDictionary<(ulong, long), double> result)
+        public void Reduce(IQuery query, int numOfTerms, ref IDictionary<(ulong, long), double> result)
         {
             IDictionary<(ulong, long), double> queryResult = new Dictionary<(ulong, long), double>();
 
@@ -18,7 +18,7 @@ namespace Sir.Search
                 {
                     foreach (var docId in queryResult)
                     {
-                        result.Add(docId.Key, docId.Value);
+                        result.Add(docId.Key, docId.Value/numOfTerms);
                     }
                 }
                 else
@@ -31,7 +31,7 @@ namespace Sir.Search
 
                         if (result.TryGetValue(doc.Key, out score))
                         {
-                            intersection.Add(doc.Key, score + doc.Value);
+                            intersection.Add(doc.Key, score + (doc.Value/numOfTerms));
                         }
                     }
 
@@ -45,7 +45,7 @@ namespace Sir.Search
                 {
                     foreach (var docId in queryResult)
                     {
-                        result.Add(docId.Key, docId.Value);
+                        result.Add(docId.Key, docId.Value / numOfTerms);
                     }
                 }
                 else
@@ -56,11 +56,11 @@ namespace Sir.Search
 
                         if (result.TryGetValue(docId.Key, out score))
                         {
-                            result[docId.Key] = score + docId.Value;
+                            result[docId.Key] = score + (docId.Value / numOfTerms);
                         }
                         else
                         {
-                            result.Add(docId.Key, docId.Value);
+                            result.Add(docId.Key, docId.Value / numOfTerms);
                         }
                     }
                 }
@@ -78,15 +78,15 @@ namespace Sir.Search
 
             if (query.And != null)
             {
-                Reduce(query.And, ref result);
+                Reduce(query.And, numOfTerms, ref result);
             }
             if (query.Or != null)
             {
-                Reduce(query.Or, ref result);
+                Reduce(query.Or, numOfTerms, ref result);
             }
             if (query.Not != null)
             {
-                Reduce(query.Not, ref result);
+                Reduce(query.Not, numOfTerms, ref result);
             }
         }
 

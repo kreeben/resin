@@ -64,7 +64,7 @@ namespace Sir.Search
 
             // Reduce
             IDictionary<(ulong, long), double> scoredResult = new Dictionary<(ulong, long), double>();
-            _postingsReader.Reduce(query, ref scoredResult);
+            _postingsReader.Reduce(query, query.TotalNumberOfTerms(), ref scoredResult);
 
             _logger.LogInformation("reducing took {0}", timer.Elapsed);
             timer.Restart();
@@ -176,7 +176,7 @@ namespace Sir.Search
                         }
                     }
 
-                    existingDoc[SystemFields.Score] = (double)existingDoc[SystemFields.Score] * (1 + ((double)doc[SystemFields.Score])); 
+                    existingDoc[SystemFields.Score] = (double)existingDoc[SystemFields.Score] + (double)doc[SystemFields.Score]; 
                 }
                 else
                 {
