@@ -16,7 +16,7 @@
 </head>
 <body>
     <div class="outer-container">
-        <div class="logo2"><a href="/?collection=cc_wat,cc_wet">Crawl Crawler <sup>BETA</sup></a></div>
+        <div class="logo2"><a href="/?collection=cc_wat,cc_wet" title="Crawl Crawler version: 0.0.1-b">Crawl Crawler <sup>BETA</sup></a></div>
         @RenderBody()
     </div>
     <footer>
@@ -29,7 +29,8 @@
                 Crawl Crawler is not affiliated with Common Crawl.
             </p>
             <p>
-                Coverage (WAT): @progress.ToString("0.##")% (@millionDocs.ToString("0.##")M documents). <a href="/donate">Donate</a> to increase capacity.
+                Coverage (WAT): @progress.ToString("0.##")% (@millionDocs.ToString("0.##")M documents). 
+                <a href="/donate">Donate</a> to increase capacity. 
             </p>
         </div>
         <div class="footer-nav">
