@@ -39,9 +39,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Update="Views\QueryParser\Index.cshtml">
-      <Pack>$(IncludeRazorContentInPack)</Pack>
-    </Content>
     <Content Update="Views\Shared\SearchForm.cshtml">
       <Pack>$(IncludeRazorContentInPack)</Pack>
     </Content>
