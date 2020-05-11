@@ -78,7 +78,7 @@ namespace Sir.HttpServer.Features
                 var c = "cc_wat".ToHash();
                 foreach (var d in documents)
                 {
-                    d[SystemFields.CollectionId] = c;
+                    d.TryAdd(SystemFields.CollectionId, c);
                 }
 
                 if (_truncate)
