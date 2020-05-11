@@ -16,7 +16,7 @@
     var querySelected = fields.Contains("query");
     var urlSelected = fields.Contains("url");
 
-    var customCollections = collections.Where(x => reservedCollections.Contains(x) == false);
+    var customCollections = collections.Where(x => reservedCollections.Contains(x) == false).ToList();
 }
 
 @using (Html.BeginRouteForm("default", new { controller = "Search" }, FormMethod.Get))
@@ -28,12 +28,17 @@
                 <label><input type="checkbox" name="collection" id="collection" value="cc_wat" @(collections.Contains("cc_wat") ? "checked" : "") />WAT meta-data</label>,
                 <label><input type="checkbox" name="collection" id="collection" value="cc_wet" @(collections.Contains("cc_wet") ? "checked" : "") />WET text extracts and WWW</label>.
             </span>
-            <span>
-                @foreach (var collection in customCollections)
-                {
-                <label><input type="checkbox" name="collection" id="collection" value="@collection" checked />@collection</label><span>,</span>
-                }
-            </span>
+            @if (customCollections.Count > 0)
+            {
+                <span>Also, </span>
+                <span>
+                    @foreach (var collection in customCollections)
+                    {
+                        <label><input type="checkbox" name="collection" id="collection" value="@collection" checked />@collection</label>
+                    }
+                </span>
+            }
+
         </legend>
 
         <label><input type="checkbox" name="field" id="title" value="title" @(titleSelected ? "checked" : "") />title</label>
