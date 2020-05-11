@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Sir
 {
@@ -28,6 +29,25 @@ namespace Sir
         public static long MapToLong(this ulong ulongValue)
         {
             return unchecked((long)ulongValue + long.MinValue);
+        }
+    }
+
+    public static class DictionaryHelper
+    {
+        public static object GetFirstValue(this IDictionary<string, object> document, string key)
+        {
+            object value;
+
+            if (document.TryGetValue(key, out value))
+            {
+                if (value is object[] arr)
+                {
+                    return arr[0];
+                }
+                return value;
+            }
+
+            return null;
         }
     }
 }

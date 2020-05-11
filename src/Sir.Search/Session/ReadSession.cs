@@ -44,7 +44,7 @@ namespace Sir.Search
 
             if (result != null)
             {
-                var docs = ReadDocs(result.SortedDocuments, primaryKey, query.Select, query.TotalNumberOfTerms());
+                var docs = ReadDocs(result.SortedDocuments, primaryKey, query.Select);
 
                 return new ReadResult { Query = query, Total = result.Total, Docs = docs };
             }
@@ -140,8 +140,7 @@ namespace Sir.Search
         private IList<IDictionary<string, object>> ReadDocs(
             IEnumerable<KeyValuePair<(ulong collectionId, long docId), double>> docIds,
             string primaryKey,
-            HashSet<string> select,
-            int numOfTerms)
+            HashSet<string> select)
         {
             if (!select.Contains(primaryKey))
             {
@@ -177,11 +176,11 @@ namespace Sir.Search
                         }
                     }
 
-                    existingDoc[SystemFields.Score] = (double)existingDoc[SystemFields.Score] * (1 + ((double)doc[SystemFields.Score]/numOfTerms)); 
+                    existingDoc[SystemFields.Score] = (double)existingDoc[SystemFields.Score] * (1 + ((double)doc[SystemFields.Score])); 
                 }
                 else
                 {
-                    doc[SystemFields.Score] = (double)doc[SystemFields.Score]/numOfTerms;
+                    doc[SystemFields.Score] = (double)doc[SystemFields.Score];
                     result.Add(doc);
                     documentsByPrimaryKey.Add(docHash, doc);
                 }

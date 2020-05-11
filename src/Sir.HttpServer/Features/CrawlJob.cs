@@ -43,8 +43,8 @@ namespace Sir.HttpServer.Features
             _queryParser = queryParser;
             _logger = logger;
             _model = model;
-            _wetStoredFieldNames = new HashSet<string> { "url", "description" };
-            _wetIndexedFieldNames = new HashSet<string> { "description" };
+            _wetStoredFieldNames = new HashSet<string> { "url", "title", "description", "filename" };
+            _wetIndexedFieldNames = new HashSet<string> { "title", "description" };
             _skip = skip;
             _take = take;
 
@@ -75,7 +75,7 @@ namespace Sir.HttpServer.Features
                 Collections, 
                 Q, 
                 Fields, 
-                select: new string[] {"url", "filename"},
+                select: new string[] {"url", "title", "filename"},
                 and: And, 
                 or: Or);
 
@@ -171,7 +171,8 @@ namespace Sir.HttpServer.Features
                                     Directory.CreateDirectory(localDir);
                                 }
 
-                                File.Move(tmpFileName, localFileName);
+                                File.Move(tmpFileName, localFileName, true);
+                                Thread.Sleep(100);
                                 Directory.Delete(Path.GetDirectoryName(tmpFileName));
                             }
                             catch (Exception ex)
@@ -187,6 +188,9 @@ namespace Sir.HttpServer.Features
 
                             if (originalResult.TryGetValue(key, out originalDoc))
                             {
+                                document["title"] = originalDoc["title"];
+                                document["filename"] = originalDoc["filename"];
+
                                 writePayload.Add(document);
                             }
                         }

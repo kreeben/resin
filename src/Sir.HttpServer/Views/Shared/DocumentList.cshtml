@@ -1,4 +1,5 @@
-﻿@model IEnumerable<Sir.HttpServer.Controllers.SearchResultModel>
+﻿@using Sir;
+@model IEnumerable<Sir.HttpServer.Controllers.SearchResultModel>
 @{
     IList<Sir.HttpServer.Controllers.SearchResultModel> docs = Model == null ?
         new Sir.HttpServer.Controllers.SearchResultModel[0].ToList() : Model.ToList();
@@ -6,7 +7,7 @@
     var jsonDownloadLink = $"{Context.Request.Path.Value.ToLower().Replace("/search", "/query")}{Context.Request.QueryString}";
     var crawlLink = $"{Context.Request.Path.Value.ToLower().Replace("/search", "/crawl")}{Context.Request.QueryString}";
     var saveAsLink = $"{Context.Request.Path.Value.ToLower().Replace("/search", "/saveas")}{Context.Request.QueryString}";
-
+    var ccWetId = "cc_wet".ToHash();
 }
 @if (docs.Count > 0)
 {
@@ -27,7 +28,7 @@
                 var uri = new Uri(prefix + url);
                 var host = uri.Host.ToString();
                 var path = $"{host}{uri.LocalPath}";
-                var title = item.Document.ContainsKey("title") ? item.Document["title"].ToString() : "Unknown title";
+                var title = item.Document.GetFirstValue("title").ToString()??"Unknown title";
                 var score = (double)item.Document[Sir.Search.SystemFields.Score] * 100;
                 var warcFilename = item.Document.ContainsKey("filename") ? item.Document["filename"].ToString() : null;
                 var wetFileName = warcFilename == null ? null : warcFilename.Replace("/warc", "/wet").Replace(".gz", ".wet.gz");
@@ -35,13 +36,14 @@
                 var warcUrlFileName = warcFilename == null ? null : "https://commoncrawl.s3.amazonaws.com/" + Html.Raw(warcFilename);
                 var wetUrl = wetUrlFileName == null ? null : "/wet" + Context.Request.QueryString + "&fileName=" + wetUrlFileName;
                 var warcUrl = warcUrlFileName == null ? null : "/warc" + Context.Request.QueryString + "&fileName=" + warcUrlFileName;
-                var isEnriched = item.Document.ContainsKey("description") && item.Document["description"] is object[];
+                var isEnriched = item.Document.ContainsKey(Sir.Search.SystemFields.CollectionId) && 
+                    (ulong)item.Document[Sir.Search.SystemFields.CollectionId] == ccWetId;
 
                 <li>
                     <div class="document-header">
                         @if (isEnriched)
                         {
-                            <span style="color:orangered;">&star;</span>
+                            <span style="color:orangered;" title="Enriched!">&star;</span>
                         }
                         <span><a class="result-link" href="@Html.Raw(uri.ToString())">@Html.Raw(title)</a></span>
                     </div>
