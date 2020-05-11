@@ -177,11 +177,11 @@ namespace Sir.Search
                         }
                     }
 
-                    existingDoc[SystemFields.Score] = (double)existingDoc[SystemFields.Score] + ((double)doc[SystemFields.Score]/numOfTerms); 
+                    existingDoc[SystemFields.Score] = (double)existingDoc[SystemFields.Score] * (1 + ((double)doc[SystemFields.Score]/numOfTerms)); 
                 }
                 else
                 {
-                    doc[SystemFields.Score] = (double)doc[SystemFields.Score] / numOfTerms;
+                    doc[SystemFields.Score] = (double)doc[SystemFields.Score]/numOfTerms;
                     result.Add(doc);
                     documentsByPrimaryKey.Add(docHash, doc);
                 }
