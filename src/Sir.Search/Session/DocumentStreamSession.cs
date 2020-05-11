@@ -88,13 +88,17 @@ namespace Sir.Search
             {
                 return ReadDoc((sourceCollectionId.Value, sourceDocId.Value), select, score);
             }
+            else
+            {
+                doc[SystemFields.DocumentId] = docId.docId;
 
-            doc[SystemFields.DocumentId] = docId.docId;
+                if (score.HasValue)
+                    doc[SystemFields.Score] = score;
 
-            if (score.HasValue)
-                doc[SystemFields.Score] = score;
+                return doc;
+            }
 
-            return doc;
+            
         }
 
         private DocumentReader GetOrCreateDocumentReader(ulong collectionId)
