@@ -10,7 +10,7 @@ namespace Sir.Search
         {
             IDictionary<(ulong, long), double> queryResult = new Dictionary<(ulong, long), double>();
 
-            Reduce(query.Terms, ref queryResult);
+            Reduce(query.Terms, numOfTerms, ref queryResult);
 
             if (query.IsIntersection)
             {
@@ -18,7 +18,7 @@ namespace Sir.Search
                 {
                     foreach (var docId in queryResult)
                     {
-                        result.Add(docId.Key, docId.Value/numOfTerms);
+                        result.Add(docId.Key, docId.Value);
                     }
                 }
                 else
@@ -31,13 +31,12 @@ namespace Sir.Search
 
                         if (result.TryGetValue(doc.Key, out score))
                         {
-                            intersection.Add(doc.Key, score + (doc.Value/numOfTerms));
+                            intersection.Add(doc.Key, score + (doc.Value));
                         }
                     }
 
                     result = intersection;
                 }
-
             }
             else if (query.IsUnion)
             {
@@ -45,7 +44,7 @@ namespace Sir.Search
                 {
                     foreach (var docId in queryResult)
                     {
-                        result.Add(docId.Key, docId.Value / numOfTerms);
+                        result.Add(docId.Key, docId.Value);
                     }
                 }
                 else
@@ -56,11 +55,11 @@ namespace Sir.Search
 
                         if (result.TryGetValue(docId.Key, out score))
                         {
-                            result[docId.Key] = score + (docId.Value / numOfTerms);
+                            result[docId.Key] = score + docId.Value;
                         }
                         else
                         {
-                            result.Add(docId.Key, docId.Value / numOfTerms);
+                            result.Add(docId.Key, docId.Value);
                         }
                     }
                 }
@@ -90,7 +89,7 @@ namespace Sir.Search
             }
         }
 
-        private void Reduce(IList<Term> terms, ref IDictionary<(ulong, long), double> result)
+        private void Reduce(IList<Term> terms, int numOfTerms, ref IDictionary<(ulong Key, long Value), double> result)
         {
             foreach (var term in terms)
             {
@@ -99,40 +98,13 @@ namespace Sir.Search
 
                 var termResult = Read(term.CollectionId, term.PostingsOffsets);
 
-                if (term.IsIntersection)
+                if (term.IsIntersection || term.IsUnion)
                 {
                     if (result.Count == 0)
                     {
                         foreach (var docId in termResult)
                         {
-                            result.Add(docId, term.Score);
-                        }
-                    }
-                    else
-                    {
-                        var intersection = new Dictionary<(ulong, long), double>();
-
-                        foreach (var docId in termResult)
-                        {
-                            double score;
-
-                            if (result.TryGetValue(docId, out score))
-                            {
-                                intersection.Add(docId, score + term.Score);
-                            }
-                        }
-
-                        result = intersection;
-                    }
-
-                }
-                else if (term.IsUnion)
-                {
-                    if (result.Count == 0)
-                    {
-                        foreach (var docId in termResult)
-                        {
-                            result.Add(docId, term.Score);
+                            result.Add(docId, term.Score / numOfTerms);
                         }
                     }
                     else
@@ -143,11 +115,11 @@ namespace Sir.Search
 
                             if (result.TryGetValue(docId, out score))
                             {
-                                result[docId] = score + term.Score;
+                                result[docId] = score + (term.Score/numOfTerms);
                             }
                             else
                             {
-                                result.Add(docId, term.Score);
+                                result.Add(docId, (term.Score / numOfTerms));
                             }
                         }
                     }
@@ -165,9 +137,6 @@ namespace Sir.Search
                     }
                 }
             }
-
-            
-
         }
     }
 }

@@ -13,7 +13,7 @@ namespace Sir.Search
     /// <summary>
     /// Read session targeting a single collection.
     /// </summary>
-    public class ReadSession : DocumentStreamSession, IDisposable, IReadSession
+    public class ReadSession : DocumentStreamSession, IDisposable, IReadSession //TODO: rename to QuerySession.
     {
         private readonly SessionFactory _sessionFactory;
         private readonly IConfigurationProvider _config;
@@ -64,7 +64,7 @@ namespace Sir.Search
 
             // Reduce
             IDictionary<(ulong, long), double> scoredResult = new Dictionary<(ulong, long), double>();
-            _postingsReader.Reduce(query, query.TotalNumberOfTerms(), ref scoredResult);
+            _postingsReader.Reduce(query, query.TotalNumberOfTerms(),ref  scoredResult);
 
             _logger.LogInformation("reducing took {0}", timer.Elapsed);
             timer.Restart();
@@ -161,6 +161,7 @@ namespace Sir.Search
                 {
                     foreach (var field in doc)
                     {
+                        // TODO: add condition for when there are two doc versions with different created dates.
                         if (field.Key != primaryKey && select.Contains(field.Key))
                         {
                             object existingValue;
