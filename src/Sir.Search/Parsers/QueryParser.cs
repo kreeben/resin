@@ -93,16 +93,6 @@ namespace Sir.Search
 
         public IQuery Parse(dynamic document, IEnumerable<string> select)
         {
-            //if (((IDictionary<string,object>)document).ContainsKey("join"))
-            //{
-            //    return ParseJoin(document);
-            //}
-
-            return ParseQuery(document, select);
-        }
-
-        public Query ParseQuery(dynamic document, IEnumerable<string> select)
-        {
             Query root = null;
             Query cursor = null;
             string[] parentCollections = null;
@@ -192,22 +182,7 @@ namespace Sir.Search
             return root;
         }
 
-        //public Join ParseJoin(dynamic document)
-        //{
-        //    string[] joinInfo = ((string)((IDictionary<string,object>)document)["join"])
-        //        .Split(',', System.StringSplitOptions.RemoveEmptyEntries);
-
-        //    string joinCollection = joinInfo[0];
-        //    string primaryKey = joinInfo[1];
-        //    var query = ParseQuery(document.query);
-        //    var root = new Join(query, joinCollection, primaryKey);
-
-        //    _log.LogDebug(JsonConvert.SerializeObject(root));
-
-        //    return root;
-        //}
-
-        public IList<Term> ParseTerms(string collectionName, string key, string value, bool and, bool or, bool not)
+        private IList<Term> ParseTerms(string collectionName, string key, string value, bool and, bool or, bool not)
         {
             var collectionId = collectionName.ToHash();
             long keyId;
