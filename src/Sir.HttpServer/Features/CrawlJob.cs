@@ -91,11 +91,13 @@ namespace Sir.HttpServer.Features
 
                 foreach (var doc in originalResult.Values)
                 {
+                    if (doc["filename"] is object[])
+                        continue;
+
                     var wetFileId = ((string)doc["filename"]).Replace("/warc", "/wet").Replace(".gz", ".wet.gz");
 
                     wetFileIds.TryAdd(wetFileId, null);
 
-                    //TODO: remove break
                     break;
                 }
 

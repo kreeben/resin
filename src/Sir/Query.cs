@@ -192,40 +192,6 @@ namespace Sir
         }
     }
 
-    /// <summary>
-    /// A join query.
-    /// </summary>
-    /// <example>
-    /// {
-    ///        "join":"cc_wet,url",
-    ///        "query":
-    ///        {
-    ///	        "or":{
-    ///		        "collection":"cc_wat",
-    ///		        "title":"red dress"
-    ///         }
-    ///     }
-    /// }
-    /// </example>
-    //public class Join : IQuery
-    //{
-    //    public Join(Query query, string collection, string primaryKey)
-    //    {
-    //        Query = query;
-    //        Collection = collection;
-    //        PrimaryKey = primaryKey;
-    //    }
-
-    //    public string PrimaryKey { get;}
-    //    public string Collection { get; }
-    //    public Query Query { get; }
-
-    //    public int GetDivider()
-    //    {
-    //        return Query.GetDivider();
-    //    }
-    //}
-
     public interface IQuery
     {
         bool IsIntersection { get; }
