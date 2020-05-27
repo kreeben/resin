@@ -96,6 +96,11 @@ namespace Sir.Search
                 File.Delete(file);
                 count++;
             }
+            foreach (var file in Directory.GetFiles(Dir, $"{collectionId}*.ixtp"))
+            {
+                File.Delete(file);
+                count++;
+            }
             foreach (var file in Directory.GetFiles(Dir, $"{collectionId}*.vec"))
             {
                 File.Delete(file);
@@ -112,7 +117,11 @@ namespace Sir.Search
             _pageInfo.Clear();
         }
 
-        public void Optimize(string collection, HashSet<string> storeFields, HashSet<string> indexFields)
+        public void Optimize(
+            string collection,
+            HashSet<string> storeFields, 
+            HashSet<string> indexFields, 
+            int batchSize = 100000)
         {
             var collectionId = collection.ToHash();
 
@@ -120,16 +129,23 @@ namespace Sir.Search
 
             using (var docStream = new DocumentStreamSession(this))
             {
-                var job = new WriteJob(
-                    collectionId,
-                    docStream.ReadDocs(
+                foreach (var batch in docStream.ReadDocs(
                         collectionId,
-                        new HashSet<string> { "title", "description", "url", "filename" }),
-                    Model,
-                    storeFields,
-                    new HashSet<string> { "title", "description", "url" }
-                    );
+                        storeFields).Batch(batchSize))
+                {
+                    var job = new WriteJob(
+                        collectionId,
+                        batch,
+                        Model,
+                        storeFields,
+                        indexFields
+                        );
+
+                    Index(job);
+                }
             }
+
+            _logger.LogInformation($"optimized collection {collection}");
         }
 
         public void SaveAs(
@@ -188,7 +204,7 @@ namespace Sir.Search
                         var docsPerSecond = (int)(reportSize / t * 1000);
                         var debug = string.Join('\n', info.Info.Select(x => x.ToString()));
 
-                        _logger.LogInformation($"batch {++batchNo}\n{debug}\n{docsPerSecond} docs/s \n write queue {writer.Count}\n index queue {indexer.Count}");
+                        _logger.LogInformation($"\n{time.Elapsed}\nbatch {++batchNo}\n{debug}\n{docsPerSecond} docs/s \n write queue {writer.Count}\n index queue {indexer.Count}");
                     }
                 }
             }
@@ -196,50 +212,43 @@ namespace Sir.Search
             _logger.LogInformation($"processed write job (collection {job.CollectionId}), time in total: {time.Elapsed}");
         }
 
-        public void Index(WriteJob job, WriteSession writeSession, IndexSession indexSession, int reportSize = 1000)
+        public void Index(WriteJob job, int reportSize = 1000)
         {
-            _logger.LogInformation($"writing to collection {job.CollectionId}");
+            _logger.LogInformation($"indexing collection {job.CollectionId}");
 
             var time = Stopwatch.StartNew();
+            var batchTime = Stopwatch.StartNew();
+            var batchNo = 0;
+            var batchCount = 0;
 
-            using (var indexer = new ProducerConsumerQueue<(long docId, IDictionary<string, object> document)>(1, document =>
+            using (var indexSession = CreateIndexSession(job.CollectionId))
             {
-                Parallel.ForEach(document.document, kv =>
-                //foreach (var kv in document.document)
+                foreach (var document in job.Documents)
                 {
-                    if (job.IndexedFieldNames.Contains(kv.Key) && kv.Value != null)
+                    var docId = (long)document[SystemFields.DocumentId];
+
+                    //Parallel.ForEach(document, kv =>
+                    foreach (var kv in document)
                     {
-                        var keyId = writeSession.EnsureKeyExists(kv.Key);
-
-                        indexSession.Put(document.docId, keyId, kv.Value.ToString());
-                    }
-                });
-            }))
-            {
-                using (var writer = new ProducerConsumerQueue<IDictionary<string, object>>(1, document =>
-                {
-                    var docId = writeSession.Write(document, job.StoredFieldNames);
-
-                    indexer.Enqueue((docId, document));
-                }))
-                {
-                    var batchNo = 0;
-
-                    foreach (var batch in job.Documents.Batch(reportSize))
-                    {
-                        var batchTime = Stopwatch.StartNew();
-
-                        foreach (var document in batch)
+                        if (job.IndexedFieldNames.Contains(kv.Key) && kv.Value != null)
                         {
-                            writer.Enqueue(document);
-                        }
+                            var keyId = GetKeyId(job.CollectionId, kv.Key.ToHash());
 
+                            indexSession.Put(docId, keyId, kv.Value.ToString());
+                        }
+                    }//);
+
+                    if (batchCount++ == reportSize)
+                    {
                         var info = indexSession.GetIndexInfo();
                         var t = batchTime.Elapsed.TotalMilliseconds;
                         var docsPerSecond = (int)(reportSize / t * 1000);
                         var debug = string.Join('\n', info.Info.Select(x => x.ToString()));
 
-                        _logger.LogInformation($"batch {++batchNo}\n{debug}\n{docsPerSecond} docs/s \n write queue {writer.Count}\n index queue {indexer.Count}");
+                        _logger.LogInformation($"\n{time.Elapsed}\nbatch {++batchNo}\n{debug}\n{docsPerSecond} docs/s");
+
+                        batchTime.Restart();
+                        batchCount = 0;
                     }
                 }
             }

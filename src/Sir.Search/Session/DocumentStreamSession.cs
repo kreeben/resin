@@ -28,10 +28,14 @@ namespace Sir.Search
             ulong collectionId, 
             HashSet<string> select, 
             int skip = 0, 
-            int take = int.MaxValue)
+            int take = 0)
         {
             var documentReader = GetOrCreateDocumentReader(collectionId);
             var docCount = documentReader.DocumentCount();
+
+            if (take == 0)
+                take = docCount;
+
             var took = 0;
             long docId = 1 + skip;
 

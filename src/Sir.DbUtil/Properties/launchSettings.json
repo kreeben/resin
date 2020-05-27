@@ -2,7 +2,7 @@
   "profiles": {
     "Sir.DbUtil": {
       "commandName": "Project",
-      "commandLineArgs": "download_wat CC-MAIN-2019-51 d:\\ cc_wat 0 1"
+      "commandLineArgs": "optimize cc_wat 1000000"
     }
   }
 }

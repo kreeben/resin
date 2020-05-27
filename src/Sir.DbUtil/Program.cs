@@ -89,13 +89,15 @@ namespace Sir.DbUtil
         private static void Optimize(string[] args, BocModel model, ILoggerFactory loggerFactory)
         {
             var collection = args[1];
+            var batchSize = int.Parse(args[2]);
 
             using (var sessionFactory = new SessionFactory(new KeyValueConfiguration("sir.ini"), model, loggerFactory))
             {
                 sessionFactory.Optimize(
                     collection, 
                     new HashSet<string> { "title", "description", "url", "filename" },
-                    new HashSet<string> { "title", "description", "url" });
+                    new HashSet<string> { "title", "description", "url" },
+                    batchSize);
             }
         }
 
