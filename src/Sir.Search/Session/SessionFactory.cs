@@ -112,6 +112,26 @@ namespace Sir.Search
             _pageInfo.Clear();
         }
 
+        public void Optimize(string collection, HashSet<string> storeFields, HashSet<string> indexFields)
+        {
+            var collectionId = collection.ToHash();
+
+            TruncateIndex(collectionId);
+
+            using (var docStream = new DocumentStreamSession(this))
+            {
+                var job = new WriteJob(
+                    collectionId,
+                    docStream.ReadDocs(
+                        collectionId,
+                        new HashSet<string> { "title", "description", "url", "filename" }),
+                    Model,
+                    storeFields,
+                    new HashSet<string> { "title", "description", "url" }
+                    );
+            }
+        }
+
         public void SaveAs(
             ulong targetCollectionId, 
             IEnumerable<IDictionary<string, object>> documents,
@@ -126,6 +146,57 @@ namespace Sir.Search
         }
 
         public void Write(WriteJob job, WriteSession writeSession, IndexSession indexSession, int reportSize = 1000)
+        {
+            _logger.LogInformation($"writing to collection {job.CollectionId}");
+
+            var time = Stopwatch.StartNew();
+
+            using (var indexer = new ProducerConsumerQueue<(long docId, IDictionary<string, object> document)>(1, document =>
+            {
+                Parallel.ForEach(document.document, kv =>
+                //foreach (var kv in document.document)
+                {
+                    if (job.IndexedFieldNames.Contains(kv.Key) && kv.Value != null)
+                    {
+                        var keyId = writeSession.EnsureKeyExists(kv.Key);
+
+                        indexSession.Put(document.docId, keyId, kv.Value.ToString());
+                    }
+                });
+            }))
+            {
+                using (var writer = new ProducerConsumerQueue<IDictionary<string, object>>(1, document =>
+                {
+                    var docId = writeSession.Write(document, job.StoredFieldNames);
+
+                    indexer.Enqueue((docId, document));
+                }))
+                {
+                    var batchNo = 0;
+
+                    foreach (var batch in job.Documents.Batch(reportSize))
+                    {
+                        var batchTime = Stopwatch.StartNew();
+
+                        foreach (var document in batch)
+                        {
+                            writer.Enqueue(document);
+                        }
+
+                        var info = indexSession.GetIndexInfo();
+                        var t = batchTime.Elapsed.TotalMilliseconds;
+                        var docsPerSecond = (int)(reportSize / t * 1000);
+                        var debug = string.Join('\n', info.Info.Select(x => x.ToString()));
+
+                        _logger.LogInformation($"batch {++batchNo}\n{debug}\n{docsPerSecond} docs/s \n write queue {writer.Count}\n index queue {indexer.Count}");
+                    }
+                }
+            }
+
+            _logger.LogInformation($"processed write job (collection {job.CollectionId}), time in total: {time.Elapsed}");
+        }
+
+        public void Index(WriteJob job, WriteSession writeSession, IndexSession indexSession, int reportSize = 1000)
         {
             _logger.LogInformation($"writing to collection {job.CollectionId}");
 

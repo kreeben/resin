@@ -74,12 +74,29 @@ namespace Sir.DbUtil
             {
                 TruncateIndex(args, model, loggerFactory);
             }
+            else if (command == "optimize")
+            {
+                Optimize(args, model, loggerFactory);
+            }
             else
             {
                 logger.LogInformation("unknown command: {0}", command);
             }
 
             logger.LogInformation($"executed {command}");
+        }
+
+        private static void Optimize(string[] args, BocModel model, ILoggerFactory loggerFactory)
+        {
+            var collection = args[1];
+
+            using (var sessionFactory = new SessionFactory(new KeyValueConfiguration("sir.ini"), model, loggerFactory))
+            {
+                sessionFactory.Optimize(
+                    collection, 
+                    new HashSet<string> { "title", "description", "url", "filename" },
+                    new HashSet<string> { "title", "description", "url" });
+            }
         }
 
         private static void WriteWet(string[] args, IStringModel model, ILoggerFactory logger)
