@@ -45,23 +45,30 @@
                         {
                             <span style="color:orangered;" title="Enriched!">&star;</span>
                         }
-                        <span><a class="result-link" href="@Html.Raw(uri.ToString())">@Html.Raw(title)</a></span>
+                    <span>
+                        <a class="result-link" href="@Html.Raw(uri.ToString())">@Html.Raw(title)</a>
+                    </span>
                     </div>
                     <div class="document-body">
-                        <a class="document-subtitle" href="@uri.Scheme://@host"><span class="medium-text">@Html.Raw(host)</span></a><a class="document-subtitle" href="@uri.Scheme://@path"><span class="medium-text">@Html.Raw(uri.LocalPath)</span></a><br />
-                        <span class="medium-text">@score.ToString("N0")%</span>
-                        @if (wetUrl != null)
-                        {
-                            <span class="medium-text">
-                                <a class="warc-link" href="@wetUrl">WET</a>
-                            </span>
-                        }
-                        @if (warcUrl != null)
-                        {
-                            <span class="medium-text">
-                                <a class="warc-link" href="@warcUrl">WARC</a>
-                            </span>
-                        }
+                        <div>
+                            <a class="document-subtitle" href="@uri.Scheme://@host"><span class="medium-text">@Html.Raw(host)</span></a><a class="document-subtitle" href="@uri.Scheme://@path"><span class="medium-text">@Html.Raw(uri.LocalPath)</span></a>
+                        </div>
+                        <div class="document-stats">
+                            <span class="medium-text">@score.ToString("N0")%</span>
+
+                            @if (wetUrl != null)
+                            {
+                                <span class="medium-text">
+                                    <a class="warc-link" href="@wetUrl">WET</a>
+                                </span>
+                            }
+                            @if (warcUrl != null)
+                            {
+                                <span class="medium-text">
+                                    <a class="warc-link" href="@warcUrl">WARC</a>
+                                </span>
+                            }
+                        </div>
                     </div>
                 </li>
             }

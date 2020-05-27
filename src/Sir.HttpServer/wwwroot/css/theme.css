@@ -30,14 +30,6 @@ a {
     color: orangered;
 }
 
-a.document-subtitle {
-    color: black;
-}
-
-    a.document-subtitle:visited {
-        color: black;
-    }
-
 a.result-link {
     font-size: 12pt;
     color: mediumblue;
@@ -78,7 +70,7 @@ ul.document-list {
 }
 
 ul.document-list li {
-    font-size: 12pt;
+    font-size: 9pt;
 }
 
 .outer-container {
@@ -143,6 +135,18 @@ div.upvote {
     margin-left: 0px;
     margin-bottom: 15px;
     margin-top: 0px;
+}
+
+.document-stats{
+    margin-top:5px;
+}
+
+a.document-subtitle {
+    color: gray;
+}
+
+a.document-subtitle:visited {
+    color: gray;
 }
 
 input[type="text"].q {
