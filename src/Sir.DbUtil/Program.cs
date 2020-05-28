@@ -293,11 +293,11 @@ namespace Sir.DbUtil
             var time = Stopwatch.StartNew();
             var storedFieldNames = new HashSet<string>
             {
-                "title","description", "scheme", "host", "path", "query", "url", "filename"
+                "title","description", "url", "filename"
             };
             var indexedFieldNames = new HashSet<string>
             {
-                "title","description", "scheme", "host", "path", "query", "url"
+                "title","description", "url"
             };
 
             using (var sessionFactory = new SessionFactory(new KeyValueConfiguration("sir.ini"), model, log))

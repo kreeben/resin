@@ -176,8 +176,7 @@ namespace Sir.Search
 
             using (var indexer = new ProducerConsumerQueue<(long docId, IDictionary<string, object> document)>(1, document =>
             {
-                Parallel.ForEach(document.document, kv =>
-                //foreach (var kv in document.document)
+                foreach (var kv in document.document)
                 {
                     if (job.IndexedFieldNames.Contains(kv.Key) && kv.Value != null)
                     {
@@ -185,7 +184,7 @@ namespace Sir.Search
 
                         indexSession.Put(document.docId, keyId, kv.Value.ToString());
                     }
-                });
+                }
             }))
             {
                 using (var writer = new ProducerConsumerQueue<IDictionary<string, object>>(1, document =>
