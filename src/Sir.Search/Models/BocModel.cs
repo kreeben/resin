@@ -10,7 +10,7 @@ namespace Sir.Search
 {
     public class BocModel : IStringModel
     {
-        public double IdenticalAngle => 0.8d;
+        public double IdenticalAngle => 0.85d;
         public double FoldAngle => 0.55d;
         public int VectorWidth => 256;
         public int UnicodeStartingPoint => 32;
@@ -18,7 +18,7 @@ namespace Sir.Search
         public IEnumerable<IVector> Tokenize(Memory<char> source)
         {
             var tokens = new List<IVector>();
-
+            
             if (source.Length > 0)
             {
                 var embedding = new SortedList<int, float>();

@@ -28,7 +28,7 @@
                 var uri = new Uri(prefix + url);
                 var host = uri.Host.ToString();
                 var path = $"{host}{uri.LocalPath}";
-                var title = item.Document.GetFirstValue("title")?.ToString()??"Unknown title";
+                var title = string.IsNullOrWhiteSpace((string)item.Document.GetFirstValue("title")) ? "[Unknown title]" : (string)item.Document.GetFirstValue("title");
                 var score = (double)item.Document[Sir.Search.SystemFields.Score] * 100;
                 var warcFilename = item.Document.ContainsKey("filename") ? item.Document["filename"].ToString() : null;
                 var wetFileName = warcFilename == null ? null : warcFilename.Replace("/warc", "/wet").Replace(".gz", ".wet.gz");
