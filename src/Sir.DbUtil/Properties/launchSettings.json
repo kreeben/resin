@@ -2,7 +2,7 @@
   "profiles": {
     "Sir.DbUtil": {
       "commandName": "Project",
-      "commandLineArgs": "optimize cc_wat 1000000"
+      "commandLineArgs": "optimize cc_wat 9000000 0 1000000"
     }
   }
 }

@@ -120,7 +120,9 @@ namespace Sir.Search
         public void Optimize(
             string collection,
             HashSet<string> storeFields, 
-            HashSet<string> indexFields, 
+            HashSet<string> indexFields,
+            int skip = 0,
+            int take = 0,
             int batchSize = 1000000)
         {
             var collectionId = collection.ToHash();
@@ -132,7 +134,9 @@ namespace Sir.Search
             {
                 foreach (var batch in docStream.ReadDocs(
                         collectionId,
-                        storeFields).Batch(batchSize))
+                        storeFields,
+                        skip,
+                        take).Batch(batchSize))
                 {
                     var job = new WriteJob(
                         collectionId,

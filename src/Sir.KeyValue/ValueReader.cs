@@ -24,7 +24,7 @@ namespace Sir.KeyValue
         public object Get(long offset, int len, byte dataType)
         {
             int read;
-            Span<byte> buf = stackalloc byte[len];
+            Span<byte> buf = new byte[len];
 
             _stream.Seek(offset, SeekOrigin.Begin);
 
