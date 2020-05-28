@@ -30,13 +30,13 @@
                 var path = $"{host}{uri.LocalPath}";
                 var title = string.IsNullOrWhiteSpace((string)item.Document.GetFirstValue("title")) ? "[Unknown title]" : (string)item.Document.GetFirstValue("title");
                 var score = (double)item.Document[Sir.Search.SystemFields.Score] * 100;
-                var warcFilename = item.Document.ContainsKey("filename") ? item.Document["filename"].ToString() : null;
-                var wetFileName = warcFilename == null ? null : warcFilename.Replace("/warc", "/wet").Replace(".gz", ".wet.gz");
+                var warcFileName = item.Document.ContainsKey("filename") ? item.Document["filename"].ToString() : null;
+                var wetFileName = warcFileName == null ? null : warcFileName.Replace("/warc", "/wet").Replace(".gz", ".wet.gz");
                 var wetUrlFileName = wetFileName == null ? null : "https://commoncrawl.s3.amazonaws.com/" + Html.Raw(wetFileName);
-                var warcUrlFileName = warcFilename == null ? null : "https://commoncrawl.s3.amazonaws.com/" + Html.Raw(warcFilename);
-                var wetUrl = wetUrlFileName == null ? null : "/wet" + Context.Request.QueryString + "&fileName=" + wetUrlFileName;
-                var warcUrl = warcUrlFileName == null ? null : "/warc" + Context.Request.QueryString + "&fileName=" + warcUrlFileName;
-                var isEnriched = item.Document.ContainsKey(Sir.Search.SystemFields.CollectionId) && 
+                var warcUrlFileName = warcFileName == null ? null : "https://commoncrawl.s3.amazonaws.com/" + Html.Raw(warcFileName);
+                var wetUrl = wetUrlFileName == null ? null : "/wet" + Context.Request.QueryString + "&fileName=" + wetFileName;
+                var warcUrl = warcUrlFileName == null ? null : "/warc" + Context.Request.QueryString + "&fileName=" + warcFileName;
+                var isEnriched = item.Document.ContainsKey(Sir.Search.SystemFields.CollectionId) &&
                     (ulong)item.Document[Sir.Search.SystemFields.CollectionId] == ccWetId;
 
                 <li>

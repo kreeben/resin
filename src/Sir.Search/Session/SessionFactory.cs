@@ -121,9 +121,10 @@ namespace Sir.Search
             string collection,
             HashSet<string> storeFields, 
             HashSet<string> indexFields, 
-            int batchSize = 100000)
+            int batchSize = 1000000)
         {
             var collectionId = collection.ToHash();
+            var totalCount = 0;
 
             TruncateIndex(collectionId);
 
@@ -141,7 +142,9 @@ namespace Sir.Search
                         indexFields
                         );
 
-                    Index(job);
+                    Index(job, ref totalCount);
+
+                    _logger.LogInformation($"processed {totalCount} documents");
                 }
             }
 
@@ -212,7 +215,7 @@ namespace Sir.Search
             _logger.LogInformation($"processed write job (collection {job.CollectionId}), time in total: {time.Elapsed}");
         }
 
-        public void Index(WriteJob job, int reportSize = 1000)
+        public void Index(WriteJob job, ref int totalCount, int reportSize = 1000)
         {
             _logger.LogInformation($"indexing collection {job.CollectionId}");
 
@@ -227,7 +230,6 @@ namespace Sir.Search
                 {
                     var docId = (long)document[SystemFields.DocumentId];
 
-                    //Parallel.ForEach(document, kv =>
                     foreach (var kv in document)
                     {
                         if (job.IndexedFieldNames.Contains(kv.Key) && kv.Value != null)
@@ -236,7 +238,7 @@ namespace Sir.Search
 
                             indexSession.Put(docId, keyId, kv.Value.ToString());
                         }
-                    }//);
+                    }
 
                     if (batchCount++ == reportSize)
                     {
@@ -245,9 +247,10 @@ namespace Sir.Search
                         var docsPerSecond = (int)(reportSize / t * 1000);
                         var debug = string.Join('\n', info.Info.Select(x => x.ToString()));
 
-                        _logger.LogInformation($"\n{time.Elapsed}\nbatch {++batchNo}\n{debug}\n{docsPerSecond} docs/s");
+                        _logger.LogInformation($"\n{time.Elapsed}\nbatch {++batchNo}\n{debug}\n{docsPerSecond} docs/s \ntotal {totalCount} docs");
 
                         batchTime.Restart();
+                        totalCount += batchCount;
                         batchCount = 0;
                     }
                 }

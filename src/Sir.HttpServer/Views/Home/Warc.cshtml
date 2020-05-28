@@ -5,7 +5,7 @@
 @{
     var query = Context.Request.Query.ToStringExcept("fileName");
     var searchLink = $"{Context.Request.Path.Value.ToLower().Replace("/warc", "/search")}?{query}";
-    var fileName = Context.Request.Query["fileName"].ToString();
+    var fileName = "https://commoncrawl.s3.amazonaws.com/" + Context.Request.Query["fileName"].ToString();
     var q = (ViewBag.Q ?? Context.Request.Query["q"]).ToString();
 
     ViewBag.Title = $"Download WARC - {q} - Crawl Crawler";
