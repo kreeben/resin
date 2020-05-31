@@ -64,7 +64,7 @@ namespace Sir.Search
 
             // Reduce
             IDictionary<(ulong, long), double> scoredResult = new Dictionary<(ulong, long), double>();
-            _postingsReader.Reduce(query, query.TotalNumberOfTerms(),ref  scoredResult);
+            _postingsReader.Reduce(query, ref scoredResult);
 
             _logger.LogInformation("reducing took {0}", timer.Elapsed);
             timer.Restart();

@@ -29,7 +29,7 @@
                 var host = uri.Host.ToString();
                 var path = $"{host}{uri.LocalPath}";
                 var title = string.IsNullOrWhiteSpace((string)item.Document.GetFirstValue("title")) ? "[Unknown title]" : (string)item.Document.GetFirstValue("title");
-                var score = (double)item.Document[Sir.Search.SystemFields.Score] * 100;
+                var score = (double)item.Document[Sir.Search.SystemFields.Score];
                 var warcFileName = item.Document.ContainsKey("filename") ? item.Document["filename"].ToString() : null;
                 var wetFileName = warcFileName == null ? null : warcFileName.Replace("/warc", "/wet").Replace(".gz", ".wet.gz");
                 var wetUrlFileName = wetFileName == null ? null : "https://commoncrawl.s3.amazonaws.com/" + Html.Raw(wetFileName);
@@ -54,20 +54,19 @@
                             <a class="document-subtitle" href="@uri.Scheme://@host"><span class="medium-text">@Html.Raw(host)</span></a><a class="document-subtitle" href="@uri.Scheme://@path"><span class="medium-text">@Html.Raw(uri.LocalPath)</span></a>
                         </div>
                         <div class="document-stats">
-                            <span class="medium-text">@score.ToString("N0")%</span>
-
                             @if (wetUrl != null)
                             {
-                                <span class="medium-text">
-                                    <a class="warc-link" href="@wetUrl">WET</a>
-                                </span>
+                            <span class="medium-text">
+                                <a class="warc-link" href="@wetUrl">WET</a>
+                            </span>
                             }
                             @if (warcUrl != null)
                             {
-                                <span class="medium-text">
-                                    <a class="warc-link" href="@warcUrl">WARC</a>
-                                </span>
+                            <span class="medium-text">
+                                <a class="warc-link" href="@warcUrl">WARC</a>
+                            </span>
                             }
+                            <span class="medium-text">Score: @score.ToString("N0")</span>
                         </div>
                     </div>
                 </li>
