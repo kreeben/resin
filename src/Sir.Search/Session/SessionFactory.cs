@@ -408,20 +408,10 @@ namespace Sir.Search
                 keyId = -1;
                 return false;
             }
+
             return true;
         }
-
-        public string GetKey(ulong collectionId, long keyId)
-        {
-            using (var indexReader = new ValueIndexReader(CreateReadStream(Path.Combine(Dir, $"{collectionId}.kix"))))
-            using (var reader = new ValueReader(CreateReadStream(Path.Combine(Dir, $"{collectionId}.key"))))
-            {
-                var keyInfo = indexReader.Get(keyId);
-
-                return (string)reader.Get(keyInfo.offset, keyInfo.len, keyInfo.dataType);
-            }
-        }
-
+        
         public DocumentStreamSession CreateDocumentStreamSession()
         {
             return new DocumentStreamSession(this);
