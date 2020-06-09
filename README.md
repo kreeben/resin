@@ -1,12 +1,10 @@
 # &#9084; Resin Extensible Search Engine
 
 Resin is a document oriented key/value database with columnar indexing, multi-collection query API and JSON-based query language. 
-Three main units of data are _document_, _vector_, and _query_ (a tree of vectors). 
+Three main units of data are _document_, _vector_, and _query_. 
 Three main units of work are _write_, _validate_, and _query_.
-
-For a description of the "Raeson" query language, see [these release notes](https://github.com/kreeben/resin/releases/tag/v0.33). 
-
-The main processes of querying are _map_ and _materialize_. 
+Another important unit of work is _optimize_.
+The main processes of querying are _map_, _reduce_ and _materialize_. 
 
 The main objective of the mapping process is to find all possible candidate document ID's (i.e. "postings") 
 that are needed to solve the query equation. 
@@ -22,8 +20,8 @@ Resin can be used to analyze term based spaces as well as semantic ones.
 
 ## Searchable vector spaces
 
-From embeddings extracted from document fields during the tokenization phase of a write session, spaces are
-constructed and persisted on disk as bitmaps so that they are scannable in a streaming fashion, 
+From embeddings extracted from document fields during the tokenization phase of a write session, vector spaces are
+constructed and persisted on disk as bitmaps so that they become scannable in a streaming fashion, 
 so that only a small amount of pressure is put on memory while querying, 
 only what amounts to the size of a single graph node (per thread), 
 which is usually very small, 
