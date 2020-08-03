@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Sir.Core;
 using Sir.Document;
-using Sir.KeyValue;
 using Sir.VectorSpace;
 using System;
 using System.Collections.Concurrent;
@@ -9,7 +8,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Sir.Search
 {
@@ -20,14 +18,13 @@ namespace Sir.Search
     {
         private ConcurrentDictionary<ulong, ConcurrentDictionary<ulong, long>> _keys;
         private readonly ConcurrentDictionary<string, IList<(long offset, long length)>> _pageInfo;
-        private ILogger<SessionFactory> _logger;
+        private ILogger _logger;
 
         public string Dir { get; }
         public IConfigurationProvider Config { get; }
         public IStringModel Model { get; }
-        public ILoggerFactory LoggerFactory { get; }
 
-        public SessionFactory(IConfigurationProvider config, IStringModel model, ILoggerFactory loggerFactory)
+        public SessionFactory(IConfigurationProvider config, IStringModel model, ILogger logger)
         {
             var time = Stopwatch.StartNew();
 
@@ -41,18 +38,12 @@ namespace Sir.Search
             }
 
             _pageInfo = new ConcurrentDictionary<string, IList<(long offset, long length)>>();
-            _logger = loggerFactory.CreateLogger<SessionFactory>();
-            LoggerFactory = loggerFactory;
+            _logger = logger;
             _keys = LoadKeys();
 
             _logger.LogInformation($"loaded keys in {time.Elapsed}");
 
             _logger.LogInformation($"sessionfactory is initiated.");
-        }
-
-        public ILogger<T> GetLogger<T>()
-        {
-            return LoggerFactory.CreateLogger<T>();
         }
 
         public long GetDocCount(string collection)
@@ -429,7 +420,7 @@ namespace Sir.Search
 
         public IndexSession CreateIndexSession(ulong collectionId)
         {
-            return new IndexSession(collectionId, this, Model, Config, LoggerFactory.CreateLogger<IndexSession>());
+            return new IndexSession(collectionId, this, Model, Config, _logger);
         }
 
         public IReadSession CreateReadSession()
@@ -439,7 +430,7 @@ namespace Sir.Search
                 Config,
                 Model,
                 new PostingsReader(this),
-                LoggerFactory.CreateLogger<ReadSession>());
+                _logger);
         }
 
         public Stream CreateAsyncReadStream(string fileName, int bufferSize = 4096)

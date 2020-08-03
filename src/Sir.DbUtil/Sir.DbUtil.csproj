@@ -13,10 +13,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.6" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Sir.CommonCrawl\Sir.CommonCrawl.csproj" />
     <ProjectReference Include="..\Sir.KeyValue\Sir.KeyValue.csproj" />
     <ProjectReference Include="..\Sir.Search\Sir.Search.csproj" />
     <ProjectReference Include="..\Sir\Sir.Core.csproj" />

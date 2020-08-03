@@ -33,6 +33,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Sir.CommonCrawl\Sir.CommonCrawl.csproj" />
     <ProjectReference Include="..\Sir.Document\Sir.Document.csproj" />
     <ProjectReference Include="..\Sir.Search\Sir.Search.csproj" />
     <ProjectReference Include="..\Sir\Sir.Core.csproj" />

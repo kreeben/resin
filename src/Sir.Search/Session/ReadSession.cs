@@ -1,8 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
-using Sir.Document;
 using Sir.VectorSpace;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -19,21 +17,19 @@ namespace Sir.Search
         private readonly IConfigurationProvider _config;
         private readonly IStringModel _model;
         private readonly IPostingsReader _postingsReader;
-        private readonly ConcurrentDictionary<ulong, DocumentReader> _streamReaders;
 
-        private readonly ILogger<ReadSession> _logger;
+        private readonly ILogger _logger;
 
         public ReadSession(
             SessionFactory sessionFactory,
             IConfigurationProvider config,
             IStringModel model,
             IPostingsReader postingsReader,
-            ILogger<ReadSession> logger) : base(sessionFactory)
+            ILogger logger) : base(sessionFactory)
         {
             _sessionFactory = sessionFactory;
             _config = config;
             _model = model;
-            _streamReaders = new ConcurrentDictionary<ulong, DocumentReader>();
             _postingsReader = postingsReader;
             _logger = logger;
         }

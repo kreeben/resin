@@ -17,7 +17,7 @@ namespace Sir.Search
         private readonly IConfigurationProvider _config;
         private readonly Stream _postingsStream;
         private readonly Stream _vectorStream;
-        private readonly ILogger<IndexSession> _logger;
+        private readonly ILogger _logger;
         private readonly IStringModel _model;
         private readonly ConcurrentDictionary<long, VectorNode> _index;
         private bool _flushed;
@@ -27,7 +27,7 @@ namespace Sir.Search
             SessionFactory sessionFactory,
             IStringModel model,
             IConfigurationProvider config,
-            ILogger<IndexSession> logger)
+            ILogger logger)
         {
             _collectionId = collectionId;
             _sessionFactory = sessionFactory;

@@ -11,12 +11,18 @@ namespace Sir.HttpServer.Controllers
         private readonly PluginsCollection _plugins;
         private readonly IStringModel _model;
         private readonly ILogger<WriteController> _logger;
+        private readonly IConfigurationProvider _config;
 
-        public WriteController(PluginsCollection plugins, IStringModel tokenizer, ILogger<WriteController> logger)
+        public WriteController(
+            PluginsCollection plugins,
+            IStringModel tokenizer, 
+            ILogger<WriteController> logger,
+            IConfigurationProvider config)
         {
             _plugins = plugins;
             _model = tokenizer;
             _logger = logger;
+            _config = config;
         }
 
         [HttpPost]
@@ -64,7 +70,7 @@ namespace Sir.HttpServer.Controllers
             if (string.IsNullOrWhiteSpace(accessToken))
                 return false;
 
-            return "Pruttapa1!".Equals(accessToken);
+            return _config.Get("admin_password").Equals(accessToken);
         }
     }
 }
