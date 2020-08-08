@@ -79,6 +79,11 @@ namespace Sir.Search
             return _streamWriter.EnsureKeyExists(key);
         }
 
+        public long EnsureKeyExistsSafely(string key)
+        {
+            return _streamWriter.EnsureKeyExistsSafely(key);
+        }
+
         public void Dispose()
         {
             _streamWriter.Dispose();

@@ -61,7 +61,7 @@ namespace Sir.Document
             _sessionFactory = sessionFactory;
         }
 
-        public long EnsureKeyExists(string keyStr)
+        public long EnsureKeyExistsSafely(string keyStr)
         {
             var keyHash = keyStr.ToHash();
             long keyId;
@@ -83,6 +83,27 @@ namespace Sir.Document
                         _sessionFactory.RegisterKeyMapping(_collectionId, keyHash, keyId);
                     }
                 }
+            }
+
+            return keyId;
+        }
+
+        public long EnsureKeyExists(string keyStr)
+        {
+            var keyHash = keyStr.ToHash();
+            long keyId;
+
+            if (!_sessionFactory.TryGetKeyId(_collectionId, keyHash, out keyId))
+            {
+                // We have a new key!
+
+                // store key
+                var keyInfo = PutKey(keyStr);
+
+                keyId = PutKeyInfo(keyInfo.offset, keyInfo.len, keyInfo.dataType);
+
+                // store key mapping
+                _sessionFactory.RegisterKeyMapping(_collectionId, keyHash, keyId);
             }
 
             return keyId;

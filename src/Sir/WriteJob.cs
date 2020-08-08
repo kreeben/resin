@@ -7,21 +7,21 @@ namespace Sir
         public IStringModel Model { get; }
         public ulong CollectionId { get; private set; }
         public IEnumerable<IDictionary<string, object>> Documents { get; private set; }
-        public HashSet<string> StoredFieldNames { get; private set; }
-        public HashSet<string> IndexedFieldNames { get; private set; }
+        public HashSet<string> FieldNamesToStore { get; private set; }
+        public HashSet<string> FieldNamesToIndex { get; private set; }
 
         public WriteJob(
             ulong collectionId, 
             IEnumerable<IDictionary<string, object>> documents, 
             IStringModel model,
-            HashSet<string> storedFieldNames,
-            HashSet<string> indexedFieldNames)
+            HashSet<string> fieldNamesToStore,
+            HashSet<string> fieldNamesToIndex)
         {
             Model = model;
             CollectionId = collectionId;
             Documents = documents;
-            StoredFieldNames = storedFieldNames;
-            IndexedFieldNames = indexedFieldNames;
+            FieldNamesToStore = fieldNamesToStore;
+            FieldNamesToIndex = fieldNamesToIndex;
         }
     }
 }
