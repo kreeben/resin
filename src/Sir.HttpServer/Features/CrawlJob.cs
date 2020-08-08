@@ -16,7 +16,7 @@ namespace Sir.HttpServer.Features
     {
         private readonly SessionFactory _sessionFactory;
         private readonly QueryParser _queryParser;
-        private readonly ILogger<CrawlJob> _logger;
+        private readonly ILogger _logger;
         private readonly IStringModel _model;
         private readonly HashSet<string> _wetStoredFieldNames;
         private readonly HashSet<string> _wetIndexedFieldNames;
@@ -27,7 +27,7 @@ namespace Sir.HttpServer.Features
             SessionFactory sessionFactory,
             QueryParser queryParser,
             IStringModel model,
-            ILogger<CrawlJob> logger,
+            ILogger logger,
             string id, 
             string[] collection, 
             string[] field, 

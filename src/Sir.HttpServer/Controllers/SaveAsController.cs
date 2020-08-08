@@ -11,6 +11,7 @@ namespace Sir.HttpServer.Controllers
     {
         private readonly IStringModel _model;
         private readonly QueryParser _queryParser;
+        private readonly ILogger<SaveAsController> _log;
         private static readonly HashSet<string> _reservedCollections = new HashSet<string> { "cc_wat", "cc_wet" };
 
         public SaveAsController(
@@ -18,10 +19,12 @@ namespace Sir.HttpServer.Controllers
             SessionFactory sessionFactory,
             IStringModel model,
             QueryParser queryParser,
-            SaveAsJobQueue queue) : base(config, sessionFactory)
+            SaveAsJobQueue queue,
+            ILogger<SaveAsController> log) : base(config, sessionFactory)
         {
             _model = model;
             _queryParser = queryParser;
+            _log = log;
         }
 
         [HttpGet]
@@ -72,7 +75,7 @@ namespace Sir.HttpServer.Controllers
                     sessionFactory: SessionFactory,
                     queryParser: _queryParser,
                     model: _model,
-                    logger: SessionFactory.LoggerFactory.CreateLogger<SaveAsJob>(),
+                    logger: _log,
                     target: target,
                     collections: collection,
                     fields: field,

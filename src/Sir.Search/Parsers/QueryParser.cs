@@ -8,13 +8,13 @@ namespace Sir.Search
     {
         private readonly SessionFactory _sessionFactory;
         private readonly IStringModel _model;
-        private readonly ILogger<QueryParser> _log;
+        private readonly ILogger _log;
 
-        public QueryParser(SessionFactory sessionFactory, IStringModel model)
+        public QueryParser(SessionFactory sessionFactory, IStringModel model, ILogger log)
         {
             _sessionFactory = sessionFactory;
             _model = model;
-            _log = _sessionFactory.GetLogger<QueryParser>();
+            _log = log;
         }
 
         public IQuery Parse(

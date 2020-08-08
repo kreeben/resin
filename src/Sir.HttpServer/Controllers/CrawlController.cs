@@ -12,17 +12,20 @@ namespace Sir.HttpServer.Controllers
         private readonly JobQueue _queue;
         private readonly IStringModel _model;
         private readonly QueryParser _queryParser;
+        private readonly ILogger<CrawlController> _log;
 
         public CrawlController(
             IConfigurationProvider config,
             SessionFactory sessionFactory,
             IStringModel model,
             QueryParser queryParser,
-            JobQueue queue) : base(config, sessionFactory)
+            JobQueue queue,
+            ILogger<CrawlController> log) : base(config, sessionFactory)
         {
             _queue = queue;
             _model = model;
             _queryParser = queryParser;
+            _log = log;
         }
 
         [HttpGet]
@@ -69,7 +72,7 @@ namespace Sir.HttpServer.Controllers
                 SessionFactory,
                 _queryParser,
                 _model,
-                SessionFactory.LoggerFactory.CreateLogger<CrawlJob>(),
+                _log,
                 crawlid, 
                 collection, 
                 field, 
