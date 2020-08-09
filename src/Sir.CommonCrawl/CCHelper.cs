@@ -14,6 +14,102 @@ namespace Sir.CommonCrawl
 {
     public static class CCHelper
     {
+        public static void DownloadAndCreateWatEmbeddings(
+            string commonCrawlId,
+            string workingDirectory,
+            string collectionName,
+            int skip,
+            int take,
+            IStringModel model,
+            ILogger log)
+        {
+            var pathsFileName = $"{commonCrawlId}/wat.paths.gz";
+            var localPathsFileName = Path.Combine(workingDirectory, pathsFileName);
+
+            if (!File.Exists(localPathsFileName))
+            {
+                var url = $"https://commoncrawl.s3.amazonaws.com/crawl-data/{pathsFileName}";
+
+                log.LogInformation($"downloading {url}");
+
+                if (!Directory.Exists(Path.GetDirectoryName(localPathsFileName)))
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(localPathsFileName));
+                }
+
+                using (var client = new WebClient())
+                {
+                    client.DownloadFile(url, localPathsFileName);
+                }
+
+                log.LogInformation($"downloaded {localPathsFileName}");
+            }
+
+            log.LogInformation($"processing {localPathsFileName}");
+
+            Task writeTask = null;
+            var took = 0;
+            var skipped = 0;
+            var embeddingsCollectionId = (collectionName + "embeddings").ToHash();
+
+            using (var sessionFactory = new SessionFactory(new KeyValueConfiguration("sir.ini"), model, log))
+            using (var writeSession = sessionFactory.CreateWriteSession(embeddingsCollectionId))
+            using (var indexSession = sessionFactory.CreateWordEmbeddingsSession(embeddingsCollectionId))
+            foreach (var watFileName in ReadAllLinesGromGz(localPathsFileName))
+            {
+                if (skip > skipped)
+                {
+                    skipped++;
+                    continue;
+                }
+
+                if (took++ == take)
+                {
+                    break;
+                }
+
+                var localWatFileName = Path.Combine(workingDirectory, watFileName);
+
+                if (!File.Exists(localWatFileName))
+                {
+                    var url = $"https://commoncrawl.s3.amazonaws.com/{watFileName}";
+
+                    log.LogInformation($"downloading {url}");
+
+                    if (!Directory.Exists(Path.GetDirectoryName(localWatFileName)))
+                    {
+                        Directory.CreateDirectory(Path.GetDirectoryName(localWatFileName));
+                    }
+
+                    using (var client = new WebClient())
+                    {
+                        client.DownloadFile(url, localWatFileName);
+                    }
+
+                    log.LogInformation($"downloaded {localWatFileName}");
+                }
+
+                var refFileName = watFileName.Replace(".wat", "").Replace("/wat", "/warc");
+
+                //log.LogInformation($"processing {localWatFileName}");
+                //WriteWatSegment(localWatFileName, collection, model, logger, log, refFileName);
+
+                if (writeTask != null)
+                {
+                    log.LogInformation($"synchronizing write");
+
+                    writeTask.Wait();
+                }
+
+                writeTask = Task.Run(() =>
+                {
+                    log.LogInformation($"processing {localWatFileName}");
+
+                    WriteEmbeddings(sessionFactory, writeSession, indexSession, localWatFileName, collectionName, model, log, refFileName);
+                });
+            }
+        }
+
         public static void DownloadAndIndexWat(
             string commonCrawlId,
             string workingDirectory,
@@ -104,6 +200,39 @@ namespace Sir.CommonCrawl
                     WriteWatSegment(localWatFileName, collectionName, model, log, refFileName);
                 });
             }
+        }
+
+        private static void WriteEmbeddings(
+            SessionFactory sessionFactory,
+            WriteSession writeSession,
+            WordEmbeddingsSession indexSession,
+            string fileName,
+            string collection,
+            IStringModel model,
+            ILogger logger,
+            string refFileName)
+        {
+            var documents = ReadWatFile(fileName, refFileName);
+            var collectionId = collection.ToHash();
+            var time = Stopwatch.StartNew();
+            var storedFieldNames = new HashSet<string>();
+            var indexedFieldNames = new HashSet<string>
+            {
+                "title","description", "url"
+            };
+
+            sessionFactory.CreateWordEmbeddings(
+                            new WriteJob(
+                                collectionId,
+                                documents,
+                                model,
+                                storedFieldNames,
+                                indexedFieldNames),
+                            writeSession,
+                            indexSession,
+                            reportSize: 1000);
+
+            logger.LogInformation($"indexed {fileName} in {time.Elapsed}");
         }
 
         private static void WriteWatSegment(

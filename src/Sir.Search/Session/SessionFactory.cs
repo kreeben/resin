@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Sir.Search
@@ -175,8 +176,8 @@ namespace Sir.Search
             {
                 var docId = writeSession.Write(document, job.FieldNamesToStore);
 
-                Parallel.ForEach(document, kv =>
-                //foreach (var kv in document)
+                //Parallel.ForEach(document, kv =>
+                foreach (var kv in document)
                 {
                     if (job.FieldNamesToIndex.Contains(kv.Key) && kv.Value != null)
                     {
@@ -184,7 +185,7 @@ namespace Sir.Search
 
                         indexSession.Put(docId, keyId, kv.Value.ToString());
                     }
-                });
+                }//);
 
                 if (count++ == reportSize)
                 {
@@ -202,6 +203,48 @@ namespace Sir.Search
             }
 
             _logger.LogInformation($"processed write job (collection {job.CollectionId}), time in total: {time.Elapsed}");
+        }
+
+        public void CreateWordEmbeddings(
+            WriteJob job, WriteSession writeSession, WordEmbeddingsSession indexSession, int reportSize = 1000)
+        {
+            _logger.LogInformation($"writing embeddings to collection {job.CollectionId}");
+
+            var time = Stopwatch.StartNew();
+
+            var batchNo = 0;
+            var count = 0;
+            var batchTime = Stopwatch.StartNew();
+
+            //Parallel.ForEach(job.Documents, document =>
+            foreach (var document in job.Documents)
+            {
+                //Parallel.ForEach(document, kv =>
+                foreach (var kv in document)
+                {
+                    if (job.FieldNamesToIndex.Contains(kv.Key) && kv.Value != null)
+                    {
+                        var keyId = writeSession.EnsureKeyExists(kv.Key);
+
+                        indexSession.Put(keyId, kv.Value.ToString());
+                    }
+                }//);
+
+                if (Interlocked.Increment(ref count)%reportSize == 0)
+                {
+                    var info = indexSession.GetIndexInfo();
+                    var t = batchTime.Elapsed.TotalSeconds;
+                    var docsPerSecond = (int)(reportSize / t);
+                    var debug = string.Join('\n', info.Info.Select(x => x.ToString()));
+
+                    _logger.LogInformation(
+                        $"\n{time.Elapsed}\nbatch {Interlocked.Increment(ref batchNo)}\n{debug}\n{docsPerSecond} docs/s");
+
+                    batchTime.Restart();
+                }
+            }//);
+
+            _logger.LogInformation($"processed embeddings job (collection {job.CollectionId}), time in total: {time.Elapsed}");
         }
 
         public void Index(WriteJob job, ref int totalCount, int reportSize = 1000)
@@ -254,6 +297,15 @@ namespace Sir.Search
             using (var indexSession = CreateIndexSession(job.CollectionId))
             {
                 Write(job, writeSession, indexSession, reportSize);
+            }
+        }
+
+        public void CreateWordEmbeddings(WriteJob job, int reportSize = 1000)
+        {
+            using (var writeSession = CreateWriteSession(job.CollectionId))
+            using (var indexSession = CreateWordEmbeddingsSession(job.CollectionId))
+            {
+                CreateWordEmbeddings(job, writeSession, indexSession, reportSize);
             }
         }
 
@@ -417,6 +469,12 @@ namespace Sir.Search
         {
             return new IndexSession(collectionId, this, Model, Config, _logger);
         }
+
+        public WordEmbeddingsSession CreateWordEmbeddingsSession(ulong collectionId)
+        {
+            return new WordEmbeddingsSession(collectionId, this, Model, Config, _logger);
+        }
+
 
         public IReadSession CreateReadSession()
         {

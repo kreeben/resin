@@ -51,6 +51,8 @@ namespace Sir.VectorSpace
 
             _logger.LogInformation($"scanning all pages took {time.Elapsed}");
 
+            time.Restart();
+
             Hit best = null;
 
             foreach (var hit in hits)
@@ -64,6 +66,8 @@ namespace Sir.VectorSpace
                     GraphBuilder.MergePostings(best.Node, hit.Node);
                 }
             }
+
+            _logger.LogInformation($"finding best hit among all page hits took {time.Elapsed}");
 
             return best;
         }

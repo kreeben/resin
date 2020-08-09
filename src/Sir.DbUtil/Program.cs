@@ -67,6 +67,19 @@ namespace Sir.DbUtil
                     model, 
                     logger);
             }
+            else if (command == "download_embedd_wat")
+            {
+                // Ex: download_embedd_wat CC-MAIN-2019-51 d:\ cc_wat 0 1
+
+                CCHelper.DownloadAndCreateWatEmbeddings(
+                    commonCrawlId: args[1],
+                    workingDirectory: args[2],
+                    collectionName: args[3],
+                    skip: int.Parse(args[4]),
+                    take: int.Parse(args[5]),
+                    model,
+                    logger);
+            }
             else if (command == "write_wet")
             {
                 // Ex: D:\CC-MAIN-2019-43\segments\1570986647517.11\wet\CC-MAIN-20191013195541-20191013222541-00000.warc.wet.gz

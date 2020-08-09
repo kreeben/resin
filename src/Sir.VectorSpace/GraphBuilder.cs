@@ -7,6 +7,31 @@ namespace Sir.VectorSpace
 {
     public static class GraphBuilder
     {
+        public static void SetIdsOnAllNodes(VectorNode root)
+        {
+            var node = root.ComponentCount == 0 ? root.Right : root;
+            var stack = new Stack<VectorNode>();
+            long id = 0;
+
+            while (node != null)
+            {
+                node.PostingsOffset = id++;
+
+                if (node.Right != null)
+                {
+                    stack.Push(node.Right);
+                }
+
+                node = node.Left;
+
+                if (node == null)
+                {
+                    if (stack.Count > 0)
+                        node = stack.Pop();
+                }
+            }
+        }
+
         public static bool TryMerge(
             VectorNode root, 
             VectorNode node,
@@ -60,8 +85,7 @@ namespace Sir.VectorSpace
             VectorNode node,
             IDistanceCalculator model, 
             double foldAngle, 
-            double identicalAngle,
-            Func<long> identity)
+            double identicalAngle)
         {
             var cursor = root;
 
@@ -77,7 +101,7 @@ namespace Sir.VectorSpace
                 {
                     if (cursor.Left == null)
                     {
-                        node.PostingsOffset = identity();
+                        node.PostingsOffset = root.Weight;
                         cursor.Left = node;
                         return node.PostingsOffset;
                     }
@@ -90,9 +114,67 @@ namespace Sir.VectorSpace
                 {
                     if (cursor.Right == null)
                     {
-                        node.PostingsOffset = identity();
+                        node.PostingsOffset = root.Weight;
                         cursor.Right = node;
                         return node.PostingsOffset;
+                    }
+                    else
+                    {
+                        cursor = cursor.Right;
+                    }
+                }
+            }
+        }
+
+        public static long AppendSynchronized(
+            VectorNode root,
+            VectorNode node,
+            IDistanceCalculator model,
+            double foldAngle,
+            double identicalAngle)
+        {
+            var cursor = root;
+
+            while (true)
+            {
+                var angle = cursor.Vector == null ? 0 : model.CosAngle(node.Vector, cursor.Vector);
+
+                if (angle >= identicalAngle)
+                {
+                    return cursor.PostingsOffset;
+                }
+                else if (angle > foldAngle)
+                {
+                    if (cursor.Left == null)
+                    {
+                        lock (cursor)
+                        {
+                            if (cursor.Left == null)
+                            {
+                                node.PostingsOffset = root.Weight;
+                                cursor.Left = node;
+                                return node.PostingsOffset;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        cursor = cursor.Left;
+                    }
+                }
+                else
+                {
+                    if (cursor.Right == null)
+                    {
+                        lock (cursor)
+                        {
+                            if (cursor.Right == null)
+                            {
+                                node.PostingsOffset = root.Weight;
+                                cursor.Right = node;
+                                return node.PostingsOffset;
+                            }
+                        }
                     }
                     else
                     {
@@ -284,8 +366,6 @@ namespace Sir.VectorSpace
             {
                 if (node.PostingsOffset == -1)
                     SerializePostings(node, postingsStream);
-                else
-                    throw new InvalidComObjectException();
 
                 node.VectorOffset = VectorOperations.SerializeVector(node.Vector, vectorStream);
 

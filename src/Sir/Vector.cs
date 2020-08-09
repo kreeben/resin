@@ -13,7 +13,7 @@ namespace Sir
         public Vector<float> Value { get; private set; }
         public int ComponentCount { get; }
 
-        public IndexedVector(IList<float> values, Memory<char> data, int vectorWidth)
+        public IndexedVector(IList<float> values, int vectorWidth, Memory<char>? data = null)
         {
             var tuples = new Tuple<int, float>[Math.Min(values.Count, vectorWidth)];
             var i = 0;
@@ -36,7 +36,7 @@ namespace Sir
             Data = data;
         }
 
-        public IndexedVector(SortedList<int, float> dictionary, Memory<char> data, int vectorWidth)
+        public IndexedVector(SortedList<int, float> dictionary, int vectorWidth, Memory<char>? data = null)
         {
             var tuples = new Tuple<int, float>[Math.Min(dictionary.Count, vectorWidth)];
             var i = 0;
@@ -54,7 +54,7 @@ namespace Sir
             Data = data;
         }
 
-        public IndexedVector(int[] index, float[] values, int vectorWidth, Memory<char> data)
+        public IndexedVector(int[] index, float[] values, int vectorWidth, Memory<char>? data = null)
         {
             var tuples = new Tuple<int, float>[Math.Min(index.Length, vectorWidth)];
 

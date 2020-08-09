@@ -11,7 +11,7 @@ namespace Sir.Search
     public class BocModel : IStringModel
     {
         public double IdenticalAngle => 0.88d;
-        public double FoldAngle => 0.55d;
+        public double FoldAngle => 0.58d;
         public int VectorWidth => 256;
         public int UnicodeStartingPoint => 32;
 
@@ -48,8 +48,8 @@ namespace Sir.Search
 
                             var vector = new IndexedVector(
                                 embedding,
-                                slice,
-                                VectorWidth);
+                                VectorWidth,
+                                slice);
 
                             embedding.Clear();
                             tokens.Add(vector);
@@ -65,8 +65,8 @@ namespace Sir.Search
 
                     var vector = new IndexedVector(
                                 embedding,
-                                source.Slice(offset, len),
-                                VectorWidth);
+                                VectorWidth,
+                                source.Slice(offset, len));
 
                     tokens.Add(vector);
                 }
@@ -82,7 +82,11 @@ namespace Sir.Search
             //var dotSelf2 = vec2.Value.DotProduct(vec2.Value);
             //return (dotProduct / (Math.Sqrt(dotSelf1) * Math.Sqrt(dotSelf2)));
 
-            return vec1.Value.DotProduct(vec2.Value) / (vec1.Value.Norm(2) * vec2.Value.Norm(2));
+            var dotProduct = vec1.Value.DotProduct(vec2.Value);
+            var dotSelf1 = vec1.Value.Norm(2);
+            var dotSelf2 = vec2.Value.Norm(2);
+
+            return dotProduct / (dotSelf1 * dotSelf2);
         }
 
         public double CosAngle(IVector vector, long vectorOffset, int componentCount, Stream vectorStream)
