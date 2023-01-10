@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Sir.IO;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Sir
@@ -37,6 +38,16 @@ namespace Sir
                 if (logger != null)
                     logger.LogDebug($"serialized column {keyId}, weight {tree.Weight} {size} in {time.Elapsed}");
             }
+        }
+
+        public void Commit(string directory, ulong collectionId, long keyId, SortedList<double, VectorInfo> tree, IStreamDispatcher streamDispatcher, ILogger logger = null)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public VectorInfoHit GetMatch(ISerializableVector vector, IModel model, ColumnReader reader)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

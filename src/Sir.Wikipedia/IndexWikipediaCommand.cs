@@ -4,6 +4,10 @@ using Sir.IO;
 using Sir.Strings;
 using System.Collections.Generic;
 using System.IO;
+using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics.LinearAlgebra.Storage;
+using System;
+using System.Text;
 
 namespace Sir.Wikipedia
 {
@@ -43,6 +47,8 @@ namespace Sir.Wikipedia
             var model = new BagOfCharsModel();
             var indexStrategy = new LogStructuredIndexingStrategy(model);
             var payload = WikipediaHelper.Read(fileName, skip, take, fieldsOfInterest);
+            var embedding = new SortedList<int, float>();
+            var meanVectors = new Dictionary<long, Vector<float>>();
 
             using (var streamDispatcher = new SessionFactory(logger))
             {
@@ -51,29 +57,141 @@ namespace Sir.Wikipedia
                 {
                     foreach (var document in payload)
                     {
+                        // store document
                         writeSession.Put(document);
 
-                        debugger.Step();
-                    }
-                }
-
-                using (var debugger = new IndexDebugger(logger, sampleSize))
-                using (var documents = new DocumentStreamSession(dataDirectory, streamDispatcher))
-                using (var indexSession = new IndexSession<string>(model, indexStrategy, streamDispatcher, dataDirectory, collectionId, logger))
-                {
-                    foreach (var document in documents.ReadDocuments(collectionId, fieldsOfInterest, skip, take))
-                    {
                         foreach (var field in document.Fields)
                         {
-                            indexSession.Put(document.Id, field.KeyId, (string)field.Value, label: false);
+                            var keyId = streamDispatcher.GetKeyId(dataDirectory, collectionId, field.Name.ToHash());
+                            Vector<float> meanVector;
+
+                            // build mean vectors for each field
+                            if (!meanVectors.TryGetValue(keyId, out meanVector))
+                            {
+                                meanVector = CreateVector.Sparse<float>(model.NumOfDimensions);
+                                meanVectors.Add(keyId, meanVector);
+                            }
+
+                            var count = 0;
+                            var fieldVector = CreateVector.Sparse<float>(model.NumOfDimensions);
+                            foreach (var vector in model.CreateEmbedding((string)field.Value, false, embedding))
+                            {
+                                fieldVector = fieldVector.Add(vector.Value);
+                                count++;
+                            }
+
+                            meanVectors[keyId] = meanVector.Add(fieldVector).Divide(2);
                         }
 
-                        debugger.Step(indexSession);
+                        debugger.Step("building mean vectors");
                     }
+                }
 
-                    indexSession.Commit();
+                // store mean vectors
+                SerializeMeanVectors(streamDispatcher, dataDirectory, collectionId, meanVectors);
+
+                // create indices
+                using (var debugger = new BatchDebugger(logger, sampleSize))
+                using (var documents = new DocumentStreamSession(dataDirectory, streamDispatcher))
+                {
+                    foreach (var batch in documents.ReadDocuments(collectionId, fieldsOfInterest, skip, take).Batch(pageSize))
+                    {
+                        using (var indexSession = new IndexSession<string>(model, indexStrategy, streamDispatcher, dataDirectory, collectionId, logger))
+                        {
+                            foreach (var document in batch)
+                            {
+                                foreach (var field in document.Fields)
+                                {
+                                    indexSession.PutMany(document.Id, field.KeyId, model.CreateEmbedding((string)field.Value, true, embedding));
+                                }
+
+                                debugger.Step("creating indices");
+                            }
+
+                            indexSession.Commit();
+                        }
+                    }
+                }
+
+                // validate indices
+                using (var debugger = new BatchDebugger(logger, sampleSize))
+                using (var validateSession = new ValidateSession<string>(
+                    collectionId,
+                    new SearchSession(dataDirectory, streamDispatcher, model, new LogStructuredIndexingStrategy(model), logger),
+                    new QueryParser<string>(dataDirectory, streamDispatcher, model, embedding: embedding, logger: logger)))
+                {
+                    using (var documents = new DocumentStreamSession(dataDirectory, streamDispatcher))
+                    {
+                        foreach (var doc in documents.ReadDocuments(collectionId, fieldsOfInterest, skip, take))
+                        {
+                            validateSession.Validate(doc);
+
+                            Console.WriteLine($"{doc.Id} {doc.Get("title").Value}");
+
+                            debugger.Step("validating documents");
+                        }
+                    }
                 }
             }
+        }
+
+        private static void SerializeMeanVectors(IStreamDispatcher streamDispatcher, string directory, ulong collectionId, Dictionary<long, Vector<float>> meanVectors)
+        {
+            foreach (var field in meanVectors)
+            {
+                var keyId = field.Key;
+
+                using (var vectorIndexStream = streamDispatcher.CreateAppendStream(directory, collectionId, keyId, "vecix"))
+                using (var vectorStream = streamDispatcher.CreateAppendStream(directory, collectionId, keyId, "vec"))
+                {
+                    // write vector
+                    var vectorOffset = SerializeVector(vectorStream, field.Value);
+
+                    // write vector offset
+                    Span<byte> obuf = BitConverter.GetBytes(vectorOffset);
+                    vectorIndexStream.Write(obuf);
+
+                    // write component count
+                    var v = (SparseVectorStorage<float>)field.Value.Storage;
+                    Span<byte> cbuf = BitConverter.GetBytes(v.ValueCount);
+                    vectorIndexStream.Write(cbuf);
+                }
+            }
+        }
+
+        private static long SerializeVector(Stream stream, Vector<float> vector)
+        {
+            var pos = stream.Position;
+            var storage = (SparseVectorStorage<float>)vector.Storage;
+
+            foreach (var index in storage.Indices)
+            {
+                if (index > 0)
+                    stream.Write(BitConverter.GetBytes(index));
+                else
+                    break;
+            }
+
+            foreach (var value in storage.Values)
+            {
+                if (value > 0)
+                    stream.Write(BitConverter.GetBytes(value));
+                else
+                    break;
+            }
+
+            return pos;
+        }
+
+        private static double CosAngle(Vector<float> vec1, Vector<float> vec2)
+        {
+            var dotProduct = vec1.DotProduct(vec2);
+            var dotSelf1 = vec1.Norm(2);
+            var dotSelf2 = vec2.Norm(2);
+
+            var cosineDistance = dotProduct / (dotSelf1 * dotSelf2);
+
+            return cosineDistance;
         }
 
         private static void Print(string name, VectorNode tree)

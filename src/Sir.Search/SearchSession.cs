@@ -94,18 +94,18 @@ namespace Sir
 
             // Read postings lists
             _postingsResolver.Resolve(query, _sessionFactory, _logger);
-            LogDebug($"reading postings took {timer.Elapsed}");
+            LogTrace($"reading postings took {timer.Elapsed}");
             timer.Restart();
             
             // Score
             IDictionary<(ulong CollectionId, long DocumentId), double> scoredResult = new Dictionary<(ulong, long), double>();
             _scorer.Score(query, ref scoredResult);
-            LogDebug($"scoring took {timer.Elapsed}");
+            LogTrace($"scoring took {timer.Elapsed}");
             timer.Restart();
 
             // Sort
             var sorted = Sort(scoredResult, skip, take);
-            LogDebug($"sorting took {timer.Elapsed}");
+            LogTrace($"sorting took {timer.Elapsed}");
 
             return sorted;
         }
@@ -129,7 +129,7 @@ namespace Sir
 
                     if (!readers.TryGetValue(key, out reader))
                     {
-                        reader = _sessionFactory.CreateColumnReader(term.Directory, term.CollectionId, term.KeyId);
+                        reader = _sessionFactory.CreateColumnReader(term.Directory, term.CollectionId, term.KeyId, _model);
 
                         if (reader != null)
                         {
@@ -139,7 +139,7 @@ namespace Sir
 
                     if (reader != null)
                     {
-                        var hit =_indexStrategy.GetMatchOrNull(term.Vector, _model, reader);
+                        var hit =_indexStrategy.GetMatch(term.Vector, _model, reader);
 
                         if (hit != null)
                         {
@@ -228,6 +228,12 @@ namespace Sir
         {
             if (_logger != null)
                 _logger.LogError(ex, message);
+        }
+
+        private void LogTrace(string message)
+        {
+            if (_logger != null)
+                _logger.LogTrace(message);
         }
 
         public override void Dispose()

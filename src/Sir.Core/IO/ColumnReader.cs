@@ -1,8 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using MathNet.Numerics.LinearAlgebra;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Sir.IO
 {
@@ -14,15 +16,53 @@ namespace Sir.IO
         private readonly Stream _vectorFile;
         private readonly Stream _ixFile;
         private readonly IList<(long offset, long length)> _pages;
+        private readonly Vector<float> _meanVector;
 
         public ColumnReader(
             IList<(long offset, long length)> pages,
             Stream indexStream,
-            Stream vectorStream)
+            Stream vectorStream,
+            Vector<float> meanVector)
         {
             _vectorFile = vectorStream;
             _ixFile = indexStream;
             _pages = pages;
+            _meanVector = meanVector;
+        }
+
+        public VectorInfoHit ClosestMatchScanningAllPages(ISerializableVector vector, IModel model)
+        {
+            if (_ixFile == null || _vectorFile == null)
+                return null;
+
+            var hits = new List<VectorInfoHit>();
+
+            foreach (var page in _pages)
+            {
+                var hit = ClosestMatchInPage(vector, model, page.offset, Convert.ToInt32(page.length));
+
+                if (hit.Score > 0)
+                {
+                    hits.Add(hit);
+                }
+            }
+
+            VectorInfoHit best = null;
+
+            foreach (var hit in hits)
+            {
+                if (best == null || hit.Score > best.Score)
+                {
+                    best = hit;
+                    best.PostingsOffsets = new List<long> { hit.Node.PostingsOffset };
+                }
+                else if (hit.Score.Approximates(best.Score))
+                {
+                    best.PostingsOffsets.Add(hit.Node.PostingsOffset);
+                }
+            }
+
+            return best;
         }
 
         public Hit ClosestMatchOrNullScanningAllPages(ISerializableVector vector, IModel model)
@@ -60,35 +100,48 @@ namespace Sir.IO
             return best;
         }
 
-        public Hit ClosestMatchOrNullStoppingAtFirstIdenticalPage(ISerializableVector vector, IModel model)
+        private VectorInfoHit ClosestMatchInPage(ISerializableVector termVector, IModel model, long pageOffset, int pageLength)
         {
-            if (_ixFile == null || _vectorFile == null)
-                return null;
+            _ixFile.Seek(pageOffset, SeekOrigin.Begin);
 
-            Hit best = null;
+            double angle;
+            long vectorOffset;
+            long postingsOffset;
+            int componentCount;
+            var listLen = pageLength / VectorRecord.BlockSize;
+            VectorRecord[] list = ArrayPool<VectorRecord>.Shared.Rent(listLen);
+            byte[] buf = ArrayPool<byte>.Shared.Rent(VectorRecord.BlockSize);
 
-            foreach (var page in _pages)
+            for (int i = 0; i < listLen; i++)
             {
-                var hit = ClosestMatchInPage(vector, model, page.offset);
+                _ixFile.Read(buf, 0, VectorRecord.BlockSize);
 
-                if (hit.Score > 0)
-                {
-                    if (best == null || hit.Score > best.Score)
-                    {
-                        best = hit;
-                        best.PostingsOffsets = new List<long> { hit.Node.PostingsOffset };
-                    }
-                    else if (hit.Score.Approximates(best.Score))
-                    {
-                        best.PostingsOffsets.Add(hit.Node.PostingsOffset);
-                    }
-                }
+                angle = BitConverter.ToDouble(buf, 0);
+                vectorOffset = BitConverter.ToInt64(buf, sizeof(double));
+                postingsOffset = BitConverter.ToInt64(buf, sizeof(double) + sizeof(long));
+                componentCount = BitConverter.ToInt32(buf, sizeof(double) + sizeof(long) + sizeof(long));
 
-                if (hit.Score >= model.IdenticalAngle)
-                    break;
+                list[i] = new VectorRecord(angle, vectorOffset, componentCount, postingsOffset);
             }
 
-            return best;
+            ArrayPool<byte>.Shared.Return(buf);
+
+            var termAngle = _meanVector.CosAngle(termVector.Value);
+            Span<VectorRecord> records = new Span<VectorRecord>(list, 0, listLen);
+            var index = records.BinarySearch(new VectorRecord(termAngle, 0, 0, 0));
+            
+            if (index < 0)
+            {
+                index = ~index;
+            }
+
+            var hit = list[index];
+
+            ArrayPool<VectorRecord>.Shared.Return(list);
+
+            double score = 1 - Math.Abs(termAngle - hit.Angle);
+
+            return new VectorInfoHit(new VectorInfo { Angle = hit.Angle, VectorOffset = hit.VectorOffset, PostingsOffset = hit.PostingsOffset, ComponentCount = hit.ComponentCount }, score);
         }
 
         private Hit ClosestMatchInPage(ISerializableVector queryVector, IModel model, long pageOffset)
@@ -98,7 +151,7 @@ namespace Sir.IO
             var block = ArrayPool<byte>.Shared.Rent(VectorNode.BlockSize);
             VectorNode bestNode = null;
             double bestScore = 0;
-            
+
             _ixFile.Read(block, 0, VectorNode.BlockSize);
 
             while (true)

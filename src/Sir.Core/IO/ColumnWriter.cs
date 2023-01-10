@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Sir.IO
@@ -21,6 +22,15 @@ namespace Sir.IO
             pageIndexWriter.Put(page.offset, page.length);
 
             return PathFinder.Size(column);
+        }
+
+        public long CreatePage(SortedList<double, VectorInfo> field, Stream postingsStream, PageIndexWriter pageIndexWriter)
+        {
+            var page = field.SerializeTree(_ixStream, postingsStream);
+
+            pageIndexWriter.Put(page.offset, page.length);
+
+            return page.length;
         }
 
         public (int depth, int width) CreatePage(VectorNode column, Stream vectorStream, PageIndexWriter pageIndexWriter)

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using MathNet.Numerics.LinearAlgebra;
+using Microsoft.Extensions.Logging;
 using Sir.Core;
 using Sir.Documents;
 using Sir.IO;
@@ -7,6 +8,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Sir
 {
@@ -26,7 +28,55 @@ namespace Sir
             LogTrace($"database initiated");
         }
 
-        public ColumnReader CreateColumnReader(string directory, ulong collectionId, long keyId)
+        public IDictionary<long, Vector<float>> DeserializeMeanVectors(IModel model, string directory, ulong collectionId)
+        {
+            var result = new Dictionary<long, Vector<float>>();
+
+            foreach (var keyId in AllKeyIds(directory, collectionId))
+            {
+                var vectorIndexFileName = Path.Combine(directory, $"{collectionId}.{keyId}.vecix");
+                var vectorFileName = Path.Combine(directory, $"{collectionId}.{keyId}.vec");
+
+                using (var vectorIndexStream = CreateReadStream(vectorIndexFileName))
+                using (var vectorStream = CreateReadStream(vectorFileName))
+                {
+                    Span<byte> obuf = new byte[sizeof(long)];
+                    vectorIndexStream.Read(obuf);
+                    var vectorOffset = BitConverter.ToInt64(obuf);
+
+                    Span<byte> cbuf = new byte[sizeof(int)];
+                    vectorIndexStream.Read(cbuf);
+                    var componentCount = BitConverter.ToInt32(cbuf);
+
+                    var vector = DeserializeVector(model.NumOfDimensions, vectorOffset, componentCount, vectorStream);
+
+                    result.Add(keyId, vector);
+                }
+            }
+
+            return result;
+        }
+
+        private static Vector<float> DeserializeVector(int numOfDimensions, long vectorOffset, int componentCount, Stream vectorStream)
+        {
+            Span<byte> buf = new byte[componentCount * 2 * sizeof(float)];
+
+            vectorStream.Seek(vectorOffset, SeekOrigin.Begin);
+            vectorStream.Read(buf);
+
+            var index = MemoryMarshal.Cast<byte, int>(buf.Slice(0, componentCount * sizeof(int)));
+            var values = MemoryMarshal.Cast<byte, float>(buf.Slice(componentCount * sizeof(float)));
+            var tuples = new Tuple<int, float>[componentCount];
+
+            for (int i = 0; i < componentCount; i++)
+            {
+                tuples[i] = new Tuple<int, float>(index[i], values[i]);
+            }
+
+            return CreateVector.SparseOfIndexed(numOfDimensions, tuples);
+        }
+
+        public ColumnReader CreateColumnReader(string directory, ulong collectionId, long keyId, IModel model)
         {
             var ixFileName = Path.Combine(directory, string.Format("{0}.{1}.ix", collectionId, keyId));
             var vectorFileName = Path.Combine(directory, $"{collectionId}.{keyId}.vec");
@@ -37,7 +87,8 @@ namespace Sir
                 return new ColumnReader(
                     pageIndexReader.ReadAll(),
                     CreateReadStream(ixFileName),
-                    CreateReadStream(vectorFileName));
+                    CreateReadStream(vectorFileName),
+                    DeserializeMeanVectors(model, directory, collectionId)[keyId]);
             }
         }
 
@@ -354,6 +405,24 @@ namespace Sir
                 }
                 return keyId;
             });
+        }
+
+        public IEnumerable<long> AllKeyIds(string directory, ulong collectionId)
+        {
+            var key = Path.Combine(directory, collectionId.ToString()).ToHash();
+
+            if (!_keys.TryGetValue(key, out _))
+            {
+                ReadKeysIntoCache(directory);
+            }
+
+            ConcurrentDictionary<ulong, long> keys;
+
+            if (_keys.TryGetValue(key, out keys))
+            {
+                foreach (var keyId in keys.Values)
+                    yield return keyId;
+            }
         }
 
         public long GetKeyId(string directory, ulong collectionId, ulong keyHash)

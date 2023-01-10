@@ -23,9 +23,11 @@ namespace Sir.Cmd
             var time = Stopwatch.StartNew();
             var count = 0;
             var embedding = new SortedList<int, float>();
+            var sampleSize = args.ContainsKey("sampleSize") ? int.Parse(args["sampleSize"]) : 1000;
 
             using (var sessionFactory = new SessionFactory(logger))
             {
+                using (var debugger = new BatchDebugger(logger, sampleSize))
                 using (var validateSession = new ValidateSession<string>(
                     collectionId, 
                     new SearchSession(dir, sessionFactory, model, new LogStructuredIndexingStrategy(model), logger), 
@@ -37,7 +39,8 @@ namespace Sir.Cmd
                         {
                             validateSession.Validate(doc);
 
-                            Console.WriteLine($"{doc.Id} {doc.Get("title").Value}");
+                            debugger.Step("validating documents");
+                            logger.LogInformation($"{doc.Id} {doc.Get("title").Value}");
 
                             count++;
                         }

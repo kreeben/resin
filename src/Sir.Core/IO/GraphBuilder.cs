@@ -274,6 +274,14 @@ namespace Sir.IO
             stream.Write(BitConverter.GetBytes(terminator), 0, sizeof(long));
         }
 
+        public static void SerializeNode(this VectorInfo node, Stream stream)
+        {
+            stream.Write(BitConverter.GetBytes(node.Angle));
+            stream.Write(BitConverter.GetBytes(node.VectorOffset));
+            stream.Write(BitConverter.GetBytes(node.PostingsOffset));
+            stream.Write(BitConverter.GetBytes(node.ComponentCount));
+        }
+
         /// <summary>
         /// Persist tree to disk.
         /// </summary>
@@ -328,7 +336,45 @@ namespace Sir.IO
             return (offset, length);
         }
 
+        public static (long offset, long length) SerializeTree(this SortedList<double, VectorInfo> tree, Stream indexStream, Stream postingsStream )
+        {
+            var offset = indexStream.Position;
+            var length = 0;
+
+            foreach (var node in tree)
+            {
+                SerializePostings(node.Value, postingsStream);
+
+                if (indexStream != null)
+                {
+                    SerializeNode(node.Value, indexStream);
+
+                    length += VectorRecord.BlockSize;
+                }
+            }
+
+            return (offset, length);
+        }
+
         public static void SerializePostings(VectorNode node, Stream postingsStream)
+        {
+            if (node.DocIds.Count == 0) throw new ArgumentException("can't be empty", nameof(node.DocIds));
+
+            node.PostingsOffset = postingsStream.Position;
+
+            // serialize item count
+            postingsStream.Write(BitConverter.GetBytes((long)node.DocIds.Count));
+
+            // serialize address of next page (unknown at this time)
+            postingsStream.Write(BitConverter.GetBytes((long)0));
+
+            foreach (var docId in node.DocIds)
+            {
+                postingsStream.Write(BitConverter.GetBytes(docId));
+            }
+        }
+
+        public static void SerializePostings(VectorInfo node, Stream postingsStream)
         {
             if (node.DocIds.Count == 0) throw new ArgumentException("can't be empty", nameof(node.DocIds));
 

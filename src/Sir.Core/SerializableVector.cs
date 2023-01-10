@@ -174,7 +174,7 @@ namespace Sir
             return new SerializableVector(index, values, vectorWidth, null);
         }
 
-        public static ISerializableVector Deserialize(long vectorOffset, int componentCount, int vectorWidth, Stream vectorStream)
+        public static ISerializableVector Deserialize(long vectorOffset, int componentCount, int numOfDimensions, Stream vectorStream)
         {
             Span<byte> buf = new byte[componentCount * 2 * sizeof(float)];
 
@@ -190,7 +190,7 @@ namespace Sir
                 tuples[i] = new Tuple<int, float>(index[i], values[i]);
             }
 
-            return new SerializableVector(tuples, vectorWidth);
+            return new SerializableVector(tuples, numOfDimensions);
         }
 
         public void Serialize(Stream stream)

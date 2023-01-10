@@ -39,14 +39,14 @@ namespace Sir
 
                 var record = $"\n{_runTime.Elapsed} session running time\n{_time.Elapsed} batch run time\n{_sampleSize * _batchNo} documents\n{debug}\n{docsPerSecond} docs/s\n{message}";
 
-                _logger.LogInformation(record);
+                _logger.LogDebug(record);
                 _time.Restart();
             }
         }
 
         public void Dispose()
         {
-            _logger.LogInformation($"session ran for {_runTime.Elapsed}");
+            _logger.LogDebug($"session ran for {_runTime.Elapsed}");
         }
     }
 
@@ -62,15 +62,18 @@ namespace Sir
         public int StepCount => _steps;
         public TimeSpan Time => _time.Elapsed;
 
-        public BatchDebugger(ILogger logger, int sampleSize = 1000)
+        public BatchDebugger(ILogger logger, int sampleSize = 1000, string startMessage = null)
         {
             _sampleSize = sampleSize;
             _runTime = Stopwatch.StartNew();
             _time = Stopwatch.StartNew();
             _logger = logger;
+
+            if (startMessage != null)
+                _logger.LogDebug(startMessage);
         }
 
-        public void Step()
+        public void Step(string label = null)
         {
             _steps++;
 
@@ -81,16 +84,16 @@ namespace Sir
 
                 _batchNo++;
 
-                var message = $"\n{_runTime.Elapsed} session run time\n{_time.Elapsed} batch run time\n{_sampleSize * _batchNo} items\n{itemsPerSecond} items/s";
+                var message = $"\n{label}\n{_runTime.Elapsed} session run time\n{_time.Elapsed} batch run time\n{_sampleSize * _batchNo} items\n{itemsPerSecond} items/s";
 
-                _logger.LogInformation(message);
+                _logger.LogDebug(message);
                 _time.Restart();
             }
         }
 
         public void Dispose()
         {
-            _logger.LogInformation($"session ran for {_runTime.Elapsed}");
+            _logger.LogDebug($"session ran for {_runTime.Elapsed}");
         }
     }
 }
