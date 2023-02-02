@@ -30,27 +30,14 @@ namespace Sir.Cmd
             }
             else
             {
-#if DEBUG
                 loggerFactory = LoggerFactory.Create(builder =>
                 {
                     builder
                         .AddFilter("Microsoft", LogLevel.Warning)
                         .AddFilter("System", LogLevel.Warning)
-                        .AddFilter("Sir", LogLevel.Debug)
+                        .AddFilter("Sir", LogLevel.Information)
                         .AddConsole();
                 });
-#else
-
-loggerFactory = LoggerFactory.Create(builder =>
-            {
-                builder
-                    .AddFilter("Microsoft", LogLevel.Warning)
-                    .AddFilter("System", LogLevel.Warning)
-                    .AddFilter("Sir", LogLevel.Information)
-                    .AddConsole();
-            });
-
-#endif
             }
 
             var logger = loggerFactory.CreateLogger("Sir");
