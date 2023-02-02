@@ -1,24 +1,45 @@
 ﻿using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
 
 namespace Sir.IO
 {
-    public class PostingsResolver
+    public class PostingsResolver : IDisposable
     {
+        private readonly Dictionary<(string, ulong, long), PostingsReader> _readers = new Dictionary<(string, ulong, long), PostingsReader>();
+
         /// <summary>
         /// Read posting list document IDs into memory.
         /// </summary>
         public void Resolve(IQuery query, IStreamDispatcher sessionFactory, ILogger logger = null)
         {
-            foreach(var term in query.AllTerms())
+            foreach (var term in query.AllTerms())
             {
-                using (var postingsReader = new PostingsReader(term.Directory, sessionFactory, logger))
-                {
-                    if (term.PostingsOffsets == null)
-                        continue;
+                if (term.PostingsOffsets == null)
+                    continue;
 
-                    term.DocumentIds = postingsReader.Read(term.CollectionId, term.KeyId, term.PostingsOffsets);
+                PostingsReader reader;
+                var key = (term.Directory, term.CollectionId, term.KeyId);
+
+                if (!_readers.TryGetValue(key, out reader))
+                {
+                    reader = new PostingsReader(term.Directory, term.CollectionId, term.KeyId, sessionFactory, logger);
+
+                    if (reader != null)
+                    {
+                        _readers.Add(key, reader);
+                    }
                 }
+
+                if (reader != null)
+                    term.DocumentIds = reader.Read(term.CollectionId, term.KeyId, term.PostingsOffsets);
             }
+        }
+
+        public void Dispose()
+        {
+            foreach (var reader in _readers.Values)
+                reader.Dispose();
         }
     }
 }

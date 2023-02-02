@@ -14,15 +14,13 @@ namespace Sir.IO
     public class PostingsReader : IDisposable
     {
         private readonly IStreamDispatcher _streamDispatcher;
-        private readonly IDictionary<(ulong collectionId, long keyId), Stream> _streams;
+        private readonly Stream _stream;
         private readonly ILogger _logger;
-        private readonly string _directory;
 
-        public PostingsReader(string directory, IStreamDispatcher streamDispatcher, ILogger logger = null)
+        public PostingsReader(string directory, ulong collectionId, long keyId, IStreamDispatcher streamDispatcher, ILogger logger = null)
         {
-            _directory = directory;
             _streamDispatcher = streamDispatcher;
-            _streams = new Dictionary<(ulong collectionId, long keyId), Stream>();
+            _stream = GetOrCreateStream(directory, collectionId, keyId);
             _logger = logger;
         }
 
@@ -55,14 +53,12 @@ namespace Sir.IO
 
         private void GetPostingsFromStream(ulong collectionId, long keyId, long postingsOffset, IList<(ulong collectionId, long docId)> documents)
         {
-            var stream = GetOrCreateStream(collectionId, keyId);
-
-            stream.Seek(postingsOffset, SeekOrigin.Begin);
+            _stream.Seek(postingsOffset, SeekOrigin.Begin);
 
             var headerLen = sizeof(long) * 2;
             var headerBuf = ArrayPool<byte>.Shared.Rent(headerLen);
 
-            stream.Read(headerBuf, 0, headerLen);
+            _stream.Read(headerBuf, 0, headerLen);
 
             var numOfPostings = BitConverter.ToInt64(headerBuf);
             var addressOfNextPage = BitConverter.ToInt64(headerBuf, sizeof(long));
@@ -71,7 +67,7 @@ namespace Sir.IO
 
             var listLen = sizeof(long) * numOfPostings;
             var listBuf = new byte[listLen];
-            var read = stream.Read(listBuf);
+            var read = _stream.Read(listBuf);
 
             if (read != listLen)
                 throw new Exception($"list lenght was {listLen} but read length was {read}");
@@ -87,24 +83,14 @@ namespace Sir.IO
             }
         }
 
-        private Stream GetOrCreateStream(ulong collectionId, long keyId)
+        private Stream GetOrCreateStream(string directory, ulong collectionId, long keyId)
         {
-            Stream stream;
-            var key = (collectionId, keyId);
-
-            if (!_streams.TryGetValue(key, out stream))
-            {
-                stream = _streamDispatcher.CreateReadStream(Path.Combine(_directory, $"{collectionId}.{keyId}.pos"));
-                _streams.Add(key, stream);
-            }
-
-            return stream;
+            return _streamDispatcher.CreateReadStream(Path.Combine(directory, $"{collectionId}.{keyId}.pos"));
         }
 
         public void Dispose()
         {
-            foreach (var stream in _streams.Values)
-                stream.Dispose();
+            _stream.Dispose();
         }
     }
 }

@@ -17,6 +17,7 @@ namespace Sir
         private readonly PostingsResolver _postingsResolver;
         private readonly Scorer _scorer;
         private readonly ILogger _logger;
+        private readonly Dictionary<(string, ulong, long), ColumnReader> _readers;
 
         public SearchSession(
             string directory,
@@ -33,6 +34,7 @@ namespace Sir
             _postingsResolver = postingsResolver ?? new PostingsResolver();
             _scorer = scorer ?? new Scorer();
             _logger = logger;
+            _readers = new Dictionary<(string, ulong, long), ColumnReader>();
         }
 
         public SearchResult Search(IQuery query, int skip, int take)
@@ -118,45 +120,33 @@ namespace Sir
             if (query == null)
                 return;
 
-            var readers = new Dictionary<(string, ulong, long), ColumnReader>();
-
-            try
+            foreach (var term in query.AllTerms())
             {
-                foreach (var term in query.AllTerms())
+                ColumnReader reader;
+                var key = (term.Directory, term.CollectionId, term.KeyId);
+
+                if (!_readers.TryGetValue(key, out reader))
                 {
-                    ColumnReader reader;
-                    var key = (term.Directory, term.CollectionId, term.KeyId);
-
-                    if (!readers.TryGetValue(key, out reader))
-                    {
-                        reader = _sessionFactory.CreateColumnReader(term.Directory, term.CollectionId, term.KeyId);
-
-                        if (reader != null)
-                        {
-                            readers.Add(key, reader);
-                        }
-                    }
+                    reader = _sessionFactory.CreateColumnReader(term.Directory, term.CollectionId, term.KeyId);
 
                     if (reader != null)
                     {
-                        var hit =_indexStrategy.GetMatchOrNull(term.Vector, _model, reader);
-
-                        if (hit != null)
-                        {
-                            if ((identicalMatchesOnly && hit.Score >= _model.IdenticalAngle) || !identicalMatchesOnly)
-                            {
-                                term.Score = hit.Score;
-                                term.PostingsOffsets = hit.PostingsOffsets;
-                            }
-                        }
+                        _readers.Add(key, reader);
                     }
                 }
-            }
-            finally
-            {
-                foreach (var reader in readers.Values)
+
+                if (reader != null)
                 {
-                    reader.Dispose();
+                    var hit = _indexStrategy.GetMatchOrNull(term.Vector, _model, reader);
+
+                    if (hit != null)
+                    {
+                        if ((identicalMatchesOnly && hit.Score >= _model.IdenticalAngle) || !identicalMatchesOnly)
+                        {
+                            term.Score = hit.Score;
+                            term.PostingsOffsets = hit.PostingsOffsets;
+                        }
+                    }
                 }
             }
         }
@@ -232,6 +222,14 @@ namespace Sir
 
         public override void Dispose()
         {
+            if (_postingsResolver!= null)
+                _postingsResolver.Dispose();
+
+            foreach (var reader in _readers.Values)
+            {
+                reader.Dispose();
+            }
+
             base.Dispose();
         }
     }
