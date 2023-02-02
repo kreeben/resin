@@ -1,1 +1,1 @@
-sir.bat indexwikipedia --directory C:\projects\resin\src\Sir.HttpServer\AppData\database --file d:\enwiki-20211122-cirrussearch-content.json.gz --collection wikipedia --skip 0 --take 50000 --pageSize 10000 --sampleSize 500 %*
+sir.bat indexwikipedia --directory C:\projects\resin\src\Sir.HttpServer\AppData\database --file d:\enwiki-20211122-cirrussearch-content.json.gz --collection wikipedia --skip 0 --take 2000 --pageSize 1000 --sampleSize 1000 %*

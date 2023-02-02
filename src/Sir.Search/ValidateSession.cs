@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 
 namespace Sir
 {
@@ -23,35 +24,41 @@ namespace Sir
             _queryParser = queryParser;
         }
 
-        public void Validate(Document doc)
+        public void Validate(Document document, string fieldName)
         {
-            foreach (var field in doc.Fields)
+            foreach (var field in document.Fields)
             {
-                if (string.IsNullOrWhiteSpace(field.Value.ToString()))
-                    throw new ArgumentNullException(nameof(field));
-
-                var query = _queryParser.Parse(CollectionId, (T)field.Value, field.Name, field.Name, true, false, true);
-                var result = _searchSession.SearchIdentical(query, 1000);
-                bool isMatch = false;
-
-                foreach (var document in result.Documents)
+                if (fieldName == field.Name)
                 {
-                    if (doc.Id == document.Id)
+                    if (string.IsNullOrWhiteSpace(field.Value.ToString()))
+                        continue;
+
+                    var query = _queryParser.Parse(CollectionId, (T)field.Value, field.Name, field.Name, true, false, true);
+                    var result = _searchSession.SearchIdentical(query, 1000);
+                    bool isMatch = false;
+                    Document mostRecentDoc = null;
+
+                    foreach (var d in result.Documents)
                     {
-                        isMatch = true;
-                        break;
+                        mostRecentDoc = d;
+
+                        if (document.Id == d.Id)
+                        {
+                            isMatch = true;
+                            break;
+                        }
                     }
-                }
-                
-                if (!isMatch)
-                {
-                    if (result.Total == 0)
+
+                    if (!isMatch)
                     {
-                        throw new Exception($"unable to validate doc.Id {doc.Id} because no documents were found. field value: {field.Value}");
-                    }
-                    else
-                    {
-                        throw new Exception($"unable to validate doc.Id {doc.Id} because wrong document was found. field value: {field.Value}");
+                        if (result.Total == 0)
+                        {
+                            throw new Exception($"unable to validate doc.Id {document.Id} because no documents were found with {field.Name}: {field.Value}");
+                        }
+                        else
+                        {
+                            throw new Exception($"unable to validate doc.Id {document.Id} because wrong document was found. query: {field.Name}: {field.Value}. best hit: {field.Name}: {mostRecentDoc.Get(field.Name).Value}");
+                        }
                     }
                 }
             }

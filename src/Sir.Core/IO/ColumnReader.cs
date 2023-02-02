@@ -127,7 +127,7 @@ namespace Sir.IO
             ArrayPool<byte>.Shared.Return(buf);
 
             var termAngle = _meanVector.CosAngle(termVector.Value);
-            Span<VectorRecord> records = new Span<VectorRecord>(list, 0, listLen);
+            var records = new Span<VectorRecord>(list, 0, listLen);
             var index = records.BinarySearch(new VectorRecord(termAngle, 0, 0, 0));
             
             if (index < 0)

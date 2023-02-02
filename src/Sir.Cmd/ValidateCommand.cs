@@ -19,7 +19,7 @@ namespace Sir.Cmd
             var take = int.Parse(args["take"]);
             var collectionId = collection.ToHash();
             var model = new BagOfCharsModel();
-            var selectFields = new HashSet<string> { "title" };
+            var selectFields = new HashSet<string> { "title", "text" };
             var time = Stopwatch.StartNew();
             var count = 0;
             var embedding = new SortedList<int, float>();
@@ -37,7 +37,7 @@ namespace Sir.Cmd
                     {
                         foreach (var doc in documents.ReadDocuments(collectionId, selectFields, skip, take))
                         {
-                            validateSession.Validate(doc);
+                            validateSession.Validate(doc, "title");
 
                             debugger.Step("validating documents");
                             logger.LogInformation($"{doc.Id} {doc.Get("title").Value}");

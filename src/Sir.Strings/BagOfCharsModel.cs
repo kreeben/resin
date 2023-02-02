@@ -37,13 +37,17 @@ namespace Sir.Strings
                         {
                             var len = index - offset;
 
-                            var vector = new SerializableVector(
-                                embedding,
-                                NumOfDimensions,
-                                label ? new string(source, offset, len) : null);
+                            if (len > 1)
+                            {
+                                var vector = new SerializableVector(
+                                    embedding,
+                                    NumOfDimensions,
+                                    label ? new string(source, offset, len) : null);
+
+                                yield return vector;
+                            }
 
                             embedding.Clear();
-                            yield return vector;
                         }
 
                         offset = index + 1;
@@ -54,12 +58,15 @@ namespace Sir.Strings
                 {
                     var len = index - offset;
 
-                    var vector = new SerializableVector(
-                                embedding,
-                                NumOfDimensions,
-                                label ? new string(source, offset, len) : null);
+                    if (len > 1)
+                    {
+                        var vector = new SerializableVector(
+                            embedding,
+                            NumOfDimensions,
+                            label ? new string(source, offset, len) : null);
 
-                    yield return vector;
+                        yield return vector;
+                    }
                 }
             }
         }

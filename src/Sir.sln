@@ -16,6 +16,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "resources", "resources", "{
 		..\README.md = ..\README.md
 		..\sir.bat = ..\sir.bat
 		..\test.bat = ..\test.bat
+		..\truncate-index.bat = ..\truncate-index.bat
 		..\truncate.bat = ..\truncate.bat
 		..\USER-GUIDE.md = ..\USER-GUIDE.md
 		..\validate.bat = ..\validate.bat

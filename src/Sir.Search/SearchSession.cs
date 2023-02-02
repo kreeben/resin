@@ -9,7 +9,7 @@ namespace Sir
     /// <summary>
     /// Read session targeting multiple collections.
     /// </summary>
-    public class SearchSession : DocumentStreamSession, IDisposable, ISearchSession
+    public class SearchSession : DocumentStreamSession, IDisposable
     {
         private readonly IStreamDispatcher _sessionFactory;
         private readonly IModel _model;
@@ -53,7 +53,7 @@ namespace Sir
 
         public Document SearchScalar(IQuery query)
         {
-            var result = Execute(query, 0, 1, true);
+            var result = Execute(query, 0, 1, false);
 
             if (result != null)
             {
@@ -207,7 +207,7 @@ namespace Sir
                     result.Add(doc);
             }
 
-            LogDebug($"reading documents took {timer.Elapsed}");
+            LogTrace($"reading documents took {timer.Elapsed}");
 
             return result;
         }

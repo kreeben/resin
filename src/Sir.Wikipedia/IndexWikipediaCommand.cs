@@ -7,7 +7,6 @@ using System.IO;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Storage;
 using System;
-using System.Text;
 
 namespace Sir.Wikipedia
 {
@@ -41,7 +40,7 @@ namespace Sir.Wikipedia
 
             if (!File.Exists(fileName))
             {
-                throw new FileNotFoundException($"This file could not be found: {fileName}. Download a wikipedia JSON dump here:  https://dumps.wikimedia.org/other/cirrussearch/current/");
+                throw new FileNotFoundException($"This file could not be found: {fileName}. Download a wikipedia cirrussearch JSON dump here:  https://dumps.wikimedia.org/other/cirrussearch/current/");
             }
 
             var model = new BagOfCharsModel();
@@ -52,43 +51,51 @@ namespace Sir.Wikipedia
 
             using (var streamDispatcher = new SessionFactory(logger))
             {
-                using (var writeSession = new WriteSession(new DocumentWriter(streamDispatcher, dataDirectory, collectionId)))
-                using (var debugger = new BatchDebugger(logger, sampleSize))
-                {
-                    foreach (var document in payload)
-                    {
-                        // store document
-                        writeSession.Put(document);
+                //streamDispatcher.Truncate(dataDirectory, collectionId);
 
-                        foreach (var field in document.Fields)
-                        {
-                            var keyId = streamDispatcher.GetKeyId(dataDirectory, collectionId, field.Name.ToHash());
-                            Vector<float> meanVector;
+                //// store documents
+                //using (var debugger = new BatchDebugger(logger, sampleSize))
+                //using (var writeSession = new WriteSession(new DocumentWriter(streamDispatcher, dataDirectory, collectionId)))
+                //{
+                //    foreach (var document in payload)
+                //    {
+                //        writeSession.Put(document);
 
-                            // build mean vectors for each field
-                            if (!meanVectors.TryGetValue(keyId, out meanVector))
-                            {
-                                meanVector = CreateVector.Sparse<float>(model.NumOfDimensions);
-                                meanVectors.Add(keyId, meanVector);
-                            }
+                //        debugger.Step("storing documents");
+                //    }
+                //}
 
-                            var count = 0;
-                            var fieldVector = CreateVector.Sparse<float>(model.NumOfDimensions);
-                            foreach (var vector in model.CreateEmbedding((string)field.Value, false, embedding))
-                            {
-                                fieldVector = fieldVector.Add(vector.Value);
-                                count++;
-                            }
+                //// build mean vectors
+                //using (var debugger = new BatchDebugger(logger, sampleSize))
+                //using (var documents = new DocumentStreamSession(dataDirectory, streamDispatcher))
+                //{
+                //    foreach (var document in documents.ReadDocuments(collectionId, fieldsOfInterest, skip, take))
+                //    {
+                //        foreach (var field in document.Fields)
+                //        {
+                //            var keyId = streamDispatcher.GetKeyId(dataDirectory, collectionId, field.Name.ToHash());
+                //            Vector<float> meanVector;
 
-                            meanVectors[keyId] = meanVector.Add(fieldVector).Divide(2);
-                        }
+                //            if (!meanVectors.TryGetValue(keyId, out meanVector))
+                //            {
+                //                meanVector = CreateVector.Sparse<float>(model.NumOfDimensions);
+                //                meanVectors.Add(keyId, meanVector);
+                //            }
 
-                        debugger.Step("building mean vectors");
-                    }
-                }
+                //            foreach (var vector in model.CreateEmbedding((string)field.Value, false, embedding))
+                //            {
+                //                meanVector.Add(vector.Value, meanVector);
+                //            }
 
-                // store mean vectors
-                SerializeMeanVectors(streamDispatcher, dataDirectory, collectionId, meanVectors);
+                //            meanVectors[keyId] = meanVector.Divide(2);
+                //        }
+
+                //        debugger.Step("building mean vectors");
+                //    }
+                //}
+
+                //// store mean vectors
+                //SerializeMeanVectors(streamDispatcher, dataDirectory, collectionId, meanVectors);
 
                 // create indices
                 using (var debugger = new BatchDebugger(logger, sampleSize))
@@ -122,9 +129,9 @@ namespace Sir.Wikipedia
                 {
                     using (var documents = new DocumentStreamSession(dataDirectory, streamDispatcher))
                     {
-                        foreach (var doc in documents.ReadDocuments(collectionId, fieldsOfInterest, skip, take))
+                        foreach (var doc in documents.ReadDocuments(collectionId, new HashSet<string> { "title" }, skip, take))
                         {
-                            validateSession.Validate(doc);
+                            validateSession.Validate(doc, "title");
 
                             Console.WriteLine($"{doc.Id} {doc.Get("title").Value}");
 
@@ -166,18 +173,22 @@ namespace Sir.Wikipedia
 
             foreach (var index in storage.Indices)
             {
-                if (index > 0)
-                    stream.Write(BitConverter.GetBytes(index));
-                else
-                    break;
+                stream.Write(BitConverter.GetBytes(index));
+
+                //if (index > 0)
+                //    stream.Write(BitConverter.GetBytes(index));
+                //else
+                //    break;
             }
 
             foreach (var value in storage.Values)
             {
-                if (value > 0)
-                    stream.Write(BitConverter.GetBytes(value));
-                else
-                    break;
+                stream.Write(BitConverter.GetBytes(value));
+
+                //if (value > 0)
+                //    stream.Write(BitConverter.GetBytes(value));
+                //else
+                //    break;
             }
 
             return pos;

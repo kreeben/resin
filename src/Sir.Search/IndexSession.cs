@@ -5,7 +5,7 @@ using Sir.IO;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Sir
 {
@@ -21,6 +21,7 @@ namespace Sir
         private readonly ILogger _logger;
         private readonly SortedList<int, float> _embedding = new SortedList<int, float>();
         private readonly IDictionary<long, Vector<float>> _meanVectors;
+        private readonly StringBuilder _skipLog = new StringBuilder();
 
         public IndexSession(
             IModel<T> model,
@@ -71,61 +72,11 @@ namespace Sir
                         vectorNodes.Add(angle, vectorNode);
                     }
                 }
-            }
-        }
-
-        public void Put(long docId, long keyId, ISerializableVector vector)
-        {
-            SortedList<double, VectorInfo> vectorNodes;
-
-            if (!_fields.TryGetValue(keyId, out vectorNodes))
-            {
-                vectorNodes = new SortedList<double, VectorInfo>();
-                _fields.Add(keyId, vectorNodes);
-            }
-
-            var meanVector = _meanVectors[keyId];
-            var angle = meanVector.CosAngle(vector.Value);
-
-            if (angle > 0)
-            {
-                VectorInfo vectorNode;
-
-                if (vectorNodes.TryGetValue(angle, out vectorNode))
-                {
-                    vectorNode.DocIds.Add(docId);
-                }
                 else
                 {
-                    vectorNode = new VectorInfo { DocIds = new HashSet<long> { docId }, ComponentCount = ((SparseVectorStorage<float>)vector.Value.Storage).ValueCount };
-                    vectorNodes.Add(angle, vectorNode);
+                    _skipLog.AppendLine($"{angle} {vector.Label}");
                 }
             }
-        }
-
-        private static long Serialize(Vector<float> vector, Stream vectorStream)
-        {
-            var pos = vectorStream.Position;
-
-            var storage = (SparseVectorStorage<float>)vector.Storage;
-
-            foreach (var index in storage.Indices)
-            {
-                if (index > 0)
-                    vectorStream.Write(BitConverter.GetBytes(index));
-                else
-                    break;
-            }
-
-            foreach (var value in storage.Values)
-            {
-                if (value > 0)
-                    vectorStream.Write(BitConverter.GetBytes(value));
-                else
-                    break;
-            }
-
-            return pos;
         }
 
         public void Put(long docId, long keyId, T value, bool label)
@@ -178,6 +129,7 @@ namespace Sir
             var field = _fields[keyId];
 
             _indexingStrategy.Commit(_directory, _collectionId, keyId, field, _sessionFactory, _logger);
+            File.WriteAllText("c:\\temp\\skipped.txt", _skipLog.ToString());
         }
 
         public IDictionary<long, VectorNode> GetInMemoryIndices()

@@ -34,24 +34,27 @@ namespace Sir
 
             foreach (var keyId in AllKeyIds(directory, collectionId))
             {
-                var vectorIndexFileName = Path.Combine(directory, $"{collectionId}.{keyId}.vecix");
-                var vectorFileName = Path.Combine(directory, $"{collectionId}.{keyId}.vec");
+                //var vectorIndexFileName = Path.Combine(directory, $"{collectionId}.{keyId}.vecix");
+                //var vectorFileName = Path.Combine(directory, $"{collectionId}.{keyId}.vec");
 
-                using (var vectorIndexStream = CreateReadStream(vectorIndexFileName))
-                using (var vectorStream = CreateReadStream(vectorFileName))
-                {
-                    Span<byte> obuf = new byte[sizeof(long)];
-                    vectorIndexStream.Read(obuf);
-                    var vectorOffset = BitConverter.ToInt64(obuf);
+                //using (var vectorIndexStream = CreateReadStream(vectorIndexFileName))
+                //using (var vectorStream = CreateReadStream(vectorFileName))
+                //{
+                //    Span<byte> obuf = new byte[sizeof(long)];
+                //    vectorIndexStream.Read(obuf);
+                //    var vectorOffset = BitConverter.ToInt64(obuf);
 
-                    Span<byte> cbuf = new byte[sizeof(int)];
-                    vectorIndexStream.Read(cbuf);
-                    var componentCount = BitConverter.ToInt32(cbuf);
+                //    Span<byte> cbuf = new byte[sizeof(int)];
+                //    vectorIndexStream.Read(cbuf);
+                //    var componentCount = BitConverter.ToInt32(cbuf);
 
-                    var vector = DeserializeVector(model.NumOfDimensions, vectorOffset, componentCount, vectorStream);
+                //    var vector = DeserializeVector(model.NumOfDimensions, vectorOffset, componentCount, vectorStream);
 
-                    result.Add(keyId, vector);
-                }
+                //    result.Add(keyId, vector);
+                //}
+
+                var vector = CreateVector.Sparse<float>(model.NumOfDimensions, 1);
+                result.Add(keyId, vector);
             }
 
             return result;
