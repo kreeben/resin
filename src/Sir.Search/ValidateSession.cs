@@ -31,7 +31,8 @@ namespace Sir
                     throw new ArgumentNullException(nameof(field));
 
                 var query = _queryParser.Parse(CollectionId, (T)field.Value, field.Name, field.Name, true, false, true);
-                var result = _readSession.SearchIdentical(query, 1000);
+                const int take = 100000;
+                var result = _readSession.SearchIdentical(query, take);
                 bool isMatch = false;
 
                 foreach (var document in result.Documents)
@@ -48,6 +49,10 @@ namespace Sir
                     if (result.Total == 0)
                     {
                         throw new Exception($"unable to validate doc.Id {doc.Id} because no documents were found. field value: {field.Value}");
+                    }
+                    else if (result.Total == take)
+                    {
+                        throw new Exception($"unable to validate doc.Id {doc.Id} because page size {take} was too small. field value: {field.Value}");
                     }
                     else
                     {
