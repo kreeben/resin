@@ -240,7 +240,7 @@ namespace Sir.IO
             IDistanceCalculator model)
         {
             var vector = SerializableVector.Deserialize(vecOffset, (int)componentCount, model.NumOfDimensions, vectorStream);
-            var node = new VectorNode(postingsOffset, vecOffset, terminator, weight, vector);
+            var node = new VectorNode(vector, postingsOffset, vecOffset, terminator, weight);
 
             return node;
         }

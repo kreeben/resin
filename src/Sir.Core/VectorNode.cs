@@ -54,18 +54,6 @@ namespace Sir
 
         public long? KeyId { get; set; }
 
-        public VectorNode()
-        {
-            PostingsOffset = -1;
-            VectorOffset = -1;
-        }
-
-        public VectorNode(long postingsOffset)
-        {
-            PostingsOffset = postingsOffset;
-            VectorOffset = -1;
-        }
-
         public VectorNode(ISerializableVector vector = null, long docId = -1, long postingsOffset = -1, long? keyId = null, HashSet<long> docIds = null)
         {
             Vector = vector;
@@ -88,7 +76,7 @@ namespace Sir
             }
         }
 
-        public VectorNode(long postingsOffset, long vecOffset, long terminator, long weight, ISerializableVector vector)
+        public VectorNode(ISerializableVector vector, long postingsOffset, long vecOffset, long terminator, long weight)
         {
             PostingsOffset = postingsOffset;
             VectorOffset = vecOffset;
