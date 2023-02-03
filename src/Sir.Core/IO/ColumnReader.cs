@@ -113,7 +113,7 @@ namespace Sir.IO
                 if (angle >= model.IdenticalAngle)
                 {
                     bestScore = angle;
-                    bestNode = new VectorNode(postingsOffset);
+                    bestNode = new VectorNode(postingsOffset: postingsOffset);
 
                     break;
                 }
@@ -122,7 +122,7 @@ namespace Sir.IO
                     if (bestNode == null || angle > bestScore)
                     {
                         bestScore = angle;
-                        bestNode = new VectorNode(postingsOffset);
+                        bestNode = new VectorNode(postingsOffset: postingsOffset);
                     }
                     else if (angle == bestScore)
                     {
@@ -151,7 +151,7 @@ namespace Sir.IO
                     if ((bestNode == null && angle > bestScore) || angle > bestScore)
                     {
                         bestScore = angle;
-                        bestNode = new VectorNode(postingsOffset);
+                        bestNode = new VectorNode(postingsOffset: postingsOffset);
                     }
                     else if (angle > 0 && angle == bestScore)
                     {
