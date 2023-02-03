@@ -37,7 +37,7 @@ namespace Sir
 
                 _batchNo++;
 
-                var record = $"\n{_runTime.Elapsed} session running time\n{_time.Elapsed} batch run time\n{_sampleSize * _batchNo} documents\n{debug}\n{docsPerSecond} docs/s\n{message}";
+                var record = $"\n{_runTime.Elapsed} index session running time\n{_time.Elapsed} batch run time\n{_sampleSize * _batchNo} documents\n{debug}\n{docsPerSecond} docs/s\n{message}";
 
                 _logger.LogInformation(record);
                 _time.Restart();
@@ -55,6 +55,7 @@ namespace Sir
         private readonly Stopwatch _runTime;
         private readonly Stopwatch _time;
         private readonly ILogger _logger;
+        private readonly string _nameOfOperation;
         private readonly int _sampleSize;
         private int _batchNo;
         private volatile int _steps;
@@ -62,12 +63,13 @@ namespace Sir
         public int StepCount => _steps;
         public TimeSpan Time => _time.Elapsed;
 
-        public BatchDebugger(ILogger logger, int sampleSize = 1000)
+        public BatchDebugger(string nameOfOperation, ILogger logger, int sampleSize = 1000)
         {
             _sampleSize = sampleSize;
             _runTime = Stopwatch.StartNew();
             _time = Stopwatch.StartNew();
             _logger = logger;
+            _nameOfOperation = nameOfOperation;
         }
 
         public void Step()
@@ -81,7 +83,7 @@ namespace Sir
 
                 _batchNo++;
 
-                var message = $"\n{_runTime.Elapsed} session run time\n{_time.Elapsed} batch run time\n{_sampleSize * _batchNo} items\n{itemsPerSecond} items/s";
+                var message = $"\n{_nameOfOperation} run time {_runTime.Elapsed}\n{_time.Elapsed} batch run time\n{_sampleSize * _batchNo} items\n{itemsPerSecond} items/s";
 
                 _logger.LogInformation(message);
                 _time.Restart();

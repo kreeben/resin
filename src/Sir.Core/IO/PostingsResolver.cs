@@ -32,7 +32,7 @@ namespace Sir.IO
                 }
 
                 if (reader != null)
-                    term.DocumentIds = reader.Read(term.CollectionId, term.KeyId, term.PostingsOffsets);
+                    term.DocumentIds = reader.Read(term.KeyId, term.PostingsOffsets);
             }
         }
 

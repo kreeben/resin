@@ -407,7 +407,7 @@ namespace Sir
         {
             LogTrace($"opening {fileName}");
 
-            return new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            return new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, FileOptions.SequentialScan);
         }
 
         public Stream CreateAsyncAppendStream(string fileName)

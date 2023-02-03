@@ -1,5 +1,4 @@
-﻿using Sir.IO;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Sir.Strings
 {
@@ -27,7 +26,7 @@ namespace Sir.Strings
                 {
                     char c = char.ToLower(source[index]);
 
-                    if (char.IsLetterOrDigit(c))
+                    if (char.IsLetterOrDigit(c) || char.GetUnicodeCategory(c) == System.Globalization.UnicodeCategory.MathSymbol)
                     {
                         embedding.AddOrAppendToComponent(c, 1);
                     }
