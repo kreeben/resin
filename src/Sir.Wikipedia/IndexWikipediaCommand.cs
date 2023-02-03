@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Sir.Documents;
 using Sir.IO;
 using Sir.Strings;
 using System.Collections.Generic;
@@ -7,12 +6,8 @@ using System.IO;
 
 namespace Sir.Wikipedia
 {
-    /// <summary>
-    /// Download JSON search index dump here: 
-    /// https://dumps.wikimedia.org/other/cirrussearch/current/enwiki-20201026-cirrussearch-content.json.gz
-    /// </summary>
     /// <example>
-    /// indexwikipedia --directory C:\projects\resin\src\Sir.HttpServer\AppData\database --file d:\enwiki-20211122-cirrussearch-content.json.gz --collection wikipedia --skip 0 --take 1000
+    /// indexwikipedia --directory C:\projects\resin\src\Sir.HttpServer\AppData\database --collection wikipedia --skip 0 --take 1000
     /// </example>
     public class IndexWikipediaCommand : ICommand
     {
@@ -20,7 +15,6 @@ namespace Sir.Wikipedia
         {
             // Required
             var dataDirectory = args["directory"];
-            var fileName = args["file"];
             var collection = args["collection"];
 
             // Optional
@@ -35,43 +29,45 @@ namespace Sir.Wikipedia
             if (take == 0)
                 take = int.MaxValue;
 
-            if (!File.Exists(fileName))
-            {
-                throw new FileNotFoundException($"This file could not be found: {fileName}. Download a wikipedia JSON dump here:  https://dumps.wikimedia.org/other/cirrussearch/current/");
-            }
+
 
             var model = new BagOfCharsModel();
             var indexStrategy = new LogStructuredIndexingStrategy(model);
-            var payload = WikipediaHelper.Read(fileName, skip, take, fieldsOfInterest);
+            //var payload = WikipediaHelper.Read(fileName, skip, take, fieldsOfInterest);
 
             using (var streamDispatcher = new SessionFactory(logger))
             {
-                using (var writeSession = new WriteSession(new DocumentWriter(streamDispatcher, dataDirectory, collectionId)))
-                using (var debugger = new BatchDebugger(logger, sampleSize))
-                {
-                    foreach (var document in payload)
-                    {
-                        writeSession.Put(document);
+                //using (var writeSession = new WriteSession(new DocumentWriter(streamDispatcher, dataDirectory, collectionId)))
+                //using (var debugger = new BatchDebugger("write session", logger, sampleSize))
+                //{
+                //    foreach (var document in payload)
+                //    {
+                //        writeSession.Put(document);
 
-                        debugger.Step();
-                    }
-                }
+                //        debugger.Step();
+                //    }
+                //}
 
                 using (var debugger = new IndexDebugger(logger, sampleSize))
                 using (var documents = new DocumentStreamSession(dataDirectory, streamDispatcher))
-                using (var indexSession = new IndexSession<string>(model, indexStrategy, streamDispatcher, dataDirectory, collectionId, logger))
                 {
-                    foreach (var document in documents.ReadDocuments(collectionId, fieldsOfInterest, skip, take))
+                    foreach (var batch in documents.ReadDocuments(collectionId, fieldsOfInterest, skip, take).Batch(pageSize))
                     {
-                        foreach (var field in document.Fields)
+                        using (var indexSession = new IndexSession<string>(model, indexStrategy, streamDispatcher, dataDirectory, collectionId, logger))
                         {
-                            indexSession.Put(document.Id, field.KeyId, (string)field.Value, label: false);
+                            foreach (var document in batch)
+                            {
+                                foreach (var field in document.Fields)
+                                {
+                                    indexSession.Put(document.Id, field.KeyId, (string)field.Value, label: false);
+                                }
+
+                                debugger.Step(indexSession);
+                            }
+
+                            indexSession.Commit();
                         }
-
-                        debugger.Step(indexSession);
                     }
-
-                    indexSession.Commit();
                 }
             }
         }

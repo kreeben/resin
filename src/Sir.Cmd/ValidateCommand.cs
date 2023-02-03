@@ -25,22 +25,20 @@ namespace Sir.Cmd
             var embedding = new SortedList<int, float>();
 
             using (var sessionFactory = new SessionFactory(logger))
-            {
-                using (var validateSession = new ValidateSession<string>(
-                    collectionId, 
-                    new SearchSession(dir, sessionFactory, model, new LogStructuredIndexingStrategy(model), logger), 
+            using (var validateSession = new ValidateSession<string>(
+                    collectionId,
+                    new SearchSession(dir, sessionFactory, model, new LogStructuredIndexingStrategy(model), logger),
                     new QueryParser<string>(dir, sessionFactory, model, embedding: embedding, logger: logger)))
+            {
+                using (var documents = new DocumentStreamSession(dir, sessionFactory))
                 {
-                    using (var documents = new DocumentStreamSession(dir, sessionFactory))
+                    foreach (var doc in documents.ReadDocuments(collectionId, selectFields, skip, take))
                     {
-                        foreach (var doc in documents.ReadDocuments(collectionId, selectFields, skip, take))
-                        {
-                            validateSession.Validate(doc);
+                        validateSession.Validate(doc);
 
-                            Console.WriteLine($"{doc.Id} {doc.Get("title").Value}");
+                        Console.WriteLine($"{doc.Id} {doc.Get("title").Value}");
 
-                            count++;
-                        }
+                        count++;
                     }
                 }
             }

@@ -12,13 +12,16 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "resources", "resources", "{
 		..\compare.bat = ..\compare.bat
 		..\index.bat = ..\index.bat
 		..\INSTALL.md = ..\INSTALL.md
+		..\optimize.bat = ..\optimize.bat
 		..\push-to-nuget.bat = ..\push-to-nuget.bat
 		..\README.md = ..\README.md
 		..\sir.bat = ..\sir.bat
 		..\test.bat = ..\test.bat
+		..\truncate-index.bat = ..\truncate-index.bat
 		..\truncate.bat = ..\truncate.bat
 		..\USER-GUIDE.md = ..\USER-GUIDE.md
 		..\validate.bat = ..\validate.bat
+		..\write.bat = ..\write.bat
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sir.HttpServer", "Sir.HttpServer\Sir.HttpServer.csproj", "{C94C2F5D-AE55-4157-A74A-26D49EE73E96}"

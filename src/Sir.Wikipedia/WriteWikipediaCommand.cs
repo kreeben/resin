@@ -1,26 +1,32 @@
 ﻿using Microsoft.Extensions.Logging;
 using Sir.Documents;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Sir.Wikipedia
 {
     /// <summary>
     /// Download JSON search index dump here: 
-    /// https://dumps.wikimedia.org/other/cirrussearch/current/enwiki-20201026-cirrussearch-content.json.gz
+    /// https://dumps.wikimedia.org/other/cirrussearch/current/
     /// </summary>
     /// <example>
-    /// writewikipedia --dataDirectory c:\data\resin --fileName d:\enwiki-20201026-cirrussearch-content.json.gz --collection wikipedia
+    /// writewikipedia --directory C:\projects\resin\src\Sir.HttpServer\AppData\database --file d:\enwiki-20211122-cirrussearch-content.json.gz --collection wikipedia --skip 0 --take 1000
     /// </example>
     public class WriteWikipediaCommand : ICommand
     {
         public void Run(IDictionary<string, string> args, ILogger logger)
         {
-            var dataDirectory = args["dataDirectory"];
-            var fileName = args["fileName"];
+            var dataDirectory = args["directory"];
+            var fileName = args["file"];
             var collection = args["collection"];
             var skip = args.ContainsKey("skip") ? int.Parse(args["skip"]) : 0;
             var take = args.ContainsKey("take") ? int.Parse(args["take"]) : int.MaxValue;
             var sampleSize = args.ContainsKey("sampleSize") ? int.Parse(args["sampleSize"]) : 1000;
+
+            if (!File.Exists(fileName))
+            {
+                throw new FileNotFoundException($"This file could not be found: {fileName}. Download a wikipedia JSON dump here:  https://dumps.wikimedia.org/other/cirrussearch/current/");
+            }
 
             var collectionId = collection.ToHash();
             var fieldsOfInterest = new HashSet<string> { "title", "text", "url" };
@@ -32,7 +38,7 @@ namespace Sir.Wikipedia
 
             using (var sessionFactory = new SessionFactory(logger))
             {
-                var debugger = new BatchDebugger(logger, sampleSize);
+                var debugger = new BatchDebugger("write session", logger, sampleSize);
 
                 using (var writeSession = new WriteSession(new DocumentWriter(sessionFactory, dataDirectory, collectionId)))
                 {

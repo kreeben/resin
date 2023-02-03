@@ -2,6 +2,7 @@
 using Sir.IO;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Sir
 {
@@ -42,27 +43,33 @@ namespace Sir
 
         public void Put(long docId, long keyId, IEnumerable<ISerializableVector> tokens)
         {
-            var documentTree = new VectorNode(keyId: keyId);
+            VectorNode column;
+
+            if (!_index.TryGetValue(keyId, out column))
+            {
+                column = new VectorNode();
+                _index.Add(keyId, column);
+            }
 
             foreach (var token in tokens)
             {
-                documentTree.AddIfUnique(new VectorNode(token, docId: docId, keyId: keyId), _model);
+                _indexingStrategy.Put<T>(
+                                    column,
+                                    new VectorNode(vector: token, docId: docId));
             }
-
-            Put(documentTree);
         }
 
-        public void Put(VectorNode documentTree)
+        public void Put(VectorNode token)
         {
             VectorNode column;
 
-            if (!_index.TryGetValue(documentTree.KeyId.Value, out column))
+            if (!_index.TryGetValue(token.KeyId.Value, out column))
             {
                 column = new VectorNode();
-                _index.Add(documentTree.KeyId.Value, column);
+                _index.Add(token.KeyId.Value, column);
             }
 
-            foreach (var node in PathFinder.All(documentTree))
+            foreach (var node in PathFinder.All(token))
             {
                 _indexingStrategy.Put<T>(
                     column,
@@ -80,9 +87,14 @@ namespace Sir
 
         public void Commit(long keyId)
         {
+            var time = Stopwatch.StartNew();
+
             var column = _index[keyId];
 
             _indexingStrategy.Commit(_directory, _collectionId, keyId, column, _sessionFactory, _logger);
+
+            if (_logger != null)
+                _logger.LogInformation($"committing index to disk for key {keyId} took {time.Elapsed}");
 
             _index.Remove(keyId);
         }
