@@ -214,15 +214,6 @@ namespace Sir
             }
         }
 
-        public static long Serialize(ISerializableVector vector, Stream vectorStream)
-        {
-            var pos = vectorStream.Position;
-
-            vector.Serialize(vectorStream);
-
-            return pos;
-        }
-
         public override string ToString()
         {
             return Label == null ? Value?.ToString() : Label.ToString();

@@ -32,7 +32,7 @@ namespace Sir
             using (var columnWriter = new ColumnWriter(streamDispatcher.CreateAppendStream(directory, collectionId, keyId, "ix")))
             using (var pageIndexWriter = new PageIndexWriter(streamDispatcher.CreateAppendStream(directory, collectionId, keyId, "ixtp")))
             {
-                var size = columnWriter.CreatePage(tree, vectorStream, postingsStream, pageIndexWriter);
+                var size = columnWriter.CreatePage(tree, vectorStream, pageIndexWriter, postingsStream);
 
                 if (logger != null)
                     logger.LogDebug($"serialized column {keyId}, weight {tree.Weight} {size} in {time.Elapsed}");

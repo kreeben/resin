@@ -2,13 +2,9 @@
 
 namespace Sir
 {
-    /// <summary>
-    /// Binary tree that consists of nodes that carry vectors as their payload. 
-    /// Nodes are balanced by taking into account the cosine similarity of their neighbouring vectors.
-    /// </summary>
     public class VectorNode
     {
-        public const int BlockSize = sizeof(long) + sizeof(long) + sizeof(long) + sizeof(long) + sizeof(long);
+        public const int BlockSize = sizeof(long) + sizeof(long) + sizeof(long);
 
         private VectorNode _right;
         private VectorNode _left;
@@ -20,6 +16,9 @@ namespace Sir
         public long VectorOffset { get; set; }
         public long PostingsOffset { get; set; }
         public ISerializableVector Vector { get; set; }
+        public SortedList<double, HashSet<long>> LeftNodes { get; set; }
+        public List<VectorNode> RightNodes { get; set; }
+        public long DocId { get; private set; }
 
         public long Weight
         {
@@ -62,6 +61,7 @@ namespace Sir
             VectorOffset = -1;
             DocIds = docIds;
             KeyId = keyId;
+            DocId = docId;
 
             if (docId > -1)
             {

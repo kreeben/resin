@@ -20,7 +20,7 @@ namespace Sir
 
         public void Put<T>(VectorNode column, VectorNode node)
         {
-            column.AddOrAppend(node, _model);
+            column.AddOrAppendToSortedList(node, _model);
         }
 
         public void Commit(string directory, ulong collectionId, long keyId, VectorNode tree, IStreamDispatcher streamDispatcher, ILogger logger = null)
@@ -32,7 +32,7 @@ namespace Sir
             using (var columnWriter = new ColumnWriter(streamDispatcher.CreateAppendStream(directory, collectionId, keyId, "ix")))
             using (var pageIndexWriter = new PageIndexWriter(streamDispatcher.CreateAppendStream(directory, collectionId, keyId, "ixtp")))
             {
-                var size = columnWriter.CreatePage(tree, vectorStream, postingsStream, pageIndexWriter);
+                var size = columnWriter.CreatePage(tree, vectorStream, pageIndexWriter, postingsStream);
 
                 if (logger != null)
                     logger.LogDebug($"serialized column {keyId}, weight {tree.Weight} {size} in {time.Elapsed}");

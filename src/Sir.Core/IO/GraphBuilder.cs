@@ -68,6 +68,49 @@ namespace Sir.IO
             }
         }
 
+        public static void AddOrAppendToSortedList(
+            this VectorNode root,
+            VectorNode node,
+            IModel model)
+        {
+            if (root.RightNodes == null)
+            {
+                node.LeftNodes = new SortedList<double, HashSet<long>> { { 1, new HashSet<long> { node.DocId } } };
+                root.RightNodes = new List<VectorNode> { node };
+            }
+            else
+            {
+                var matched = false;
+
+                foreach (var rightNode in root.RightNodes)
+                {
+                    var angle = model.CosAngle(node.Vector, rightNode.Vector);
+
+                    if (angle > 0)
+                    {
+                        matched = true;
+
+                        HashSet<long> documents;
+
+                        if (rightNode.LeftNodes.TryGetValue(angle, out documents))
+                        {
+                            documents.Add(node.DocId);
+                        }
+                        else
+                        {
+                            rightNode.LeftNodes.Add(angle, new HashSet<long> { node.DocId });
+                        }
+                    }
+                }
+
+                if (!matched)
+                {
+                    node.LeftNodes = new SortedList<double, HashSet<long>> { { 1, new HashSet<long> { node.DocId } } };
+                    root.RightNodes.Add(node);
+                }
+            }
+        }
+
         public static void AddOrAppend(
             this VectorNode root, 
             VectorNode node,
@@ -272,78 +315,6 @@ namespace Sir.IO
             stream.Write(BitConverter.GetBytes((long)node.Vector.ComponentCount), 0, sizeof(long));
             stream.Write(BitConverter.GetBytes(node.Weight), 0, sizeof(long));
             stream.Write(BitConverter.GetBytes(terminator), 0, sizeof(long));
-        }
-
-        /// <summary>
-        /// Persist tree to disk.
-        /// </summary>
-        /// <param name="node">Tree to persist.</param>
-        /// <param name="indexStream">stream to persist tree into</param>
-        /// <param name="vectorStream">stream to persist vectors into</param>
-        /// <param name="postingsStream">stream to persist postings into</param>
-        /// <returns></returns>
-        public static (long offset, long length) SerializeTree(this VectorNode node, Stream indexStream = null, Stream vectorStream = null, Stream postingsStream = null)
-        {
-            var stack = new Stack<VectorNode>();
-            var offset = indexStream.Position;
-            var length = 0;
-
-            if (node.ComponentCount == 0)
-            {
-                node = node.Right;
-            }
-
-            while (node != null)
-            {
-                if (node.PostingsOffset == -1 && postingsStream != null)
-                {
-                    SerializePostings(node, postingsStream);
-                }
-
-                if (vectorStream != null)
-                {
-                    node.VectorOffset = SerializableVector.Serialize(node.Vector, vectorStream);
-                }
-
-                if (indexStream != null)
-                {
-                    SerializeNode(node, indexStream);
-
-                    length += VectorNode.BlockSize;
-                }
-
-                if (node.Right != null)
-                {
-                    stack.Push(node.Right);
-                }
-
-                node = node.Left;
-
-                if (node == null && stack.Count > 0)
-                {
-                    node = stack.Pop();
-                }
-            }
-
-            return (offset, length);
-        }
-
-        public static void SerializePostings(VectorNode node, Stream postingsStream)
-        {
-            if (node.DocIds.Count == 0) throw new ArgumentException("can't be empty", nameof(node.DocIds));
-
-            node.PostingsOffset = postingsStream.Position;
-
-            // serialize item count
-            postingsStream.Write(BitConverter.GetBytes((long)node.DocIds.Count));
-
-            // serialize address of next page (unknown at this time)
-            postingsStream.Write(BitConverter.GetBytes((long)0));
-
-            foreach (var docId in node.DocIds)
-            {
-                postingsStream.Write(BitConverter.GetBytes(docId));
-            }
         }
     }
 }
