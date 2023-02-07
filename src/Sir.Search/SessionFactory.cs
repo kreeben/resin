@@ -5,8 +5,8 @@ using Sir.IO;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 
 namespace Sir
 {
@@ -26,17 +26,25 @@ namespace Sir
             LogTrace($"database initiated");
         }
 
+        public MemoryMappedFile OpenMMF(string fileName)
+        {
+            var fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return MemoryMappedFile.CreateFromFile(fs, null, fs.Length, MemoryMappedFileAccess.Read, HandleInheritability.None, false);
+        }
+
         public ColumnReader CreateColumnReader(string directory, ulong collectionId, long keyId)
         {
             var ixFileName = Path.Combine(directory, string.Format("{0}.{1}.ix", collectionId, keyId));
             var vectorFileName = Path.Combine(directory, $"{collectionId}.{keyId}.vec");
             var pageIndexFileName = Path.Combine(directory, $"{collectionId}.{keyId}.ixtp");
 
+            using (var ixFile = OpenMMF(ixFileName))
+            using (var ixStream = CreateReadStream(ixFileName))
             using (var pageIndexReader = new PageIndexReader(CreateReadStream(pageIndexFileName)))
             {
                 return new ColumnReader(
                     pageIndexReader.ReadAll(),
-                    CreateReadStream(ixFileName),
+                    ixFile,
                     CreateReadStream(vectorFileName));
             }
         }

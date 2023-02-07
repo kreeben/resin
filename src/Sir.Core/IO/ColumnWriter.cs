@@ -40,19 +40,19 @@ namespace Sir.IO
 
                 if (vectorStream != null)
                 {
-                    rightNode.VectorOffset = Serialize(tree.Vector, vectorStream);
+                    rightNode.VectorOffset = SerializeVector(rightNode.Vector, vectorStream);
                 }
 
                 if (indexStream != null)
                 {
-                    length += SerializeNode(rightNode, angles, indexStream);
+                    length += SerializeNodeAndAngles(rightNode, angles, indexStream);
                 }
             }
 
             return (offset, length);
         }
 
-        private static long Serialize(ISerializableVector vector, Stream vectorStream)
+        private static long SerializeVector(ISerializableVector vector, Stream vectorStream)
         {
             var pos = vectorStream.Position;
 
@@ -61,19 +61,26 @@ namespace Sir.IO
             return pos;
         }
 
-        private static long SerializeNode(VectorNode node, List<Angle> angles, Stream stream)
+        private static long SerializeNodeAndAngles(VectorNode node, List<Angle> angles, Stream stream)
         {
             var startPosition = stream.Position;
 
+            // write node
             stream.Write(BitConverter.GetBytes(node.VectorOffset), 0, sizeof(long));
             stream.Write(BitConverter.GetBytes((long)node.Vector.ComponentCount), 0, sizeof(long));
             stream.Write(BitConverter.GetBytes((long)angles.Count), 0, sizeof(long));
 
             if (angles != null)
             {
+                // write angles
                 foreach (var angle in angles)
                 {
                     stream.Write(BitConverter.GetBytes(angle.ValueOf), 0, sizeof(double));
+                }
+
+                // write postings offsets
+                foreach (var angle in angles)
+                {
                     stream.Write(BitConverter.GetBytes(angle.PostingsOffset), 0, sizeof(long));
                 }
             }
