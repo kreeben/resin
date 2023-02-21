@@ -27,12 +27,13 @@ namespace Sir
         {
             var time = Stopwatch.StartNew();
 
+            using(var anglesStream = streamDispatcher.CreateAppendStream(directory, collectionId, keyId, "ang"))
             using (var vectorStream = streamDispatcher.CreateAppendStream(directory, collectionId, keyId, "vec"))
             using (var postingsStream = streamDispatcher.CreateAppendStream(directory, collectionId, keyId, "pos"))
             using (var columnWriter = new ColumnWriter(streamDispatcher.CreateAppendStream(directory, collectionId, keyId, "ix")))
             using (var pageIndexWriter = new PageIndexWriter(streamDispatcher.CreateAppendStream(directory, collectionId, keyId, "ixtp")))
             {
-                var size = columnWriter.CreatePage(tree, vectorStream, pageIndexWriter, postingsStream);
+                var size = columnWriter.CreatePage(tree, anglesStream, vectorStream, pageIndexWriter, postingsStream);
 
                 if (logger != null)
                     logger.LogDebug($"serialized column {keyId}, weight {tree.Weight} {size} in {time.Elapsed}");

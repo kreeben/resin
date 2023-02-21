@@ -4,7 +4,7 @@ namespace Sir
 {
     public class VectorNode
     {
-        public const int BlockSize = sizeof(long) + sizeof(long) + sizeof(long);
+        public const int BlockSize = sizeof(long)*4;
 
         private VectorNode _right;
         private VectorNode _left;
@@ -16,7 +16,7 @@ namespace Sir
         public long VectorOffset { get; set; }
         public long PostingsOffset { get; set; }
         public ISerializableVector Vector { get; set; }
-        public SortedList<double, HashSet<long>> LeftNodes { get; set; }
+        public SortedList<double, (List<object> labels, HashSet<long> documents)> LeftNodes { get; set; }
         public List<VectorNode> RightNodes { get; set; }
         public long DocId { get; private set; }
 

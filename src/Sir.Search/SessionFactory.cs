@@ -28,23 +28,25 @@ namespace Sir
 
         public MemoryMappedFile OpenMMF(string fileName)
         {
-            var fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-            return MemoryMappedFile.CreateFromFile(fs, null, fs.Length, MemoryMappedFileAccess.Read, HandleInheritability.None, false);
+            var fs = new FileStream(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+            return MemoryMappedFile.CreateFromFile(fs, null, fs.Length, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
         }
 
         public ColumnReader CreateColumnReader(string directory, ulong collectionId, long keyId)
         {
             var ixFileName = Path.Combine(directory, string.Format("{0}.{1}.ix", collectionId, keyId));
+            var anglesFileName = Path.Combine(directory, string.Format("{0}.{1}.ang", collectionId, keyId));
             var vectorFileName = Path.Combine(directory, $"{collectionId}.{keyId}.vec");
             var pageIndexFileName = Path.Combine(directory, $"{collectionId}.{keyId}.ixtp");
+            var ixFile = OpenMMF(ixFileName);
+            var anglesFile = OpenMMF(anglesFileName);
 
-            using (var ixFile = OpenMMF(ixFileName))
-            using (var ixStream = CreateReadStream(ixFileName))
             using (var pageIndexReader = new PageIndexReader(CreateReadStream(pageIndexFileName)))
             {
                 return new ColumnReader(
                     pageIndexReader.ReadAll(),
                     ixFile,
+                    anglesFile,
                     CreateReadStream(vectorFileName));
             }
         }
@@ -139,6 +141,11 @@ namespace Sir
                 count++;
             }
             foreach (var file in Directory.GetFiles(directory, $"{collectionId}*.pos"))
+            {
+                File.Delete(file);
+                count++;
+            }
+            foreach (var file in Directory.GetFiles(directory, $"{collectionId}*.ang"))
             {
                 File.Delete(file);
                 count++;

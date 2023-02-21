@@ -18,29 +18,29 @@ namespace Sir.StringCompare
             else
             {
                 Similarity(args[0], args[1], model);
-                CompareToBaseVector(args[0], args[1], model);
+                //CompareToBaseVector(args[0], args[1], model);
             }
         }
 
-        private static void CompareToBaseVector(string first, string second, IModel<string> model)
-        {
-            var baseVectorStorage = new float[model.NumOfDimensions];
+        //private static void CompareToBaseVector(string first, string second, IModel<string> model)
+        //{
+        //    var baseVectorStorage = new float[model.NumOfDimensions];
 
-            for (int i = 0; i < baseVectorStorage.Length; i++)
-            {
-                baseVectorStorage[i] = (float)i + 1;
-            }
+        //    for (int i = 0; i < baseVectorStorage.Length; i++)
+        //    {
+        //        baseVectorStorage[i] = (float)i + 1;
+        //    }
 
-            var baseVector = new SerializableVector(baseVectorStorage);
-            var firstVector = model.CreateEmbedding(first, false).First();
-            var secondVector = model.CreateEmbedding(second, false).First();
-            var angle1 = model.CosAngle(baseVector, firstVector);
-            var angle2 = model.CosAngle(baseVector, secondVector);
+        //    var baseVector = new SerializableVector(baseVectorStorage);
+        //    var firstVector = model.CreateEmbedding(first, false).First();
+        //    var secondVector = model.CreateEmbedding(second, false).First();
+        //    var angle1 = model.CosAngle(baseVector, firstVector);
+        //    var angle2 = model.CosAngle(baseVector, secondVector);
 
-            Console.WriteLine($"first angle to base vector: {angle1}");
-            Console.WriteLine($"second angle to base vector: {angle2}");
-            Console.WriteLine($"base vector similarity: {Math.Min(angle1, angle2) / Math.Max(angle1, angle2)}");
-        }
+        //    Console.WriteLine($"first angle to base vector: {angle1}");
+        //    Console.WriteLine($"second angle to base vector: {angle2}");
+        //    Console.WriteLine($"base vector similarity: {Math.Min(angle1, angle2) / Math.Max(angle1, angle2)}");
+        //}
 
         private static void Similarity(string first, string second, IModel<string> model)
         {

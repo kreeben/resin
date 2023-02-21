@@ -167,6 +167,23 @@ namespace Sir.IO
             return output.ToString();
         }
 
+        public static string Visualize2(VectorNode root)
+        {
+            StringBuilder output = new StringBuilder();
+
+            foreach (var rightNode in root.RightNodes)
+            {
+                output.AppendLine($"{rightNode} w:{rightNode.LeftNodes.Count}");
+
+                foreach (var leftNode in rightNode.LeftNodes)
+                {
+                    output.AppendLine($"\t{string.Join(" ", leftNode.Value.labels)} a:{leftNode.Key} w:{leftNode.Value.documents.Count}");
+                }
+            }
+
+            return output.ToString();
+        }
+
         private static void Visualize(VectorNode node, int depth, StringBuilder output)
         {
             if (node == null) return;

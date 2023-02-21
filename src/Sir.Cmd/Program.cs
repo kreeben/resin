@@ -25,7 +25,7 @@ namespace Sir.Cmd
                         .AddFilter("Microsoft", LogLevel.Warning)
                         .AddFilter("System", LogLevel.Warning)
                         .AddFilter("Sir", LogLevel.Debug)
-                        .AddConsole();
+                        .AddConsole().AddDebug();
                 });
             }
             else

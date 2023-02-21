@@ -15,5 +15,15 @@ namespace Sir
         {
             return Math.Abs(left - right) < _precision;
         }
+
+        public static bool Approximates(this double left, double right, double precision)
+        {
+            return Math.Abs(left - right) < precision;
+        }
+
+        public static bool Approximates(this float left, float right, double precision)
+        {
+            return Math.Abs(left - right) < precision;
+        }
     }
 }

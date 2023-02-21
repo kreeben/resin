@@ -15,16 +15,16 @@ namespace Sir.IO
             _keepIndexStreamOpen = keepStreamOpen;
         }
 
-        public (int depth, int width) CreatePage(VectorNode column, Stream vectorStream, PageIndexWriter pageIndexWriter, Stream postingsStream = null)
+        public (int depth, int width) CreatePage(VectorNode column, Stream anglesStream, Stream vectorStream, PageIndexWriter pageIndexWriter, Stream postingsStream)
         {
-            var page = SerializeTree(column, _ixStream, vectorStream, postingsStream);
+            var page = SerializeTree(column, _ixStream, anglesStream, vectorStream, postingsStream);
 
             pageIndexWriter.Put(page.offset, page.length);
 
             return PathFinder.Size(column);
         }
 
-        private static (long offset, long length) SerializeTree(VectorNode tree, Stream indexStream = null, Stream vectorStream = null, Stream postingsStream = null)
+        private static (long offset, long length) SerializeTree(VectorNode tree, Stream indexStream, Stream anglesStream, Stream vectorStream, Stream postingsStream)
         {
             var offset = indexStream.Position;
             long length = 0;
@@ -45,7 +45,7 @@ namespace Sir.IO
 
                 if (indexStream != null)
                 {
-                    length += SerializeNodeAndAngles(rightNode, angles, indexStream);
+                    length += SerializeRightNode(rightNode, angles, indexStream, anglesStream);
                 }
             }
 
@@ -61,31 +61,24 @@ namespace Sir.IO
             return pos;
         }
 
-        private static long SerializeNodeAndAngles(VectorNode node, List<Angle> angles, Stream stream)
+        private static long SerializeRightNode(VectorNode node, List<Angle> angles, Stream ixStream, Stream anglesStream)
         {
-            var startPosition = stream.Position;
+            var startPosition = ixStream.Position;
 
             // write node
-            stream.Write(BitConverter.GetBytes(node.VectorOffset), 0, sizeof(long));
-            stream.Write(BitConverter.GetBytes((long)node.Vector.ComponentCount), 0, sizeof(long));
-            stream.Write(BitConverter.GetBytes((long)angles.Count), 0, sizeof(long));
+            ixStream.Write(BitConverter.GetBytes(node.VectorOffset));
+            ixStream.Write(BitConverter.GetBytes((long)node.Vector.ComponentCount));
+            ixStream.Write(BitConverter.GetBytes((long)angles.Count));
+            ixStream.Write(BitConverter.GetBytes(anglesStream.Position));
 
-            if (angles != null)
+            // write angles and postings offsets
+            foreach (var angle in angles)
             {
-                // write angles
-                foreach (var angle in angles)
-                {
-                    stream.Write(BitConverter.GetBytes(angle.ValueOf), 0, sizeof(double));
-                }
-
-                // write postings offsets
-                foreach (var angle in angles)
-                {
-                    stream.Write(BitConverter.GetBytes(angle.PostingsOffset), 0, sizeof(long));
-                }
+                anglesStream.Write(BitConverter.GetBytes(angle.ValueOf));
+                anglesStream.Write(BitConverter.GetBytes(angle.PostingsOffset));
             }
 
-            return stream.Position - startPosition;
+            return ixStream.Position - startPosition;
         }
 
         private static List<Angle> SerializePostings(VectorNode node, Stream postingsStream)
@@ -101,26 +94,28 @@ namespace Sir.IO
                 var postingsOffset = postingsStream.Position;
 
                 // serialize list length
-                postingsStream.Write(BitConverter.GetBytes((long)angle.Value.Count));
+                postingsStream.Write(BitConverter.GetBytes((long)angle.Value.documents.Count));
 
                 // serialize address of next page (unknown at this time)
                 postingsStream.Write(BitConverter.GetBytes((long)0));
 
-                foreach (var docId in angle.Value)
+                foreach (var docId in angle.Value.documents)
                 {
                     postingsStream.Write(BitConverter.GetBytes(docId));
                 }
 
-                angles.Add(new Angle { ValueOf = angle.Key, PostingsOffset = postingsOffset });
+                angles.Add(new Angle { ValueOf = angle.Key, PostingsOffset = postingsOffset, Labels = angle.Value.labels });
             }
 
             return angles;
         }
 
+        [System.Diagnostics.DebuggerDisplay("{Labels}")]
         public class Angle
         {
             public double ValueOf { get; set; }
             public long PostingsOffset { get; set; }
+            public List<object> Labels { get; set; }
         }
 
         public void Dispose()

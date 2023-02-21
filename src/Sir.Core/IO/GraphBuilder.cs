@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Sir.IO
 {
@@ -75,7 +76,7 @@ namespace Sir.IO
         {
             if (root.RightNodes == null)
             {
-                node.LeftNodes = new SortedList<double, HashSet<long>> { { 1, new HashSet<long> { node.DocId } } };
+                node.LeftNodes = new SortedList<double, (List<object> labels, HashSet<long> documents)> { { 1, (new List<object> { node.Vector.Label }, new HashSet<long> { node.DocId }) } };
                 root.RightNodes = new List<VectorNode> { node };
             }
             else
@@ -84,28 +85,39 @@ namespace Sir.IO
 
                 foreach (var rightNode in root.RightNodes)
                 {
-                    var angle = model.CosAngle(node.Vector, rightNode.Vector);
+                    var angle = Math.Round(model.CosAngle(node.Vector, rightNode.Vector), 15);
 
                     if (angle > 0)
                     {
                         matched = true;
 
-                        HashSet<long> documents;
+                        (List<object> labels, HashSet<long> documents) documents;
 
                         if (rightNode.LeftNodes.TryGetValue(angle, out documents))
                         {
-                            documents.Add(node.DocId);
+                            documents.documents.Add(node.DocId);
+
+#if DEBUG
+                            if (!documents.labels.Select(s => s.ToString().ToLower()).Contains(node.Vector.Label.ToString().ToLower()))
+                            {
+                                documents.labels.Add(node.Vector.Label);
+                            }
+
+                            rightNode.LeftNodes[angle] = documents;
+#endif
                         }
                         else
                         {
-                            rightNode.LeftNodes.Add(angle, new HashSet<long> { node.DocId });
+                            rightNode.LeftNodes.Add(angle, (new List<object> { node.Vector.Label }, new HashSet<long> { node.DocId }));
                         }
+
+                        break;
                     }
                 }
 
                 if (!matched)
                 {
-                    node.LeftNodes = new SortedList<double, HashSet<long>> { { 1, new HashSet<long> { node.DocId } } };
+                    node.LeftNodes = new SortedList<double, (List<object>, HashSet<long>)> { { 1, (new List<object> { node.Vector.Label }, new HashSet<long> { node.DocId }) } };
                     root.RightNodes.Add(node);
                 }
             }

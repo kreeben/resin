@@ -15,7 +15,7 @@ namespace Sir
 
         public override string ToString()
         {
-            return $"key {_keyId} weight {_graph.Weight} {PathFinder.Size(_graph)}";
+            return $"key {_keyId} weight {_graph.RightNodes.Count}";
         }
     }
 }

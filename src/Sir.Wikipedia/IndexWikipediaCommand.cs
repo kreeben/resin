@@ -1,8 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
-using Sir.IO;
 using Sir.Strings;
 using System.Collections.Generic;
-using System.IO;
 
 namespace Sir.Wikipedia
 {
@@ -22,14 +20,12 @@ namespace Sir.Wikipedia
             var take = args.ContainsKey("take") ? int.Parse(args["take"]) : int.MaxValue;
             var sampleSize = args.ContainsKey("sampleSize") ? int.Parse(args["sampleSize"]) : 1000;
             var pageSize = args.ContainsKey("pageSize") ? int.Parse(args["pageSize"]) : 100000;
-
+            var labelVectors = args.ContainsKey("label") ? args["label"] == "true" ? true : false : false;
             var collectionId = collection.ToHash();
-            var fieldsOfInterest = new HashSet<string> { "title", "text", "url" };
+            var fieldsOfInterest = new HashSet<string> { "title"/*, "text", "url"*/ };
 
             if (take == 0)
                 take = int.MaxValue;
-
-
 
             var model = new BagOfCharsModel();
             var indexStrategy = new LogStructuredIndexingStrategy(model);
@@ -59,7 +55,7 @@ namespace Sir.Wikipedia
                             {
                                 foreach (var field in document.Fields)
                                 {
-                                    indexSession.Put(document.Id, field.KeyId, (string)field.Value, label: false);
+                                    indexSession.Put(document.Id, field.KeyId, (string)field.Value, label: labelVectors);
                                 }
 
                                 debugger.Step(indexSession);
@@ -70,12 +66,6 @@ namespace Sir.Wikipedia
                     }
                 }
             }
-        }
-
-        private static void Print(string name, VectorNode tree)
-        {
-            var diagram = PathFinder.Visualize(tree);
-            File.WriteAllText($@"c:\temp\{name}.txt", diagram);
         }
     }
 }

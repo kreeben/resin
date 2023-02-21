@@ -87,16 +87,18 @@ namespace Sir
 
         public void Commit(long keyId)
         {
-            var time = Stopwatch.StartNew();
-
             var column = _index[keyId];
 
             _indexingStrategy.Commit(_directory, _collectionId, keyId, column, _sessionFactory, _logger);
-
-            if (_logger != null)
-                _logger.LogInformation($"committing index to disk for key {keyId} took {time.Elapsed}");
-
             _index.Remove(keyId);
+
+            Print(keyId, column);
+        }
+
+        private static void Print(long keyId, VectorNode tree)
+        {
+            var diagram = PathFinder.Visualize2(tree);
+            System.IO.File.WriteAllText($@"c:\temp\{keyId}.txt", diagram);
         }
 
         public IDictionary<long, VectorNode> GetInMemoryIndices()
