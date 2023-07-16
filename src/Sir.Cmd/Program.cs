@@ -56,6 +56,7 @@ namespace Sir.Cmd
                 catch (Exception ex)
                 {
                     logger.LogError(ex, ex.Message);
+                    Console.WriteLine("plugin crashed");
                 }
             }
             else if ((command == "slice"))

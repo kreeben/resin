@@ -92,7 +92,7 @@ namespace Sir
         {
             foreach (var term in terms)
             {
-                if (term.PostingsOffsets == null)
+                if (term.PostingsPageIds == null)
                     continue;
 
                 if (term.IsIntersection)

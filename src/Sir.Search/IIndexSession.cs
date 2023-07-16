@@ -12,9 +12,7 @@ namespace Sir
     {
         IndexInfo GetIndexInfo();
         void Put(long docId, long keyId, IEnumerable<ISerializableVector> tokens);
-        void Put(VectorNode documentTree);
         void Commit();
-        void Commit(long keyId);
         IDictionary<long, VectorNode> GetInMemoryIndices();
     }
 }

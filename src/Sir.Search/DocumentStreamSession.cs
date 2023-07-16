@@ -49,6 +49,8 @@ namespace Sir
             {
                 yield return ReadDocument((collectionId, docId++), select, documentReader);
             }
+
+            yield break;
         }
 
         public IEnumerable<AnalyzedDocument> GetDocumentsAsVectors<T>(
@@ -81,7 +83,7 @@ namespace Sir
                     columns.Add(node);
                 }
 
-                yield return new AnalyzedDocument(columns);
+                yield return new AnalyzedDocument(columns, docId);
 
                 docId++;
             }
@@ -184,10 +186,10 @@ namespace Sir
                 var kvp = docMap[i];
                 var kInfo = streamReader.GetAddressOfKey(kvp.keyId);
                 var key = (string)streamReader.GetKey(kInfo.offset, kInfo.len, kInfo.dataType);
-                var tree = new VectorNode(keyId:kvp.keyId);
 
                 if (select.Contains(key))
                 {
+                    var tree = new VectorNode(keyId: kvp.keyId);
                     var vInfo = streamReader.GetAddressOfValue(kvp.valId);
 
                     foreach (var vector in streamReader.GetValueConvertedToVectors<T>(vInfo.offset, vInfo.len, vInfo.dataType, value => model.CreateEmbedding(value, label, embedding)))

@@ -1,1 +1,1 @@
-sir.bat indexwikipedia --directory C:\projects\resin\src\Sir.HttpServer\AppData\database --collection wikipedia --skip 0 --take 200000 --pageSize 100000 --sampleSize 1000 %*
+sir.bat indexwikipedia --directory C:\projects\resin\src\Sir.HttpServer\AppData\database --collection wikipedia --skip 0 --take 513 --pageSize 513 --sampleSize 513 %*

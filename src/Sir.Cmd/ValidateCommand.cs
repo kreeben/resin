@@ -35,15 +35,13 @@ namespace Sir.Cmd
                     foreach (var doc in documents.ReadDocuments(collectionId, selectFields, skip, take))
                     {
                         validateSession.Validate(doc);
-
-                        Console.WriteLine($"{doc.Id} {doc.Get("title").Value}");
-
                         count++;
+                        Console.WriteLine($"{doc.Id} {doc.Get("title").Value}");
                     }
                 }
             }
 
-            Console.WriteLine($"successfully validated {count} docs in {time.Elapsed}");
+            Console.WriteLine($"validated {count} docs in {time.Elapsed}");
         }
     }
 }

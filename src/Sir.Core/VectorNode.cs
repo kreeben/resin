@@ -18,7 +18,7 @@ namespace Sir
         public VectorNode Ancestor { get; private set; }
         public long ComponentCount { get; set; }
         public long VectorOffset { get; set; }
-        public long PostingsOffset { get; set; }
+        public long PostingsPageId { get; set; }
         public ISerializableVector Vector { get; set; }
 
         public long Weight
@@ -54,11 +54,11 @@ namespace Sir
 
         public long? KeyId { get; set; }
 
-        public VectorNode(ISerializableVector vector = null, long docId = -1, long postingsOffset = -1, long? keyId = null, HashSet<long> docIds = null)
+        public VectorNode(ISerializableVector vector = null, long docId = -1, long postingsPageId = -1, long? keyId = null, HashSet<long> docIds = null)
         {
             Vector = vector;
             ComponentCount = vector == null ? 0 : vector.ComponentCount;
-            PostingsOffset = postingsOffset;
+            PostingsPageId = postingsPageId;
             VectorOffset = -1;
             DocIds = docIds;
             KeyId = keyId;
@@ -76,9 +76,9 @@ namespace Sir
             }
         }
 
-        public VectorNode(ISerializableVector vector, long postingsOffset, long vecOffset, long terminator, long weight)
+        public VectorNode(ISerializableVector vector, long postingsPageId, long vecOffset, long terminator, long weight)
         {
-            PostingsOffset = postingsOffset;
+            PostingsPageId = postingsPageId;
             VectorOffset = vecOffset;
             Terminator = terminator;
             _weight = weight;

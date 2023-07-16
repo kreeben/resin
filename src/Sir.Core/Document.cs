@@ -74,15 +74,12 @@ namespace Sir
     public class AnalyzedDocument
     {
         public IList<VectorNode> Nodes { get; }
+        public long DocumentId { get; }
 
-        public AnalyzedDocument(params VectorNode[] nodes)
+        public AnalyzedDocument(IList<VectorNode> nodes, long documentId = -1)
         {
             Nodes = nodes;
-        }
-
-        public AnalyzedDocument(IList<VectorNode> nodes)
-        {
-            Nodes = nodes;
+            DocumentId = documentId;
         }
     }
 

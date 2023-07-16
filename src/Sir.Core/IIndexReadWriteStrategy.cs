@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Sir.IO;
+using System.Collections.Generic;
 
 namespace Sir
 {
@@ -7,6 +8,6 @@ namespace Sir
     {
         void Put<T>(VectorNode column, VectorNode node);
         Hit GetMatchOrNull(ISerializableVector vector, IModel model, ColumnReader reader);
-        void Commit(string directory, ulong collectionId, long keyId, VectorNode tree, IStreamDispatcher streamDispatcher, ILogger logger = null);
+        void Commit(string directory, ulong collectionId, long keyId, VectorNode tree, IStreamDispatcher streamDispatcher, Dictionary<(long keyId, long pageId), HashSet<long>> postingsToAppend, ILogger logger = null);
     }
 }

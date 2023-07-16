@@ -16,6 +16,8 @@ namespace Sir
         private readonly ulong _collectionId;
         private readonly ILogger _logger;
         private readonly SortedList<int, float> _embedding = new SortedList<int, float>();
+        private readonly Dictionary<(string directory, ulong collectionId, long keyId), ColumnReader> _readers;
+        private readonly Dictionary<long, Dictionary<(long keyId, long pageId), HashSet<long>>> _postingsToAppend;
 
         public IndexSession(
             IModel<T> model,
@@ -32,6 +34,8 @@ namespace Sir
             _directory = directory;
             _collectionId = collectionId;
             _logger = logger;
+            _readers = new Dictionary<(string, ulong, long), ColumnReader>();
+            _postingsToAppend = new Dictionary<long, Dictionary<(long keyId, long pageId), HashSet<long>>>();
         }
 
         public void Put(long docId, long keyId, T value, bool label)
@@ -43,9 +47,9 @@ namespace Sir
 
         public void Put(long docId, long keyId, IEnumerable<ISerializableVector> tokens)
         {
-            VectorNode column;
+            var reader = GetColumnReader(keyId);
 
-            if (!_index.TryGetValue(keyId, out column))
+            if (!_index.TryGetValue(keyId, out var column))
             {
                 column = new VectorNode();
                 _index.Add(keyId, column);
@@ -53,27 +57,45 @@ namespace Sir
 
             foreach (var token in tokens)
             {
-                _indexingStrategy.Put<T>(
+                if (reader == null)
+                {
+                    _indexingStrategy.Put<T>(
                                     column,
                                     new VectorNode(vector: token, docId: docId));
-            }
-        }
+                }
+                else
+                {
+                    var hit = reader.ClosestMatchOrNullStoppingAtFirstIdenticalPage(token, _model);
 
-        public void Put(VectorNode token)
-        {
-            VectorNode column;
+                    if (hit == null || hit.Score < _model.IdenticalAngle)
+                    {
+                        _indexingStrategy.Put<T>(
+                                    column,
+                                    new VectorNode(vector: token, docId: docId));
+                    }
+                    else
+                    {
+                        var compositeKey = (keyId, hit.PostingsPageIds[0]);
 
-            if (!_index.TryGetValue(token.KeyId.Value, out column))
-            {
-                column = new VectorNode();
-                _index.Add(token.KeyId.Value, column);
-            }
-
-            foreach (var node in PathFinder.All(token))
-            {
-                _indexingStrategy.Put<T>(
-                    column,
-                    new VectorNode(node.Vector, docIds: node.DocIds));
+                        if (!_postingsToAppend.TryGetValue(keyId, out var postingsSet))
+                        {
+                            postingsSet = new Dictionary<(long keyId, long pageId), HashSet<long>> { { compositeKey, new HashSet<long> { docId } } };
+                            _postingsToAppend.Add(keyId, postingsSet);
+                        }
+                        else
+                        {
+                            if (!postingsSet.TryGetValue(compositeKey, out var postings))
+                            {
+                                postingsSet.Add(compositeKey, new HashSet<long> { docId });
+                            }
+                            else
+                            {
+                                postings.Add(docId);
+                            }
+                        }
+                        
+                    }
+                }
             }
         }
 
@@ -83,20 +105,26 @@ namespace Sir
             {
                 Commit(column.Key);
             }
+
+            _index.Clear();
+            _postingsToAppend.Clear();
+
+            foreach (var reader in _readers.Values)
+            {
+                reader.Dispose();
+            }
+            _readers.Clear();
         }
 
-        public void Commit(long keyId)
+        private void Commit(long keyId)
         {
             var time = Stopwatch.StartNew();
 
             var column = _index[keyId];
-
-            _indexingStrategy.Commit(_directory, _collectionId, keyId, column, _sessionFactory, _logger);
+            _indexingStrategy.Commit(_directory, _collectionId, keyId, column, _sessionFactory, _postingsToAppend.ContainsKey(keyId) ? _postingsToAppend[keyId] : null, _logger);
 
             if (_logger != null)
-                _logger.LogInformation($"committing index to disk for key {keyId} took {time.Elapsed}");
-
-            _index.Remove(keyId);
+                _logger.LogInformation($"committed index to disk for key {keyId} in {time.Elapsed}");
         }
 
         public IDictionary<long, VectorNode> GetInMemoryIndices()
@@ -118,11 +146,34 @@ namespace Sir
             }
         }
 
+        private ColumnReader GetColumnReader(long keyId)
+        {
+            ColumnReader reader;
+            var key = (_directory, _collectionId, keyId);
+
+            if (!_readers.TryGetValue(key, out reader))
+            {
+                reader = _sessionFactory.CreateColumnReader(_directory, _collectionId, keyId);
+
+                if (reader != null)
+                {
+                    _readers.Add(key, reader);
+                }
+            }
+
+            return reader;
+        }
+
         public void Dispose()
         {
             if(_index.Count > 0)
             {
                 Commit();
+            }
+
+            foreach (var reader in _readers.Values)
+            {
+                reader.Dispose();
             }
         }
     }

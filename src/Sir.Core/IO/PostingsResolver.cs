@@ -15,7 +15,7 @@ namespace Sir.IO
         {
             foreach (var term in query.AllTerms())
             {
-                if (term.PostingsOffsets == null)
+                if (term.PostingsPageIds == null)
                     continue;
 
                 PostingsReader reader;
@@ -32,7 +32,7 @@ namespace Sir.IO
                 }
 
                 if (reader != null)
-                    term.DocumentIds = reader.Read(term.KeyId, term.PostingsOffsets);
+                    term.DocumentIds = reader.Read(term.KeyId, term.PostingsPageIds);
             }
         }
 

@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
@@ -49,11 +48,11 @@ namespace Sir.IO
                 if (best == null || hit.Score > best.Score)
                 {
                     best = hit;
-                    best.PostingsOffsets = new List<long> { hit.Node.PostingsOffset };
+                    best.PostingsPageIds = new List<long> { hit.Node.PostingsPageId };
                 }
                 else if (hit.Score.Approximates(best.Score))
                 {
-                    best.PostingsOffsets.Add(hit.Node.PostingsOffset);
+                    best.PostingsPageIds.Add(hit.Node.PostingsPageId);
                 }
             }
 
@@ -76,11 +75,11 @@ namespace Sir.IO
                     if (best == null || hit.Score > best.Score)
                     {
                         best = hit;
-                        best.PostingsOffsets = new List<long> { hit.Node.PostingsOffset };
+                        best.PostingsPageIds = new List<long> { hit.Node.PostingsPageId };
                     }
                     else if (hit.Score.Approximates(best.Score))
                     {
-                        best.PostingsOffsets.Add(hit.Node.PostingsOffset);
+                        best.PostingsPageIds.Add(hit.Node.PostingsPageId);
                     }
                 }
 
@@ -104,7 +103,7 @@ namespace Sir.IO
             while (true)
             {
                 var vecOffset = BitConverter.ToInt64(block, 0);
-                var postingsOffset = BitConverter.ToInt64(block, sizeof(long));
+                var pageId = BitConverter.ToInt64(block, sizeof(long));
                 var componentCount = BitConverter.ToInt64(block, sizeof(long) * 2);
                 var terminator = BitConverter.ToInt64(block, sizeof(long) * 4);
 
@@ -113,7 +112,7 @@ namespace Sir.IO
                 if (angle >= model.IdenticalAngle)
                 {
                     bestScore = angle;
-                    bestNode = new VectorNode(postingsOffset: postingsOffset);
+                    bestNode = new VectorNode(postingsPageId: pageId);
 
                     break;
                 }
@@ -122,11 +121,11 @@ namespace Sir.IO
                     if (bestNode == null || angle > bestScore)
                     {
                         bestScore = angle;
-                        bestNode = new VectorNode(postingsOffset: postingsOffset);
+                        bestNode = new VectorNode(postingsPageId: pageId);
                     }
                     else if (angle == bestScore)
                     {
-                        bestNode.PostingsOffset = postingsOffset;
+                        bestNode.PostingsPageId = pageId;
                     }
 
                     // We need to determine if we can traverse further left.
@@ -151,11 +150,11 @@ namespace Sir.IO
                     if ((bestNode == null && angle > bestScore) || angle > bestScore)
                     {
                         bestScore = angle;
-                        bestNode = new VectorNode(postingsOffset: postingsOffset);
+                        bestNode = new VectorNode(postingsPageId: pageId);
                     }
                     else if (angle > 0 && angle == bestScore)
                     {
-                        bestNode.PostingsOffset = postingsOffset;
+                        bestNode.PostingsPageId = pageId;
                     }
 
                     // We need to determine if we can traverse further to the right.

@@ -5,7 +5,6 @@ using Sir.IO;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 
 namespace Sir
@@ -32,13 +31,18 @@ namespace Sir
             var vectorFileName = Path.Combine(directory, $"{collectionId}.{keyId}.vec");
             var pageIndexFileName = Path.Combine(directory, $"{collectionId}.{keyId}.ixtp");
 
-            using (var pageIndexReader = new PageIndexReader(CreateReadStream(pageIndexFileName)))
+            if (File.Exists(ixFileName) && File.Exists(vectorFileName) && File.Exists(pageIndexFileName))
             {
-                return new ColumnReader(
-                    pageIndexReader.ReadAll(),
-                    CreateReadStream(ixFileName),
-                    CreateReadStream(vectorFileName));
+                using (var pageIndexReader = new PageIndexReader(CreateReadStream(pageIndexFileName)))
+                {
+                    return new ColumnReader(
+                        pageIndexReader.ReadAll(),
+                        CreateReadStream(ixFileName),
+                        CreateReadStream(vectorFileName));
+                }
             }
+
+            return null;
         }
 
         public IEnumerable<Document> Select(string directory, ulong collectionId, HashSet<string> select, int skip = 0, int take = 0)
@@ -135,6 +139,11 @@ namespace Sir
                 File.Delete(file);
                 count++;
             }
+            foreach (var file in Directory.GetFiles(directory, $"{collectionId}*.pix"))
+            {
+                File.Delete(file);
+                count++;
+            }
 
             LogInformation($"truncated index {collectionId} ({count} files affected)");
         }
@@ -203,7 +212,10 @@ namespace Sir
                             {
                                 foreach (var node in document.Nodes)
                                 {
-                                    indexSession.Put(node);
+                                    foreach (var n in PathFinder.All(node))
+                                    {
+                                        indexSession.Put(document.DocumentId, n.KeyId.Value, new ISerializableVector[] { n.Vector });
+                                    }
                                 }
 
                                 count++;
@@ -403,11 +415,11 @@ namespace Sir
             return new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, FileOptions.Asynchronous);
         }
 
-        public Stream CreateReadStream(string fileName)
+        public Stream CreateReadStream(string fileName, int bufferSize = 4096)
         {
             LogTrace($"opening {fileName}");
 
-            return new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, FileOptions.SequentialScan);
+            return new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, bufferSize, FileOptions.SequentialScan);
         }
 
         public Stream CreateAsyncAppendStream(string fileName)
@@ -451,6 +463,27 @@ namespace Sir
             LogTrace($"opening {fileName}");
 
             return new FileStream(fileName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+        }
+
+        public Stream CreateSeekWriteStream(string directory, ulong collectionId, long keyId, string fileExtension)
+        {
+            if (!Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            var fileName = Path.Combine(directory, $"{collectionId}.{keyId}.{fileExtension}");
+
+            if (!File.Exists(fileName))
+            {
+                LogTrace($"creating {fileName}");
+
+                using (var fs = new FileStream(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite)) { }
+            }
+
+            LogTrace($"opening {fileName}");
+
+            return new FileStream(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
         }
 
         public void Dispose()

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Sir.IO
@@ -14,18 +15,34 @@ namespace Sir.IO
             _keepIndexStreamOpen = keepStreamOpen;
         }
 
-        public (int depth, int width) CreatePage(VectorNode column, Stream vectorStream, Stream postingsStream, PageIndexWriter pageIndexWriter)
+        public (int depth, int width) CreatePage(
+            VectorNode column,
+            Stream vectorStream,
+            PostingsWriter postingsWriter,
+            PageIndexWriter pageIndexWriter, 
+            Dictionary<(long keyId, long pageId), HashSet<long>> postingsToAppend)
         {
-            var page = column.SerializeTree(_ixStream, vectorStream, postingsStream);
+            if (postingsToAppend != null)
+            {
+                foreach (var posting in postingsToAppend)
+                {
+                    postingsWriter.AppendAndUpdatePageRef(posting.Key.pageId, posting.Value);
+                }
+            }
+
+            var page = column.SerializeTree(_ixStream, vectorStream, postingsWriter);
 
             pageIndexWriter.Put(page.offset, page.length);
 
             return PathFinder.Size(column);
         }
 
-        public (int depth, int width) CreatePage(VectorNode column, Stream vectorStream, PageIndexWriter pageIndexWriter)
+        public (int depth, int width) CreatePage(
+            VectorNode column, 
+            Stream vectorStream, 
+            PageIndexWriter pageIndexWriter)
         {
-            var page = column.SerializeTree(_ixStream, vectorStream, null);
+            var page = column.SerializeTree(_ixStream, vectorStream);
 
             pageIndexWriter.Put(page.offset, page.length);
 

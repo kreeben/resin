@@ -29,44 +29,27 @@ namespace Sir.Wikipedia
             if (take == 0)
                 take = int.MaxValue;
 
-
-
             var model = new BagOfCharsModel();
             var indexStrategy = new LogStructuredIndexingStrategy(model);
-            //var payload = WikipediaHelper.Read(fileName, skip, take, fieldsOfInterest);
 
             using (var streamDispatcher = new SessionFactory(logger))
             {
-                //using (var writeSession = new WriteSession(new DocumentWriter(streamDispatcher, dataDirectory, collectionId)))
-                //using (var debugger = new BatchDebugger("write session", logger, sampleSize))
-                //{
-                //    foreach (var document in payload)
-                //    {
-                //        writeSession.Put(document);
-
-                //        debugger.Step();
-                //    }
-                //}
-
                 using (var debugger = new IndexDebugger(logger, sampleSize))
                 using (var documents = new DocumentStreamSession(dataDirectory, streamDispatcher))
+                using (var indexSession = new IndexSession<string>(model, indexStrategy, streamDispatcher, dataDirectory, collectionId, logger))
                 {
                     foreach (var batch in documents.ReadDocuments(collectionId, fieldsOfInterest, skip, take).Batch(pageSize))
                     {
-                        using (var indexSession = new IndexSession<string>(model, indexStrategy, streamDispatcher, dataDirectory, collectionId, logger))
+                        foreach (var document in batch)
                         {
-                            foreach (var document in batch)
+                            foreach (var field in document.Fields)
                             {
-                                foreach (var field in document.Fields)
-                                {
-                                    indexSession.Put(document.Id, field.KeyId, (string)field.Value, label: false);
-                                }
-
-                                debugger.Step(indexSession);
+                                indexSession.Put(document.Id, field.KeyId, (string)field.Value, label: false);
                             }
 
-                            indexSession.Commit();
+                            debugger.Step(indexSession);
                         }
+                        indexSession.Commit();
                     }
                 }
             }

@@ -10,6 +10,10 @@ namespace Sir.Strings
 
         public IEnumerable<ISerializableVector> CreateEmbedding(string data, bool label, SortedList<int, float> embedding = null)
         {
+#if DEBUG
+            label = true;
+#endif
+
             var source = data.ToCharArray();
 
             if (source.Length > 0)

@@ -8,7 +8,7 @@ namespace Sir
     {
         public double Score { get; set; }
         public VectorNode Node { get; set; }
-        public List<long> PostingsOffsets { get; set; }
+        public List<long> PostingsPageIds { get; set; }
 
         public Hit (VectorNode node, double score)
         {

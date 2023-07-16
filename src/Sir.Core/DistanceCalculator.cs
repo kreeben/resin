@@ -25,7 +25,7 @@ namespace Sir
         {
             var bufSize = componentCount * 2 * sizeof(int);
             var rent = ArrayPool<byte>.Shared.Rent(bufSize);
-            Span<byte> buf = rent;
+            Span<byte> buf = new Span<byte>(rent).Slice(0, bufSize);
 
             vectorStream.Seek(vectorOffset, SeekOrigin.Begin);
             vectorStream.Read(buf);
