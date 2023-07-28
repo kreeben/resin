@@ -14,7 +14,7 @@ namespace Sir.Wikipedia
         public void Run(IDictionary<string, string> args, ILogger logger)
         {
             // Required
-            var dataDirectory = args["directory"];
+            var directory = args["directory"];
             var collection = args["collection"];
 
             // Optional
@@ -32,26 +32,18 @@ namespace Sir.Wikipedia
             var model = new BagOfCharsModel();
             var indexStrategy = new LogStructuredIndexingStrategy(model);
 
-            using (var streamDispatcher = new SessionFactory(logger))
+            using (var session = new SessionFactory(logger))
             {
-                using (var debugger = new IndexDebugger(logger, sampleSize))
-                using (var documents = new DocumentStreamSession(dataDirectory, streamDispatcher))
-                using (var indexSession = new IndexSession<string>(model, indexStrategy, streamDispatcher, dataDirectory, collectionId, logger))
-                {
-                    foreach (var batch in documents.ReadDocuments(collectionId, fieldsOfInterest, skip, take).Batch(pageSize))
-                    {
-                        foreach (var document in batch)
-                        {
-                            foreach (var field in document.Fields)
-                            {
-                                indexSession.Put(document.Id, field.KeyId, (string)field.Value, label: false);
-                            }
-
-                            debugger.Step(indexSession);
-                        }
-                        indexSession.Commit();
-                    }
-                }
+                session.Index<string>(
+                    directory, 
+                    collectionId, 
+                    model, 
+                    indexStrategy, 
+                    fieldsOfInterest, 
+                    sampleSize, 
+                    pageSize, 
+                    skip, 
+                    take);
             }
         }
 

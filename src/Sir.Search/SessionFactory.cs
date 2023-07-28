@@ -295,6 +295,28 @@ namespace Sir
             }
         }
 
+        public void Index<T>(string directory, ulong collectionId, IModel<T> model, IIndexReadWriteStrategy indexStrategy, HashSet<string> fieldsOfInterest, int reportSize = 1000, int pageSize = 1000, int skip = 0, int take = int.MaxValue)
+        {
+            using (var debugger = new IndexDebugger(_logger, reportSize))
+            using (var documents = new DocumentStreamSession(directory, this))
+            using (var indexSession = new IndexSession<T>(model, indexStrategy, this, directory, collectionId, _logger))
+            {
+                foreach (var batch in documents.ReadDocuments(collectionId, fieldsOfInterest, skip, take).Batch(pageSize))
+                {
+                    foreach (var document in batch)
+                    {
+                        foreach (var field in document.Fields)
+                        {
+                            indexSession.Put(document.Id, field.KeyId, (T)field.Value, label: false);
+                        }
+
+                        debugger.Step(indexSession);
+                    }
+                    indexSession.Commit();
+                }
+            }
+        }
+
         public bool DocumentExists<T>(string directory, string collection, string key, T value, IModel<T> model, bool label = true)
         {
             var query = new QueryParser<T>(directory, this, model, logger: _logger)
