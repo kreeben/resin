@@ -11,7 +11,7 @@ namespace Sir.IO
         /// <summary>
         /// Read posting list document IDs into memory.
         /// </summary>
-        public void Resolve(IQuery query, IStreamDispatcher sessionFactory, ILogger logger = null)
+        public void Resolve(IQuery query, ISessionFactory sessionFactory, ILogger logger = null)
         {
             foreach (var term in query.AllTerms())
             {

@@ -12,7 +12,7 @@ namespace Sir.Documents
         private readonly DocMapWriter _docs;
         private readonly DocIndexWriter _docIx;
         
-        public DocumentWriter(IStreamDispatcher streamDispatcher, string directory, ulong collectionId) : base(directory, collectionId, streamDispatcher)
+        public DocumentWriter(ISessionFactory streamDispatcher, string directory, ulong collectionId) : base(directory, collectionId, streamDispatcher)
         {
             var docStream = streamDispatcher.CreateAppendStream(directory, collectionId, "docs");
             var docIndexStream = streamDispatcher.CreateAppendStream(directory, collectionId, "dix");

@@ -24,7 +24,7 @@ namespace Sir.HttpServer
             var httpParser = new HttpQueryParser(qp);
 
             services.AddSingleton(typeof(IModel<string>), model);
-            services.AddSingleton(typeof(IStreamDispatcher), sessionFactory);
+            services.AddSingleton(typeof(ISessionFactory), sessionFactory);
             services.AddSingleton(typeof(SessionFactory), sessionFactory);
             services.AddSingleton(typeof(QueryParser<string>), qp);
             services.AddSingleton(typeof(HttpQueryParser), httpParser);

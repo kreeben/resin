@@ -15,9 +15,9 @@ namespace Sir
             _model = model;
         }
 
-        public Hit GetMatchOrNull(ISerializableVector vector, IModel model, ColumnReader reader)
+        public Hit GetMatchOrNull(ISerializableVector vector, ColumnReader reader)
         {
-            return reader.ClosestMatchOrNullScanningAllPages(vector, model);
+            return reader.ClosestMatchOrNullScanningAllPages(vector);
         }
 
         public void Put<T>(VectorNode column, VectorNode node)
@@ -25,7 +25,7 @@ namespace Sir
             column.AddOrAppendSupervised(node, _model);
         }
 
-        public void Commit(string directory, ulong collectionId, long keyId, VectorNode tree, IStreamDispatcher streamDispatcher, Dictionary<(long keyId, long pageId), HashSet<long>> postingsToAppend, ILogger logger = null)
+        public void Commit(string directory, ulong collectionId, long keyId, VectorNode tree, ISessionFactory streamDispatcher, Dictionary<(long keyId, long pageId), HashSet<long>> postingsToAppend, ILogger logger = null)
         {
             var time = Stopwatch.StartNew();
 

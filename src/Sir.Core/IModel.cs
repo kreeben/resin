@@ -35,6 +35,5 @@ namespace Sir
     {
         int NumOfDimensions { get; }
         double CosAngle(ISerializableVector vec1, ISerializableVector vec2);
-        double CosAngle(ISerializableVector vector, long vectorOffset, int componentCount, Stream vectorStream);
     }
 }

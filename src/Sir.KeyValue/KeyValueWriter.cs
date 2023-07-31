@@ -12,11 +12,11 @@ namespace Sir.KeyValue
         private readonly ValueIndexWriter _valIx;
         private readonly ValueIndexWriter _keyIx;
         private readonly ulong _collectionId;
-        private readonly IStreamDispatcher _streamDispatcher;
+        private readonly ISessionFactory _streamDispatcher;
         private readonly string _directory;
         private readonly object _keyLock = new object();
         
-        public KeyValueWriter(string directory, ulong collectionId, IStreamDispatcher streamDispatcher)
+        public KeyValueWriter(string directory, ulong collectionId, ISessionFactory streamDispatcher)
             : this(
                 new ValueWriter(streamDispatcher.CreateAppendStream(directory, collectionId, "val")),
                 new ValueWriter(streamDispatcher.CreateAppendStream(directory, collectionId, "key")),

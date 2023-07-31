@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Sir
 {
-    public interface IStreamDispatcher
+    public interface ISessionFactory
     {
         Stream CreateAppendStream(string directory, ulong collectionId, string fileExtension);
         Stream CreateAppendStream(string directory, ulong collectionId, long keyId, string fileExtension);
@@ -12,6 +12,6 @@ namespace Sir
         void RegisterKeyMapping(string directory, ulong collectionId, ulong keyHash, long keyId);
         bool TryGetKeyId(string directory, ulong collectionId, ulong keyHash, out long keyId);
         long GetKeyId(string directory, ulong collectionId, ulong keyHash);
-        ColumnReader CreateColumnReader(string directory, ulong collectionId, long keyId);
+        ColumnReader CreateColumnReader(string directory, ulong collectionId, long keyId, IModel model);
     }
 }

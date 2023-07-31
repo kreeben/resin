@@ -19,7 +19,7 @@ namespace Sir.Documents
 
         public ulong CollectionId { get; }
 
-        public DocumentReader(string directory, ulong collectionId, IStreamDispatcher database)
+        public DocumentReader(string directory, ulong collectionId, ISessionFactory database)
         {
             var valueStream = database.CreateReadStream(Path.Combine(directory, string.Format("{0}.val", collectionId)));
             var keyStream = database.CreateReadStream(Path.Combine(directory, string.Format("{0}.key", collectionId)));

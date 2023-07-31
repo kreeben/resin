@@ -11,7 +11,7 @@ namespace Sir
         private readonly IModel<T> _model;
         private readonly IIndexReadWriteStrategy _indexingStrategy;
         private readonly IDictionary<long, VectorNode> _index;
-        private readonly IStreamDispatcher _sessionFactory;
+        private readonly ISessionFactory _sessionFactory;
         private readonly string _directory;
         private readonly ulong _collectionId;
         private readonly ILogger _logger;
@@ -22,7 +22,7 @@ namespace Sir
         public IndexSession(
             IModel<T> model,
             IIndexReadWriteStrategy indexingStrategy,
-            IStreamDispatcher sessionFactory, 
+            ISessionFactory sessionFactory, 
             string directory,
             ulong collectionId,
             ILogger logger = null)
@@ -65,7 +65,7 @@ namespace Sir
                 }
                 else
                 {
-                    var hit = reader.ClosestMatchOrNullStoppingAtFirstIdenticalPage(token, _model);
+                    var hit = reader.ClosestMatchOrNullStoppingAtFirstIdenticalPage(token);
 
                     if (hit == null || hit.Score < _model.IdenticalAngle)
                     {
@@ -106,13 +106,13 @@ namespace Sir
                 Commit(column.Key);
             }
 
-            _index.Clear();
-            _postingsToAppend.Clear();
-
             foreach (var reader in _readers.Values)
             {
                 reader.Dispose();
             }
+
+            _index.Clear();
+            _postingsToAppend.Clear();
             _readers.Clear();
         }
 
@@ -153,7 +153,7 @@ namespace Sir
 
             if (!_readers.TryGetValue(key, out reader))
             {
-                reader = _sessionFactory.CreateColumnReader(_directory, _collectionId, keyId);
+                reader = _sessionFactory.CreateColumnReader(_directory, _collectionId, keyId, _model);
 
                 if (reader != null)
                 {

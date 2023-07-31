@@ -66,17 +66,19 @@ namespace Sir.StringTests
                 }
 
                 pageStream.Position = 0;
+                vectorStream.Position = 0;
+                indexStream.Position = 0;
 
                 Assert.DoesNotThrow(() =>
                 {
                     using (var pageIndexReader = new PageIndexReader(pageStream))
-                    using (var reader = new ColumnReader(pageIndexReader.ReadAll(), indexStream, vectorStream))
+                    using (var reader = new ColumnReader(pageIndexReader.ReadAll(), indexStream, vectorStream, model))
                     {
                         foreach (var word in _data)
                         {
                             foreach (var queryVector in model.CreateEmbedding(word, true))
                             {
-                                var hit = reader.ClosestMatchOrNullScanningAllPages(queryVector, model);
+                                var hit = reader.ClosestMatchOrNullScanningAllPages(queryVector);
 
                                 if (hit == null)
                                 {

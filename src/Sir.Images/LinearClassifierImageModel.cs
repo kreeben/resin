@@ -17,10 +17,5 @@ namespace Sir.Images
 
             yield return new SerializableVector(pixels, data.Label);
         }
-
-        public Hit GetClosestMatchOrNull(ISerializableVector vector, IModel model, ColumnReader reader)
-        {
-            return reader.ClosestMatchOrNullScanningAllPages(vector, model);
-        }
     }
 }

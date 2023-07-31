@@ -18,7 +18,7 @@ namespace Sir.IO
         private readonly ILogger _logger;
         private readonly ulong _collectionId;
 
-        public PostingsReader(string directory, ulong collectionId, long keyId, IStreamDispatcher streamDispatcher, ILogger logger = null)
+        public PostingsReader(string directory, ulong collectionId, long keyId, ISessionFactory streamDispatcher, ILogger logger = null)
             : this(
                   streamDispatcher.CreateReadStream(Path.Combine(directory, $"{collectionId}.{keyId}.pos")), 
                   new PostingsIndexReader(streamDispatcher.CreateReadStream(Path.Combine(directory, $"{collectionId}.{keyId}.pix"))), 

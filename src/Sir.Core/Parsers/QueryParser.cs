@@ -6,13 +6,13 @@ namespace Sir
 {
     public class QueryParser<T>
     {
-        private readonly IStreamDispatcher _sessionFactory;
+        private readonly ISessionFactory _sessionFactory;
         private readonly IModel<T> _model;
         private readonly ILogger _logger;
         private readonly string _directory;
         private readonly SortedList<int, float> _embedding;
 
-        public QueryParser(string directory, IStreamDispatcher sessionFactory, IModel<T> model, SortedList<int, float> embedding = null, ILogger logger = null)
+        public QueryParser(string directory, ISessionFactory sessionFactory, IModel<T> model, SortedList<int, float> embedding = null, ILogger logger = null)
         {
             _sessionFactory = sessionFactory;
             _model = model;

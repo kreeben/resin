@@ -1,7 +1,11 @@
-﻿using System;
+﻿using MathNet.Numerics.LinearAlgebra;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Sir.IO
 {
@@ -10,30 +14,97 @@ namespace Sir.IO
     /// </summary>
     public class ColumnReader : IDisposable
     {
-        private readonly Stream _vectorFile;
+        private readonly Stream _vectorStream;
         private readonly Stream _ixFile;
         private readonly IList<(long offset, long length)> _pages;
+        private readonly IDictionary<long, ISerializableVector> _vectors;
+        private readonly ILogger _logger;
+        private readonly IModel _model;
 
         public ColumnReader(
             IList<(long offset, long length)> pages,
             Stream indexStream,
-            Stream vectorStream)
+            Stream vectorStream,
+            IModel model,
+            ILogger logger = null)
         {
-            _vectorFile = vectorStream;
+            _vectorStream = vectorStream;
             _ixFile = indexStream;
             _pages = pages;
+            _model = model;
+            _logger = logger;
+            _vectors = LoadVectors();
         }
 
-        public Hit ClosestMatchOrNullScanningAllPages(ISerializableVector vector, IModel model)
+        private IDictionary<long, ISerializableVector> LoadVectors()
         {
-            if (_ixFile == null || _vectorFile == null)
+            var time = Stopwatch.StartNew();
+            var vectors = new Dictionary<long, ISerializableVector>();
+            var block = ArrayPool<byte>.Shared.Rent(VectorNode.BlockSize);
+            var read = _ixFile.Read(block, 0, VectorNode.BlockSize);
+
+            while (read > 0)
+            {
+                var vecOffset = BitConverter.ToInt64(block, 0);
+                var componentCount = BitConverter.ToInt64(block, sizeof(long) * 2);
+                var vector = DeserializeVector(vecOffset, (int)componentCount, _model.NumOfDimensions);
+
+                vectors.Add(vecOffset, vector);
+                read = _ixFile.Read(block, 0, VectorNode.BlockSize);
+            }
+
+            ArrayPool<byte>.Shared.Return(block);
+
+            if (_logger != null)
+            {
+                _logger.LogInformation($"loaded {vectors.Count} vectors into memory in {time.Elapsed}");
+            }
+
+            return vectors;
+        }
+
+        private ISerializableVector DeserializeVector(long vectorOffset, int componentCount, int numOfDimensions)
+        {
+            var bufSize = componentCount * 2 * sizeof(int);
+            var rent = ArrayPool<byte>.Shared.Rent(bufSize);
+            Span<byte> buf = new Span<byte>(rent).Slice(0, bufSize);
+
+            if (_vectorStream.Position != vectorOffset)
+            {
+                _vectorStream.Seek(vectorOffset, SeekOrigin.Begin);
+            }
+
+            _vectorStream.Read(buf);
+
+            var index = MemoryMarshal.Cast<byte, int>(buf.Slice(0, componentCount * sizeof(int)));
+            var values = MemoryMarshal.Cast<byte, float>(buf.Slice(componentCount * sizeof(int), componentCount * sizeof(float)));
+
+            ArrayPool<byte>.Shared.Return(rent);
+
+            var tuples = ArrayPool<Tuple<int, float>>.Shared.Rent(componentCount);
+
+            for (int i = 0; i < componentCount; i++)
+            {
+                tuples[i] = new Tuple<int, float>(index[i], values[i]);
+            }
+
+            var vectorOnFile = CreateVector.SparseOfIndexed(numOfDimensions, new ArraySegment<Tuple<int, float>>(tuples, 0, componentCount));
+
+            ArrayPool<Tuple<int, float>>.Shared.Return(tuples);
+
+            return new SerializableVector(vectorOnFile);
+        }
+
+        public Hit ClosestMatchOrNullScanningAllPages(ISerializableVector vector)
+        {
+            if (_ixFile == null || _vectorStream == null)
                 return null;
 
             var hits = new List<Hit>();
 
             foreach (var page in _pages)
             {
-                var hit = ClosestMatchInPage(vector, model, page.offset);
+                var hit = ClosestMatchInPage(vector, page.offset);
 
                 if (hit.Score > 0)
                 {
@@ -59,16 +130,16 @@ namespace Sir.IO
             return best;
         }
 
-        public Hit ClosestMatchOrNullStoppingAtFirstIdenticalPage(ISerializableVector vector, IModel model)
+        public Hit ClosestMatchOrNullStoppingAtFirstIdenticalPage(ISerializableVector vector)
         {
-            if (_ixFile == null || _vectorFile == null)
+            if (_ixFile == null || _vectorStream == null)
                 return null;
 
             Hit best = null;
 
             foreach (var page in _pages)
             {
-                var hit = ClosestMatchInPage(vector, model, page.offset);
+                var hit = ClosestMatchInPage(vector, page.offset);
 
                 if (hit.Score > 0)
                 {
@@ -83,14 +154,14 @@ namespace Sir.IO
                     }
                 }
 
-                if (hit.Score >= model.IdenticalAngle)
+                if (hit.Score >= _model.IdenticalAngle)
                     break;
             }
 
             return best;
         }
 
-        private Hit ClosestMatchInPage(ISerializableVector queryVector, IModel model, long pageOffset)
+        private Hit ClosestMatchInPage(ISerializableVector queryVector, long pageOffset)
         {
             _ixFile.Seek(pageOffset, SeekOrigin.Begin);
 
@@ -104,19 +175,19 @@ namespace Sir.IO
             {
                 var vecOffset = BitConverter.ToInt64(block, 0);
                 var pageId = BitConverter.ToInt64(block, sizeof(long));
-                var componentCount = BitConverter.ToInt64(block, sizeof(long) * 2);
                 var terminator = BitConverter.ToInt64(block, sizeof(long) * 4);
 
-                var angle = model.CosAngle(queryVector, vecOffset, (int)componentCount, _vectorFile);
+                var vector = _vectors[vecOffset];
+                var angle = _model.CosAngle(queryVector, vector);
 
-                if (angle >= model.IdenticalAngle)
+                if (angle >= _model.IdenticalAngle)
                 {
                     bestScore = angle;
                     bestNode = new VectorNode(postingsPageId: pageId);
 
                     break;
                 }
-                else if (angle > model.FoldAngle)
+                else if (angle > _model.FoldAngle)
                 {
                     if (bestNode == null || angle > bestScore)
                     {
@@ -207,8 +278,8 @@ namespace Sir.IO
 
         public void Dispose()
         {
-            if (_vectorFile != null)
-                _vectorFile.Dispose();
+            if (_vectorStream != null)
+                _vectorStream.Dispose();
 
             if (_ixFile != null)
                 _ixFile.Dispose();

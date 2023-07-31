@@ -11,7 +11,7 @@ namespace Sir
     /// </summary>
     public class SearchSession : DocumentStreamSession, IDisposable, ISearchSession
     {
-        private readonly IStreamDispatcher _sessionFactory;
+        private readonly ISessionFactory _sessionFactory;
         private readonly IModel _model;
         private readonly IIndexReadWriteStrategy _indexStrategy;
         private readonly PostingsResolver _postingsResolver;
@@ -21,7 +21,7 @@ namespace Sir
 
         public SearchSession(
             string directory,
-            IStreamDispatcher sessionFactory,
+            ISessionFactory sessionFactory,
             IModel model,
             IIndexReadWriteStrategy indexStrategy,
             ILogger logger = null,
@@ -127,7 +127,7 @@ namespace Sir
 
                 if (!_readers.TryGetValue(key, out reader))
                 {
-                    reader = _sessionFactory.CreateColumnReader(term.Directory, term.CollectionId, term.KeyId);
+                    reader = _sessionFactory.CreateColumnReader(term.Directory, term.CollectionId, term.KeyId, _model);
 
                     if (reader != null)
                     {
@@ -137,7 +137,7 @@ namespace Sir
 
                 if (reader != null)
                 {
-                    var hit = _indexStrategy.GetMatchOrNull(term.Vector, _model, reader);
+                    var hit = _indexStrategy.GetMatchOrNull(term.Vector, reader);
 
                     if (hit != null)
                     {

@@ -12,7 +12,7 @@ namespace Sir
     /// <summary>
     /// Stream dispatcher with helper methods for writing, indexing, optimizing, updating and truncating document collections.
     /// </summary>
-    public class SessionFactory : IDisposable, IStreamDispatcher
+    public class SessionFactory : IDisposable, ISessionFactory
     {
         private ConcurrentDictionary<ulong, ConcurrentDictionary<ulong, long>> _keys;
         private ILogger _logger;
@@ -25,7 +25,7 @@ namespace Sir
             LogTrace($"database initiated");
         }
 
-        public ColumnReader CreateColumnReader(string directory, ulong collectionId, long keyId)
+        public ColumnReader CreateColumnReader(string directory, ulong collectionId, long keyId, IModel model)
         {
             var ixFileName = Path.Combine(directory, string.Format("{0}.{1}.ix", collectionId, keyId));
             var vectorFileName = Path.Combine(directory, $"{collectionId}.{keyId}.vec");
@@ -38,7 +38,9 @@ namespace Sir
                     return new ColumnReader(
                         pageIndexReader.ReadAll(),
                         CreateReadStream(ixFileName),
-                        CreateReadStream(vectorFileName));
+                        CreateReadStream(vectorFileName),
+                        model,
+                        _logger);
                 }
             }
 
