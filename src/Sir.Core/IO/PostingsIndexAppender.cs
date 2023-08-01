@@ -39,7 +39,21 @@ namespace Sir.IO
 
         public void Update(long pageId, long nextPageId)
         {
+            var currentNextPageIdBuf = new byte[sizeof(long)];
+
             _seekableIndexStream.Seek((pageId * PostingsIndexAppender.BlockSize) + sizeof(long), SeekOrigin.Begin);
+            _seekableIndexStream.Read(currentNextPageIdBuf, 0, sizeof(long));
+
+            long currentNextPageId = BitConverter.ToInt64(currentNextPageIdBuf);
+
+            while (currentNextPageId > 0)
+            {
+                _seekableIndexStream.Seek((currentNextPageId * PostingsIndexAppender.BlockSize) + sizeof(long), SeekOrigin.Begin);
+                _seekableIndexStream.Read(currentNextPageIdBuf, 0, sizeof(long));
+                currentNextPageId = BitConverter.ToInt64(currentNextPageIdBuf);
+            }
+
+            _seekableIndexStream.Seek(-sizeof(long), SeekOrigin.Current);
             _seekableIndexStream.Write(BitConverter.GetBytes(nextPageId));
         }
 

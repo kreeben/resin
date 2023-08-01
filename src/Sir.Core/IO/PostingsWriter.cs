@@ -24,21 +24,6 @@ namespace Sir.IO
             }
         }
 
-        public void Dispose()
-        {
-            if (_postingsStream != null )
-                _postingsStream.Dispose();
-
-            if (_postingsIndexAppender != null )
-                _postingsIndexAppender.Dispose();
-
-            if (_postingsIndexUpdater != null)
-                _postingsIndexUpdater.Dispose();
-
-            if (_postingsIndexReader != null)
-                _postingsIndexReader.Dispose();
-        }
-
         public long Append(HashSet<long> docIds)
         {
             if (docIds.Count == 0) throw new ArgumentException("can't be empty", nameof(docIds));
@@ -68,6 +53,21 @@ namespace Sir.IO
 
             // update parent page info
             _postingsIndexUpdater.Update(pageId, newPageId);
+        }
+
+        public void Dispose()
+        {
+            if (_postingsStream != null)
+                _postingsStream.Dispose();
+
+            if (_postingsIndexAppender != null)
+                _postingsIndexAppender.Dispose();
+
+            if (_postingsIndexUpdater != null)
+                _postingsIndexUpdater.Dispose();
+
+            if (_postingsIndexReader != null)
+                _postingsIndexReader.Dispose();
         }
     }
 }
