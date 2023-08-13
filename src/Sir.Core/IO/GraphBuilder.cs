@@ -293,6 +293,7 @@ namespace Sir.IO
                 if (postingsWriter != null && node.PostingsPageId == -1)
                 {
                     node.PostingsPageId = postingsWriter.Append(node.DocIds);
+                    node.DocIds = null;
                 }
 
                 if (vectorStream != null)

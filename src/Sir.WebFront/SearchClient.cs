@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Sir.IO;
 
 namespace Sir.HttpServer
 {
@@ -50,8 +51,10 @@ namespace Sir.HttpServer
             var userDirectory = Path.Combine(_config.Get("user_dir"), queryId);
             var urlCollectionId = "url".ToHash();
             var collections = new List<string>();
+            var directory = _config.Get("data_dir");
+            var keys = new KeyRepository(directory, _sessionFactory);
 
-            using (var documentReader = new DocumentStreamSession(userDirectory, _sessionFactory))
+            using (var documentReader = new DocumentStreamSession(_sessionFactory, keys, userDirectory))
             {
                 foreach (var url in documentReader.ReadDocumentValues<string>(urlCollectionId, "host"))
                 {
@@ -76,7 +79,7 @@ namespace Sir.HttpServer
             _logger.LogDebug($"parsed query: {queryLog}");
 #endif
 
-            using (var readSession = new SearchSession(_config.Get("data_dir"), _sessionFactory, model, new LogStructuredIndexingStrategy(model), _logger))
+            using (var readSession = new SearchSession(_config.Get("data_dir"), keys, _sessionFactory, model, new LogStructuredIndexingStrategy(model), _logger))
             {
                 return readSession.Search(query, skip, take);
             }

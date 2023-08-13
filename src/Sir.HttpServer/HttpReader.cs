@@ -57,8 +57,8 @@ namespace Sir.HttpServer
 
             _logger.LogDebug($"parsed query: {queryLog}");
 #endif
-
-            using (var readSession = new SearchSession(_config.Get("data_dir"), _sessionFactory, model, new LogStructuredIndexingStrategy(model), _logger))
+            var directory = _config.Get("data_dir");
+            using (var readSession = new SearchSession(_config.Get("data_dir"), new IO.KeyRepository(directory, _sessionFactory), _sessionFactory, model, new LogStructuredIndexingStrategy(model), _logger))
             {
                 return readSession.Search(query, skip, take);
             }

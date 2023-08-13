@@ -18,26 +18,28 @@ namespace Sir.Cmd
             var collectionId = collection.ToHash();
             var model = new BagOfCharsModel();
             var embedding = new SortedList<int, float>();
-
             using (var sessionFactory = new SessionFactory(logger))
-            using (var documents = new DocumentStreamSession(dataDirectory, sessionFactory))
-            using (var documentReader = new DocumentReader(dataDirectory, collectionId, sessionFactory))
             {
-                var doc = documents.ReadDocument((collectionId, documentId), select, documentReader);
-
-                foreach (var field in doc.Fields)
+                var keys = new KeyRepository(dataDirectory, sessionFactory);
+                using (var documents = new DocumentStreamSession(sessionFactory, keys, dataDirectory))
+                using (var documentReader = new DocumentReader(dataDirectory, collectionId, sessionFactory))
                 {
-                    var tokens = model.CreateEmbedding(field.Value.ToString(), true, embedding);
-                    var tree = new VectorNode();
+                    var doc = documents.ReadDocument((collectionId, documentId), select, documentReader);
 
-                    foreach (var token in tokens)
+                    foreach (var field in doc.Fields)
                     {
-                        tree.AddOrAppend(new VectorNode(vector:token), model);
-                    }
+                        var tokens = model.CreateEmbedding(field.Value.ToString(), true, embedding);
+                        var tree = new VectorNode();
 
-                    Console.WriteLine(field.Name);
-                    Console.WriteLine(PathFinder.Visualize(tree));
-                    Console.WriteLine(string.Join('\n', tokens));
+                        foreach (var token in tokens)
+                        {
+                            tree.AddOrAppend(new VectorNode(vector: token), model);
+                        }
+
+                        Console.WriteLine(field.Name);
+                        Console.WriteLine(PathFinder.Visualize(tree));
+                        Console.WriteLine(string.Join('\n', tokens));
+                    }
                 }
             }
         }

@@ -21,7 +21,7 @@ namespace Sir.HttpServer
 
         public async Task<string> Format(HttpRequest request, IModel<string> tokenizer)
         {
-            var parser = new HttpQueryParser(new QueryParser<string>(_directory, _sessionFactory, tokenizer, logger: _log));
+            var parser = new HttpQueryParser(new QueryParser<string>(_directory, new IO.KeyRepository(_directory, _sessionFactory), tokenizer, logger: _log));
             var query = await parser.ParseRequest(request);
             var dictionary = new Dictionary<string, object>();
             

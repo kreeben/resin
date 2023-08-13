@@ -49,9 +49,18 @@ namespace Sir.IO
 
         public IList<(long offset, long length)> ReadAll()
         {
-            var mem = new MemoryStream();
-            _stream.CopyTo(mem);
-            var buf = mem.ToArray();
+            byte[] buf;
+
+            if (_stream is MemoryStream mem)
+            {
+                buf = mem.ToArray();
+            }
+            else
+            {
+                mem = new MemoryStream();
+                _stream.CopyTo(mem);
+                buf = mem.ToArray();
+            }
 
             var read = 0;
             var result = new List<(long, long)>();

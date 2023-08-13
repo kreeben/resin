@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Sir.IO;
 using Sir.Strings;
 using System;
 using System.Collections.Generic;
@@ -23,14 +24,15 @@ namespace Sir.Cmd
             var time = Stopwatch.StartNew();
             var count = 0;
             var embedding = new SortedList<int, float>();
+            var keys = new KeyRepository();
 
             using (var sessionFactory = new SessionFactory(logger))
             using (var validateSession = new ValidateSession<string>(
                     collectionId,
-                    new SearchSession(dir, sessionFactory, model, new LogStructuredIndexingStrategy(model), logger),
-                    new QueryParser<string>(dir, sessionFactory, model, embedding: embedding, logger: logger)))
+                    new SearchSession(dir, keys, sessionFactory, model, new LogStructuredIndexingStrategy(model), logger),
+                    new QueryParser<string>(dir, keys, model, embedding: embedding, logger: logger)))
             {
-                using (var documents = new DocumentStreamSession(dir, sessionFactory))
+                using (var documents = new DocumentStreamSession(sessionFactory, keys, dir))
                 {
                     foreach (var doc in documents.ReadDocuments(collectionId, selectFields, skip, take))
                     {

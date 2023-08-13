@@ -1,6 +1,8 @@
-﻿using Sir.KeyValue;
+﻿using Sir.IO;
+using Sir.KeyValue;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Sir.Documents
 {
@@ -12,13 +14,21 @@ namespace Sir.Documents
         private readonly DocMapWriter _docs;
         private readonly DocIndexWriter _docIx;
         
-        public DocumentWriter(ISessionFactory streamDispatcher, string directory, ulong collectionId) : base(directory, collectionId, streamDispatcher)
+        public DocumentWriter(ISessionFactory sessionFactory, string directory, ulong collectionId) 
+            : base(directory, collectionId, sessionFactory)
         {
-            var docStream = streamDispatcher.CreateAppendStream(directory, collectionId, "docs");
-            var docIndexStream = streamDispatcher.CreateAppendStream(directory, collectionId, "dix");
+            var documentStream = sessionFactory.CreateAppendStream(directory, collectionId, "docs");
+            var documentIndexStream = sessionFactory.CreateAppendStream(directory, collectionId, "dix");
 
-            _docs = new DocMapWriter(docStream);
-            _docIx = new DocIndexWriter(docIndexStream);
+            _docs = new DocMapWriter(documentStream);
+            _docIx = new DocIndexWriter(documentIndexStream);
+        }
+
+        public DocumentWriter(ulong collectionId, Stream documentStream, Stream documentIndexStream, Stream valueStream, Stream keyStream, Stream valueIndexStream, Stream keyIndexStream, KeyRepository keyRepository)
+            : base(collectionId, new ValueWriter(valueStream), new ValueWriter(keyStream), new ValueIndexWriter(valueIndexStream), new ValueIndexWriter(keyIndexStream), keyRepository)
+        {
+            _docs = new DocMapWriter(documentStream);
+            _docIx = new DocIndexWriter(documentIndexStream);
         }
 
         public long IncrementDocId()

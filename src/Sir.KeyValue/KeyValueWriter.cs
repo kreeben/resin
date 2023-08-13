@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Sir.IO;
+using System;
 
 namespace Sir.KeyValue
 {
@@ -11,30 +12,29 @@ namespace Sir.KeyValue
         private readonly ValueWriter _keys;
         private readonly ValueIndexWriter _valIx;
         private readonly ValueIndexWriter _keyIx;
+        private readonly KeyRepository _keyRepository;
         private readonly ulong _collectionId;
-        private readonly ISessionFactory _streamDispatcher;
-        private readonly string _directory;
         private readonly object _keyLock = new object();
         
-        public KeyValueWriter(string directory, ulong collectionId, ISessionFactory streamDispatcher)
+        public KeyValueWriter(string directory, ulong collectionId, ISessionFactory sessionFactory)
             : this(
-                new ValueWriter(streamDispatcher.CreateAppendStream(directory, collectionId, "val")),
-                new ValueWriter(streamDispatcher.CreateAppendStream(directory, collectionId, "key")),
-                new ValueIndexWriter(streamDispatcher.CreateAppendStream(directory, collectionId, "vix")),
-                new ValueIndexWriter(streamDispatcher.CreateAppendStream(directory, collectionId, "kix"))
+                collectionId,
+                new ValueWriter(sessionFactory.CreateAppendStream(directory, collectionId, "val")),
+                new ValueWriter(sessionFactory.CreateAppendStream(directory, collectionId, "key")),
+                new ValueIndexWriter(sessionFactory.CreateAppendStream(directory, collectionId, "vix")),
+                new ValueIndexWriter(sessionFactory.CreateAppendStream(directory, collectionId, "kix")),
+                new KeyRepository(directory, sessionFactory)
                 )
+        { }
+
+        public KeyValueWriter(ulong collectionId, ValueWriter values, ValueWriter keys, ValueIndexWriter valIx, ValueIndexWriter keyIx, KeyRepository keyRepository)
         {
             _collectionId = collectionId;
-            _streamDispatcher = streamDispatcher;
-            _directory = directory;
-        }
-
-        public KeyValueWriter(ValueWriter values, ValueWriter keys, ValueIndexWriter valIx, ValueIndexWriter keyIx)
-        {
             _vals = values;
             _keys = keys;
             _valIx = valIx;
             _keyIx = keyIx;
+            _keyRepository = keyRepository;
         }
 
         public long EnsureKeyExistsSafely(string keyStr)
@@ -42,11 +42,11 @@ namespace Sir.KeyValue
             var keyHash = keyStr.ToHash();
             long keyId;
 
-            if (!_streamDispatcher.TryGetKeyId(_directory, _collectionId, keyHash, out keyId))
+            if (!_keyRepository.TryGetKeyId(_collectionId, keyHash, out keyId))
             {
                 lock (_keyLock)
                 {
-                    if (!_streamDispatcher.TryGetKeyId(_directory, _collectionId, keyHash, out keyId))
+                    if (!_keyRepository.TryGetKeyId(_collectionId, keyHash, out keyId))
                     {
                         // We have a new key!
 
@@ -56,7 +56,7 @@ namespace Sir.KeyValue
                         keyId = PutKeyInfo(keyInfo.offset, keyInfo.len, keyInfo.dataType);
 
                         // store key mapping
-                        _streamDispatcher.RegisterKeyMapping(_directory, _collectionId, keyHash, keyId);
+                        _keyRepository.RegisterKeyMapping(_collectionId, keyHash, keyId);
                     }
                 }
             }
@@ -69,7 +69,7 @@ namespace Sir.KeyValue
             var keyHash = keyStr.ToHash();
             long keyId;
 
-            if (!_streamDispatcher.TryGetKeyId(_directory, _collectionId, keyHash, out keyId))
+            if (!_keyRepository.TryGetKeyId(_collectionId, keyHash, out keyId))
             {
                 // We have a new key!
 
@@ -79,7 +79,7 @@ namespace Sir.KeyValue
                 keyId = PutKeyInfo(keyInfo.offset, keyInfo.len, keyInfo.dataType);
 
                 // store key mapping
-                _streamDispatcher.RegisterKeyMapping(_directory, _collectionId, keyHash, keyId);
+                _keyRepository.RegisterKeyMapping(_collectionId, keyHash, keyId);
             }
 
             return keyId;

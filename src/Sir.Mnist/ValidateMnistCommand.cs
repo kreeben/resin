@@ -25,34 +25,37 @@ namespace Sir.Mnist
             var model = new LinearClassifierImageModel();
 
             using (var sessionFactory = new SessionFactory(logger: logger))
-            using (var querySession = new SearchSession(dataDirectory, sessionFactory, model, new SupervisedLogStructuredIndexingStrategy(model), logger))
             {
-                var queryParser = new QueryParser<IImage>(dataDirectory, sessionFactory, model, logger: logger);
-
-                foreach (var image in images)
+                var keyRepository = new IO.KeyRepository(dataDirectory, sessionFactory);
+                using (var querySession = new SearchSession(dataDirectory, keyRepository, sessionFactory, model, new SupervisedLogStructuredIndexingStrategy(model), logger))
                 {
-                    var query = queryParser.Parse(collection, image, field: "image", select: "label", and: true, or: false, true);
-                    var result = querySession.Search(query, 0, 1);
+                    var queryParser = new QueryParser<IImage>(dataDirectory, keyRepository, model, logger: logger);
 
-                    count++;
-
-                    if (result.Total == 0)
+                    foreach (var image in images)
                     {
-                        errors++;
-                    }
-                    else
-                    {
-                        var documentLabel = (string)result.Documents.First().Get("label").Value;
+                        var query = queryParser.Parse(collection, image, field: "image", select: "label", and: true, or: false, true);
+                        var result = querySession.Search(query, 0, 1);
 
-                        if (!documentLabel.Equals(image.Label))
+                        count++;
+
+                        if (result.Total == 0)
                         {
                             errors++;
-
-                            logger.LogDebug($"error. label: {image.Label} document label: {documentLabel}\n{((MnistImage)image).Print()}\n{((MnistImage)image).Print()}");
                         }
-                    }
+                        else
+                        {
+                            var documentLabel = (string)result.Documents.First().Get("label").Value;
 
-                    logger.LogInformation($"errors: {errors}. total tests {count}. error rate: {(float)errors / count * 100}%");
+                            if (!documentLabel.Equals(image.Label))
+                            {
+                                errors++;
+
+                                logger.LogDebug($"error. label: {image.Label} document label: {documentLabel}\n{((MnistImage)image).Print()}\n{((MnistImage)image).Print()}");
+                            }
+                        }
+
+                        logger.LogInformation($"errors: {errors}. total tests {count}. error rate: {(float)errors / count * 100}%");
+                    }
                 }
             }
 

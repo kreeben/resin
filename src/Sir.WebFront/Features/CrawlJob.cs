@@ -8,6 +8,7 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using Microsoft.Extensions.Logging;
+using Sir.IO;
 
 namespace Sir.HttpServer.Features
 {
@@ -21,6 +22,7 @@ namespace Sir.HttpServer.Features
         private readonly int _skip;
         private readonly int _take;
         private readonly IIndexReadWriteStrategy _indexStrategy;
+        private readonly IConfigurationProvider _config;
 
         public CrawlJob(
             string directory,
@@ -28,6 +30,7 @@ namespace Sir.HttpServer.Features
             QueryParser<string> queryParser,
             IModel<string> model,
             IIndexReadWriteStrategy indexStrategy,
+            IConfigurationProvider config,
             ILogger logger,
             string id, 
             string[] collection, 
@@ -48,6 +51,7 @@ namespace Sir.HttpServer.Features
             _skip = skip;
             _take = take;
             _indexStrategy = indexStrategy;
+            _config = config;
 
             Status["download"] = 0;
             Status["index"] = 0;
@@ -81,7 +85,9 @@ namespace Sir.HttpServer.Features
                 or: Or,
                 label: false);
 
-            using (var readSession = new SearchSession(_directory, _sessionFactory, _model, new LogStructuredIndexingStrategy(_model), _logger))
+            var directory = _config.Get("data_dir");
+            var keys = new KeyRepository(directory, _sessionFactory);
+            using (var readSession = new SearchSession(_directory, keys, _sessionFactory, _model, new LogStructuredIndexingStrategy(_model), _logger))
             {
                 var originalResult = readSession.Search(originalQuery, _skip, _take)
                     .Documents

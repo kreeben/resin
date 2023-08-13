@@ -9,16 +9,23 @@ namespace Sir
     public class DocumentStreamSession : IDisposable
     {
         private readonly string _directory;
-        private readonly ISessionFactory _database;
+        private readonly ISessionFactory _sessionFactory;
         private readonly IDictionary<ulong, DocumentReader> _documentReaders;
+        private readonly KeyRepository _keyRepository;
 
-        public DocumentStreamSession(string directory, ISessionFactory database) 
+        public DocumentStreamSession(ISessionFactory sessionFactory, KeyRepository keyRepository, string directory) 
         {
             _directory = directory;
-            _database = database;
+            _sessionFactory = sessionFactory;
             _documentReaders = new Dictionary<ulong, DocumentReader>();
+            _keyRepository = keyRepository;
         }
 
+        public DocumentStreamSession(KeyRepository keyRepository, Dictionary<ulong, DocumentReader> documentReaders)
+        {
+            _documentReaders = documentReaders;
+            _keyRepository = keyRepository;
+        }
 
         public int Count(ulong collectionId)
         {
@@ -107,7 +114,7 @@ namespace Sir
 
             var took = 0;
             long docId = skip;
-            var keyId = _database.GetKeyId(_directory, collectionId, field.ToHash());
+            var keyId = _keyRepository.GetKeyId(collectionId, field.ToHash());
 
             while (docId < docCount && took++ < take)
             {
@@ -245,14 +252,14 @@ namespace Sir
 
         private DocumentReader GetOrCreateDocumentReader(ulong collectionId)
         {
-            if (!File.Exists(Path.Combine(_directory, string.Format("{0}.val", collectionId))))
-                return null;
-
             DocumentReader reader;
 
             if (!_documentReaders.TryGetValue(collectionId, out reader))
             {
-                reader = new DocumentReader(_directory, collectionId, _database);
+                if (!File.Exists(Path.Combine(_directory, string.Format("{0}.val", collectionId))))
+                    return null;
+
+                reader = new DocumentReader(_directory, collectionId, _sessionFactory);
                 _documentReaders.Add(collectionId, reader);
             }
 

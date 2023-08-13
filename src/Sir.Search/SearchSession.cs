@@ -21,12 +21,13 @@ namespace Sir
 
         public SearchSession(
             string directory,
+            KeyRepository keyRepository,
             ISessionFactory sessionFactory,
             IModel model,
             IIndexReadWriteStrategy indexStrategy,
             ILogger logger = null,
             PostingsResolver postingsResolver = null,
-            Scorer scorer = null) : base(directory, sessionFactory)
+            Scorer scorer = null) : base(sessionFactory, keyRepository, directory)
         {
             _sessionFactory = sessionFactory;
             _model = model;

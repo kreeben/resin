@@ -14,15 +14,91 @@ namespace Sir
     /// </summary>
     public class SessionFactory : IDisposable, ISessionFactory
     {
-        private ConcurrentDictionary<ulong, ConcurrentDictionary<ulong, long>> _keys;
-        private ILogger _logger;
-
+        private readonly ILogger _logger;
+        private readonly ConcurrentDictionary<(string directory, ulong collectionId), IDictionary<long, IList<VectorNode>>> _columns;
         public SessionFactory(ILogger logger = null)
         {
             _logger = logger;
-            _keys = new ConcurrentDictionary<ulong, ConcurrentDictionary<ulong, long>>();
+            _columns = new ConcurrentDictionary<(string directory, ulong collectionId), IDictionary<long, IList<VectorNode>>>();
 
             LogTrace($"database initiated");
+        }
+
+        public IndexWriteStream CreateIndexingWriteStream(string directory, ulong collectionId, long keyId, bool keepOpen = false)
+        {
+            return new IndexWriteStream(
+                indexStream: CreateAppendStream(directory, collectionId, keyId, "ix"),
+                vectorStream: CreateAppendStream(directory, collectionId, keyId, "vec"),
+                postingsStream: CreateAppendStream(directory, collectionId, keyId, "pos"),
+                pageIndexStream: CreateAppendStream(directory, collectionId, keyId, "ixtp"),
+                postingsIndexReadStream: CreateReadStream(Path.Combine(directory, $"{collectionId}.{keyId}.pix")),
+                postingsIndexUpdateStream: CreateSeekWriteStream(directory, collectionId, keyId, "pix"),
+                postingsIndexAppendStream: CreateAppendStream(directory, collectionId, keyId, "pix"),
+                keepOpen: keepOpen
+                );
+        }
+
+        public IDictionary<long, IList<VectorNode>> GetColumns(string directory, ulong collectionId, IModel model)
+        {
+            var columns = new Dictionary<long, IList<VectorNode>>();
+
+            if (string.IsNullOrWhiteSpace(directory))
+            {
+                return columns;
+            }
+
+            if (_columns.TryGetValue((directory, collectionId), out var col))
+            {
+                return col;
+            }
+
+            foreach (var ixFileName in Directory.GetFiles(directory, "*.ix", SearchOption.AllDirectories))
+            {
+                var name = Path.GetFileNameWithoutExtension(ixFileName);
+                var i = name.LastIndexOf('.') + 1;
+                var keyIdSegment = name.Substring(i, name.Length - i);
+                var keyId = long.Parse(keyIdSegment);
+                var vectorFileName = Path.Combine(directory, $"{collectionId}.{keyId}.vec");
+                var pageIndexFileName = Path.Combine(directory, $"{collectionId}.{keyId}.ixtp");
+
+                IList<(long offset, long length)> pages;
+
+                using (var pageIndexReader = new PageIndexReader(CreateReadStream(pageIndexFileName)))
+                {
+                    pages = pageIndexReader.ReadAll();
+                }
+
+                using (var ixStream = CreateReadStream(ixFileName))
+                using (var vectorStream = CreateReadStream(vectorFileName))
+                {
+                    var trees = new List<VectorNode>();
+
+                    foreach (var page in pages)
+                    {
+                        ixStream.Seek(page.offset, SeekOrigin.Begin);
+                        var tree = PathFinder.DeserializeTree(ixStream, vectorStream, model, page.length);
+                        trees.Add(tree);
+                    }
+
+                    columns.Add(keyId, trees);
+                }
+
+                LogInformation($"loaded {ixFileName} into memory");
+            }
+
+            if (columns.Count > 0)
+            {
+                _columns.GetOrAdd((directory, collectionId), columns);
+
+                return columns;
+            }
+
+            return new Dictionary<long, IList<VectorNode>>();
+        }
+
+        public void UpdateColumns(string directory, ulong collectionId, IDictionary<long, IList<VectorNode>> columns)
+        {
+            _columns[(directory, collectionId)] = columns;
         }
 
         public ColumnReader CreateColumnReader(string directory, ulong collectionId, long keyId, IModel model)
@@ -49,7 +125,7 @@ namespace Sir
 
         public IEnumerable<Document> Select(string directory, ulong collectionId, HashSet<string> select, int skip = 0, int take = 0)
         {
-            using (var reader = new DocumentStreamSession(directory, this))
+            using (var reader = new DocumentStreamSession(this, new KeyRepository(directory, this), directory))
             {
                 foreach (var document in reader.ReadDocuments(collectionId, select, skip, take))
                 {
@@ -106,7 +182,7 @@ namespace Sir
 
                 var keyStr = Path.Combine(directory, collectionId.ToString());
                 var key = keyStr.ToHash();
-                _keys.Remove(key, out _);
+                new KeyRepository(directory, this).RemoveFromCache(key);
             }
 
             LogInformation($"truncated collection {collectionId} ({count} files affected)");
@@ -165,7 +241,7 @@ namespace Sir
 
             var key = Path.Combine(directory, currentCollectionId.ToString()).ToHash();
 
-            _keys.Remove(key, out _);
+            new KeyRepository(directory, this).RemoveFromCache(key);
 
             LogInformation($"renamed collection {currentCollectionId} to {newCollectionId} ({count} files affected)");
         }
@@ -186,7 +262,7 @@ namespace Sir
             LogDebug($"optimizing indices for {string.Join(',', selectFields)} in collection {collectionId}");
 
             using (var debugger = new IndexDebugger(_logger, reportFrequency))
-            using (var documents = new DocumentStreamSession(directory, this))
+            using (var documents = new DocumentStreamSession(this, new KeyRepository(directory, this), directory))
             {
                 using (var writeQueue = new ProducerConsumerQueue<IndexSession<T>>(indexSession =>
                 {
@@ -300,7 +376,7 @@ namespace Sir
         public void Index<T>(string directory, ulong collectionId, IModel<T> model, IIndexReadWriteStrategy indexStrategy, HashSet<string> fieldsOfInterest, int reportSize = 1000, int pageSize = 1000, int skip = 0, int take = int.MaxValue)
         {
             using (var debugger = new IndexDebugger(_logger, reportSize))
-            using (var documents = new DocumentStreamSession(directory, this))
+            using (var documents = new DocumentStreamSession(this, new KeyRepository(directory, this), directory))
             using (var indexSession = new IndexSession<T>(model, indexStrategy, this, directory, collectionId, _logger))
             {
                 foreach (var batch in documents.ReadDocuments(collectionId, fieldsOfInterest, skip, take).Batch(pageSize))
@@ -321,12 +397,13 @@ namespace Sir
 
         public bool DocumentExists<T>(string directory, string collection, string key, T value, IModel<T> model, bool label = true)
         {
-            var query = new QueryParser<T>(directory, this, model, logger: _logger)
+            var keyRepository = new KeyRepository(directory, this);
+            var query = new QueryParser<T>(directory, keyRepository, model, logger: _logger)
                 .Parse(collection, value, key, key, and: true, or: false, label);
 
             if (query != null)
             {
-                using (var searchSession = new SearchSession(directory, this, model, new LogStructuredIndexingStrategy(model),  _logger))
+                using (var searchSession = new SearchSession(directory, keyRepository, this, model, new LogStructuredIndexingStrategy(model),  _logger))
                 {
                     var document = searchSession.SearchScalar(query);
 
@@ -346,92 +423,6 @@ namespace Sir
             return new FileStream(Path.Combine(directory, collectionId + ".lock"),
                    FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None,
                    4096, FileOptions.RandomAccess | FileOptions.DeleteOnClose);
-        }
-
-        private void ReadKeysIntoCache(string directory)
-        {
-            foreach (var keyFile in Directory.GetFiles(directory, "*.kmap"))
-            {
-                var collectionId = ulong.Parse(Path.GetFileNameWithoutExtension(keyFile));
-                var key = Path.Combine(directory, collectionId.ToString()).ToHash();
-
-                var keys = _keys.GetOrAdd(key, (k) =>
-                {
-                    var ks = new ConcurrentDictionary<ulong, long>();
-
-                    using (var stream = new FileStream(keyFile, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite))
-                    {
-                        long i = 0;
-                        var buf = new byte[sizeof(ulong)];
-                        var read = stream.Read(buf, 0, buf.Length);
-
-                        while (read > 0)
-                        {
-                            ks.TryAdd(BitConverter.ToUInt64(buf, 0), i++);
-
-                            read = stream.Read(buf, 0, buf.Length);
-                        }
-                    }
-
-                    return ks;
-                });
-            }
-        }
-
-        public void RegisterKeyMapping(string directory, ulong collectionId, ulong keyHash, long keyId)
-        {
-            var key = Path.Combine(directory, collectionId.ToString()).ToHash();
-            var keys = _keys.GetOrAdd(key, (key) => { return new ConcurrentDictionary<ulong, long>(); });
-            var keyMapping = keys.GetOrAdd(keyHash, (key) =>
-            {
-                using (var stream = CreateAppendStream(directory, collectionId, "kmap"))
-                {
-                    stream.Write(BitConverter.GetBytes(keyHash), 0, sizeof(ulong));
-                }
-                return keyId;
-            });
-        }
-
-        public long GetKeyId(string directory, ulong collectionId, ulong keyHash)
-        {
-            var key = Path.Combine(directory, collectionId.ToString()).ToHash();
-
-            ConcurrentDictionary<ulong, long> keys;
-
-            if (!_keys.TryGetValue(key, out keys))
-            {
-                ReadKeysIntoCache(directory);
-            }
-
-            if (keys != null || _keys.TryGetValue(key, out keys))
-            {
-                return keys[keyHash];
-            }
-
-            throw new Exception($"unable to find key {keyHash} for collection {collectionId} in directory {directory}.");
-        }
-
-        public bool TryGetKeyId(string directory, ulong collectionId, ulong keyHash, out long keyId)
-        {
-            var key = Path.Combine(directory, collectionId.ToString()).ToHash();
-
-            ConcurrentDictionary<ulong, long> keys;
-
-            if (!_keys.TryGetValue(key, out keys))
-            {
-                ReadKeysIntoCache(directory);
-            }
-
-            if (keys != null || _keys.TryGetValue(key, out keys))
-            {
-                if (keys.TryGetValue(keyHash, out keyId))
-                {
-                    return true;
-                }
-            }
-
-            keyId = -1;
-            return false;
         }
 
         public Stream CreateAsyncReadStream(string fileName)

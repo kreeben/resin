@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Sir.Documents;
+using Sir.IO;
 
 namespace Sir.HttpServer.Features
 {
@@ -19,6 +20,7 @@ namespace Sir.HttpServer.Features
         private readonly string[] _select;
         private readonly bool _truncate;
         private readonly IIndexReadWriteStrategy _indexStrategy;
+        private readonly IConfigurationProvider _configurationProvider;
 
         public SaveAsJob(
             string directory,
@@ -27,6 +29,7 @@ namespace Sir.HttpServer.Features
             IModel<T> model,
             IIndexReadWriteStrategy indexStrategy,
             ILogger logger,
+            IConfigurationProvider configurationProvider,
             string target,
             string[] collections,
             string[] fields,
@@ -51,6 +54,7 @@ namespace Sir.HttpServer.Features
             _select = select;
             _truncate = truncate;
             _indexStrategy = indexStrategy;
+            _configurationProvider = configurationProvider;
         }
 
         public override void Execute()
@@ -68,8 +72,10 @@ namespace Sir.HttpServer.Features
 
                 var targetCollectionId = _target.ToHash();
                 IEnumerable<Document> documents;
+                var directory = _configurationProvider.Get("data_dir");
+                var keys = new KeyRepository(directory, _sessionFactory);
 
-                using (var readSession = new SearchSession(_directory, _sessionFactory, _model, new LogStructuredIndexingStrategy(_model), _logger))
+                using (var readSession = new SearchSession(_directory, keys, _sessionFactory, _model, new LogStructuredIndexingStrategy(_model), _logger))
                 {
                     documents = readSession.Search(query, _skip, _take).Documents;
                 }
