@@ -8,6 +8,13 @@ namespace Sir.IO
     {
         private readonly Dictionary<(string, ulong, long), PostingsReader> _readers = new Dictionary<(string, ulong, long), PostingsReader>();
 
+        public PostingsResolver() { }
+
+        public PostingsResolver(Dictionary<(string, ulong, long), PostingsReader> readers)
+        {
+            _readers = readers;
+        }
+
         /// <summary>
         /// Read posting list document IDs into memory.
         /// </summary>

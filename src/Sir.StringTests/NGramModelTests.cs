@@ -29,23 +29,28 @@ namespace Sir.StringTests
 
             Assert.DoesNotThrow(() =>
             {
-                foreach (var phrase in _data)
+                foreach (var word in _data)
                 {
-                    foreach (var queryVector in model.CreateEmbedding(phrase, true))
+                    foreach (var queryVector in model.CreateEmbedding(word, true))
                     {
                         var hit = PathFinder.ClosestMatch(index, queryVector, model);
 
                         if (hit == null)
                         {
-                            throw new Exception($"unable to find {phrase} in index.");
+                            throw new Exception($"unable to find {word} in index.");
                         }
 
                         if (hit.Score < model.IdenticalAngle)
                         {
-                            throw new Exception($"unable to score {phrase}.");
+                            throw new Exception($"unable to score {word}.");
                         }
 
-                        Debug.WriteLine($"{phrase} matched with {hit.Node.Vector.Label} with {hit.Score * 100}% certainty.");
+                        if ((string)queryVector.Label != (string)hit.Node.Vector.Label)
+                        {
+                            throw new Exception($"best match was {hit.Node.Vector.Label} when searching for {word}.");
+                        }
+
+                        Debug.WriteLine($"{word} matched with {hit.Node.Vector.Label} with {hit.Score * 100}% certainty.");
                     }
                 }
             });
@@ -60,16 +65,26 @@ namespace Sir.StringTests
 
             using (var indexStream = new MemoryStream())
             using (var vectorStream = new MemoryStream())
+            using (var postingsStream = new MemoryStream())
+            using (var appendableIndexStream = new MemoryStream())
+            using (var seekableIndexStream = new MemoryStream())
+            using (var postingsIndex = new MemoryStream())
             using (var pageStream = new MemoryStream())
             {
                 using (var writer = new ColumnWriter(indexStream, keepStreamOpen: true))
+                using (var postingsWriter = new PostingsWriter(postingsStream, new PostingsIndexAppender(appendableIndexStream), new PostingsIndexUpdater(seekableIndexStream), new PostingsIndexReader(postingsIndex), keepOpen: true))
                 {
-                    writer.CreatePage(index, vectorStream, new PageIndexWriter(pageStream, keepStreamOpen: true));
+                    writer.CreatePage(index, vectorStream, postingsWriter, new PageIndexWriter(pageStream, keepStreamOpen: true), new Dictionary<(long keyId, long pageId), HashSet<long>>());
                 }
 
                 pageStream.Position = 0;
                 vectorStream.Position = 0;
                 indexStream.Position = 0;
+                postingsStream.Position = 0;
+                appendableIndexStream.Position = 0;
+                seekableIndexStream.Position = 0;
+                postingsIndex.Position = 0;
+                pageStream.Position = 0;
 
                 Assert.DoesNotThrow(() =>
                 {
@@ -84,15 +99,15 @@ namespace Sir.StringTests
 
                                 if (hit == null)
                                 {
-                                    throw new Exception($"unable to find \"{word}\" in tree.");
+                                    throw new Exception($"unable to find {word} in tree.");
                                 }
 
                                 if (hit.Score < model.IdenticalAngle)
                                 {
-                                    throw new Exception($"unable to score \"{word}\".");
+                                    throw new Exception($"unable to score {word}.");
                                 }
 
-                                Debug.WriteLine($"\"{word}\" matched vector in disk with {hit.Score * 100}% certainty.");
+                                Debug.WriteLine($"{word} matched vector in disk with {hit.Score * 100}% certainty.");
                             }
                         }
                     }
@@ -103,24 +118,39 @@ namespace Sir.StringTests
         [Test]
         public void Can_traverse_streamed_paged()
         {
-            const int numOfPages = 2;
             var model = new NGramModel(new BagOfCharsModel());
+
+            const int numOfPages = 2;
 
             using (var indexStream = new MemoryStream())
             using (var vectorStream = new MemoryStream())
+            using (var postingsStream = new MemoryStream())
+            using (var appendableIndexStream = new MemoryStream())
+            using (var seekableIndexStream = new MemoryStream())
+            using (var postingsIndex = new MemoryStream())
             using (var pageStream = new MemoryStream())
-            using (var writer = new ColumnWriter(indexStream))
             {
-                foreach (var batch in _data.Batch((int)Math.Ceiling((double)_data.Length / numOfPages)))
+                var batchSize = (int)Math.Ceiling((double)_data.Length / numOfPages);
+
+                foreach (var batch in _data.Batch(batchSize))
                 {
                     var index = model.CreateTree(new LogStructuredIndexingStrategy(model), batch.ToArray());
 
-                    writer.CreatePage(index, vectorStream, new PageIndexWriter(pageStream, keepStreamOpen: true));
+                    using (var writer = new ColumnWriter(indexStream, keepStreamOpen: true))
+                    using (var postingsWriter = new PostingsWriter(postingsStream, new PostingsIndexAppender(appendableIndexStream), new PostingsIndexUpdater(seekableIndexStream), new PostingsIndexReader(postingsIndex), keepOpen: true))
+                    {
+                        writer.CreatePage(index, vectorStream, postingsWriter, new PageIndexWriter(pageStream, keepStreamOpen: true), new Dictionary<(long keyId, long pageId), HashSet<long>>());
+                    }
                 }
 
                 pageStream.Position = 0;
                 vectorStream.Position = 0;
                 indexStream.Position = 0;
+                postingsStream.Position = 0;
+                appendableIndexStream.Position = 0;
+                seekableIndexStream.Position = 0;
+                postingsIndex.Position = 0;
+                pageStream.Position = 0;
 
                 Assert.DoesNotThrow(() =>
                 {

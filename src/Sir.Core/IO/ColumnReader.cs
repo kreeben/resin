@@ -18,6 +18,7 @@ namespace Sir.IO
         private readonly Stream _ixFile;
         private readonly IList<(long offset, long length)> _pages;
         private readonly IDictionary<long, ISerializableVector> _vectors;
+        private readonly bool _keepOpen;
         private readonly ILogger _logger;
         private readonly IModel _model;
 
@@ -26,7 +27,8 @@ namespace Sir.IO
             Stream indexStream,
             Stream vectorStream,
             IModel model,
-            ILogger logger = null)
+            ILogger logger = null,
+            bool keepOpen = false)
         {
             _vectorStream = vectorStream;
             _ixFile = indexStream;
@@ -34,6 +36,7 @@ namespace Sir.IO
             _model = model;
             _logger = logger;
             _vectors = LoadVectors();
+            _keepOpen = keepOpen;
         }
 
         private IDictionary<long, ISerializableVector> LoadVectors()
@@ -106,7 +109,7 @@ namespace Sir.IO
             {
                 var hit = ClosestMatchInPage(vector, page.offset);
 
-                if (hit.Score > 0)
+                if (hit.Score > 0 && hit.Node.PostingsPageId > -1)
                 {
                     hits.Add(hit);
                 }
@@ -141,7 +144,7 @@ namespace Sir.IO
             {
                 var hit = ClosestMatchInPage(vector, page.offset);
 
-                if (hit.Score > 0)
+                if (hit.Score > 0 && hit.Node.PostingsPageId > -1)
                 {
                     if (best == null || hit.Score > best.Score)
                     {
@@ -278,6 +281,9 @@ namespace Sir.IO
 
         public void Dispose()
         {
+            if (_keepOpen)
+                return;
+
             if (_vectorStream != null)
                 _vectorStream.Dispose();
 

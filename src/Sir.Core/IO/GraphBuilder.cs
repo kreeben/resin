@@ -10,12 +10,13 @@ namespace Sir.IO
         {
             var root = new VectorNode();
             var embedding = new SortedList<int, float>();
+            var docId = 0;
 
             foreach (var item in data)
             {
                 foreach (var vector in model.CreateEmbedding(item, true, embedding))
                 {
-                    indexingStrategy.Put<T>(root, new VectorNode(vector));
+                    indexingStrategy.Put<T>(root, new VectorNode(vector:vector, docId = docId++));
                 }
             }
 

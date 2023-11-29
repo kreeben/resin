@@ -225,7 +225,7 @@ namespace Sir
 
         public (int depth, int width) CreatePage(VectorNode page, Dictionary<(long keyId, long pageId), HashSet<long>> postings)
         {
-            return ColumnWriter.CreatePage(page, VectorStream, PageIndexWriter);
+            return ColumnWriter.CreatePage(page, VectorStream, PostingsWriter, PageIndexWriter, postings);
         }
 
         public void Dispose()

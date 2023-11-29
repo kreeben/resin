@@ -12,6 +12,7 @@ namespace Sir
         private readonly ISessionFactory _sessionFactory;
         private readonly IDictionary<ulong, DocumentReader> _documentReaders;
         private readonly KeyRepository _keyRepository;
+        private readonly bool _keepOpen;
 
         public DocumentStreamSession(ISessionFactory sessionFactory, KeyRepository keyRepository, string directory) 
         {
@@ -21,10 +22,11 @@ namespace Sir
             _keyRepository = keyRepository;
         }
 
-        public DocumentStreamSession(KeyRepository keyRepository, Dictionary<ulong, DocumentReader> documentReaders)
+        public DocumentStreamSession(KeyRepository keyRepository, Dictionary<ulong, DocumentReader> documentReaders, bool keepOpen = true)
         {
             _documentReaders = documentReaders;
             _keyRepository = keyRepository;
+            _keepOpen = keepOpen;
         }
 
         public int Count(ulong collectionId)
@@ -268,9 +270,12 @@ namespace Sir
 
         public virtual void Dispose()
         {
-            foreach (var reader in _documentReaders.Values)
+            if (!_keepOpen)
             {
-                reader.Dispose();
+                foreach (var reader in _documentReaders.Values)
+                {
+                    reader.Dispose();
+                }
             }
         }
     }

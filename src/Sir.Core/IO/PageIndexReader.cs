@@ -13,10 +13,10 @@ namespace Sir.IO
         private readonly Stream _stream;
         private readonly bool _keepStreamOpen;
 
-        public PageIndexReader(Stream stream, bool keepStreamOpen = false)
+        public PageIndexReader(Stream stream, bool keepOpen = false)
         {
             _stream = stream;
-            _keepStreamOpen = keepStreamOpen;
+            _keepStreamOpen = keepOpen;
         }
 
         public void Dispose()

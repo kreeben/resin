@@ -81,16 +81,26 @@ namespace Sir.ImageTests
 
             using (var indexStream = new MemoryStream())
             using (var vectorStream = new MemoryStream())
+            using (var postingsStream = new MemoryStream())
+            using (var appendableIndexStream = new MemoryStream())
+            using (var seekableIndexStream = new MemoryStream())
+            using (var postingsIndex = new MemoryStream())
             using (var pageStream = new MemoryStream())
             {
                 using (var writer = new ColumnWriter(indexStream, keepStreamOpen: true))
+                using (var postingsWriter = new PostingsWriter(postingsStream, new PostingsIndexAppender(appendableIndexStream), new PostingsIndexUpdater(seekableIndexStream), new PostingsIndexReader(postingsIndex), keepOpen: true))
                 {
-                    writer.CreatePage(index, vectorStream, new PageIndexWriter(pageStream, keepStreamOpen: true));
+                    writer.CreatePage(index, vectorStream, postingsWriter, new PageIndexWriter(pageStream, keepStreamOpen: true), new Dictionary<(long keyId, long pageId), HashSet<long>>());
                 }
 
                 pageStream.Position = 0;
                 vectorStream.Position = 0;
                 indexStream.Position = 0;
+                postingsStream.Position = 0;
+                appendableIndexStream.Position = 0;
+                seekableIndexStream.Position = 0;
+                postingsIndex.Position = 0;
+                pageStream.Position = 0;
 
                 Assert.DoesNotThrow(() =>
                 {
@@ -124,23 +134,39 @@ namespace Sir.ImageTests
         [Test]
         public void Can_traverse_streamed_paged()
         {
-            const int numOfPages = 2;
             var model = new LinearClassifierImageModel();
-            var index = model.CreateTree(new LogStructuredIndexingStrategy(model), _data);
+
+            const int numOfPages = 2;
 
             using (var indexStream = new MemoryStream())
             using (var vectorStream = new MemoryStream())
+            using (var postingsStream = new MemoryStream())
+            using (var appendableIndexStream = new MemoryStream())
+            using (var seekableIndexStream = new MemoryStream())
+            using (var postingsIndex = new MemoryStream())
             using (var pageStream = new MemoryStream())
-            using (var writer = new ColumnWriter(indexStream))
             {
-                foreach (var batch in _data.Batch((int)Math.Ceiling((double)_data.Length / numOfPages)))
+                var batchSize = (int)Math.Ceiling((double)_data.Length / numOfPages);
+
+                foreach (var batch in _data.Batch(batchSize))
                 {
-                    writer.CreatePage(index, vectorStream, new PageIndexWriter(pageStream, keepStreamOpen: true));
+                    var index = model.CreateTree(new LogStructuredIndexingStrategy(model), batch.ToArray());
+
+                    using (var writer = new ColumnWriter(indexStream, keepStreamOpen: true))
+                    using (var postingsWriter = new PostingsWriter(postingsStream, new PostingsIndexAppender(appendableIndexStream), new PostingsIndexUpdater(seekableIndexStream), new PostingsIndexReader(postingsIndex), keepOpen: true))
+                    {
+                        writer.CreatePage(index, vectorStream, postingsWriter, new PageIndexWriter(pageStream, keepStreamOpen: true), new Dictionary<(long keyId, long pageId), HashSet<long>>());
+                    }
                 }
 
                 pageStream.Position = 0;
                 vectorStream.Position = 0;
                 indexStream.Position = 0;
+                postingsStream.Position = 0;
+                appendableIndexStream.Position = 0;
+                seekableIndexStream.Position = 0;
+                postingsIndex.Position = 0;
+                pageStream.Position = 0;
 
                 Assert.DoesNotThrow(() =>
                 {

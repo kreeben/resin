@@ -35,7 +35,7 @@ namespace Sir.IO
             _collectionId = collectionId;
         }
 
-        public IList<(ulong, long)> Read(long keyId, IList<long> pageIds)
+        public IList<(ulong collectionId, long docId)> Read(long keyId, IList<long> pageIds)
         {
             var time = Stopwatch.StartNew();
             var documents = new List<(ulong, long)>();

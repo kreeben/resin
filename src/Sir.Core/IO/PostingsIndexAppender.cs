@@ -15,6 +15,11 @@ namespace Sir.IO
 
         public long Append(long address, long nextPageId)
         {
+            if (_appendableIndexStream is MemoryStream && _appendableIndexStream.Length > 0)
+            {
+                _appendableIndexStream.Position = _appendableIndexStream.Length;
+            }
+
             long pageId = _appendableIndexStream.Length / BlockSize;
             _appendableIndexStream.Write(BitConverter.GetBytes(address));
             _appendableIndexStream.Write(BitConverter.GetBytes(nextPageId));

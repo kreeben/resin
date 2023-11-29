@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Sir.Documents;
 using Sir.IO;
 using System;
 using System.Collections.Generic;
@@ -36,6 +37,27 @@ namespace Sir
             _scorer = scorer ?? new Scorer();
             _logger = logger;
             _readers = new Dictionary<(string, ulong, long), ColumnReader>();
+        }
+
+        public SearchSession(
+            KeyRepository keyRepository, 
+            Dictionary<ulong, DocumentReader> documentReaders,
+            ISessionFactory sessionFactory,
+            IModel model,
+            IIndexReadWriteStrategy indexStrategy,
+            PostingsResolver postingsResolver,
+            Dictionary<(string, ulong, long), ColumnReader> columnReaders,
+            ILogger logger = null,
+            Scorer scorer = null,
+            bool keepOpen = true) : base(keyRepository, documentReaders, keepOpen)
+        {
+            _sessionFactory = sessionFactory;
+            _model = model;
+            _indexStrategy = indexStrategy;
+            _postingsResolver = postingsResolver ?? new PostingsResolver();
+            _scorer = scorer ?? new Scorer();
+            _logger = logger;
+            _readers = columnReaders;
         }
 
         public SearchResult Search(IQuery query, int skip, int take)

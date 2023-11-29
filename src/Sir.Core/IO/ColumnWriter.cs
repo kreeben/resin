@@ -37,18 +37,6 @@ namespace Sir.IO
             return PathFinder.Size(column);
         }
 
-        public (int depth, int width) CreatePage(
-            VectorNode column, 
-            Stream vectorStream, 
-            PageIndexWriter pageIndexWriter)
-        {
-            var page = column.SerializeTree(_ixStream, vectorStream);
-
-            pageIndexWriter.Put(page.offset, page.length);
-
-            return PathFinder.Size(column);
-        }
-
         public void Dispose()
         {
             if (!_keepIndexStreamOpen)

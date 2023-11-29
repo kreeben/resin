@@ -9,7 +9,7 @@ namespace Sir
     {
         public ulong CollectionId { get; }
 
-        private readonly SearchSession _readSession;
+        private readonly SearchSession _searchSession;
         private readonly QueryParser<T> _queryParser;
 
         public ValidateSession(
@@ -19,7 +19,7 @@ namespace Sir
             )
         {
             CollectionId = collectionId;
-            _readSession = searchSession;
+            _searchSession = searchSession;
             _queryParser = queryParser;
         }
 
@@ -32,7 +32,7 @@ namespace Sir
 
                 var query = _queryParser.Parse(CollectionId, (T)field.Value, field.Name, field.Name, true, false, true);
                 const int take = 100000;
-                var result = _readSession.SearchIdentical(query, take);
+                var result = _searchSession.SearchIdentical(query, take);
                 bool isMatch = false;
 
                 foreach (var document in result.Documents)
@@ -64,7 +64,7 @@ namespace Sir
 
         public void Dispose()
         {
-            _readSession.Dispose();
+            _searchSession.Dispose();
         }
     }
 }
