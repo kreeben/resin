@@ -11,6 +11,5 @@ namespace Sir
         void RegisterKeyMapping(string directory, ulong collectionId, ulong keyHash, long keyId);
         bool TryGetKeyId(string directory, ulong collectionId, ulong keyHash, out long keyId);
         long GetKeyId(string directory, ulong collectionId, ulong keyHash);
-        ColumnReader CreateColumnReader(string directory, ulong collectionId, long keyId);
     }
 }

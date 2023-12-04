@@ -3,6 +3,7 @@ using Sir.IO;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 
 namespace Sir
 {
@@ -127,7 +128,7 @@ namespace Sir
 
                 if (!_readers.TryGetValue(key, out reader))
                 {
-                    reader = _sessionFactory.CreateColumnReader(term.Directory, term.CollectionId, term.KeyId);
+                    reader = CreateColumnReader(term.Directory, term.CollectionId, term.KeyId);
 
                     if (reader != null)
                     {
@@ -148,6 +149,21 @@ namespace Sir
                         }
                     }
                 }
+            }
+        }
+
+        private ColumnReader CreateColumnReader(string directory, ulong collectionId, long keyId)
+        {
+            var ixFileName = Path.Combine(directory, string.Format("{0}.{1}.ix", collectionId, keyId));
+            var vectorFileName = Path.Combine(directory, $"{collectionId}.{keyId}.vec");
+            var pageIndexFileName = Path.Combine(directory, $"{collectionId}.{keyId}.ixtp");
+
+            using (var pageIndexReader = new PageIndexReader(_sessionFactory.CreateReadStream(pageIndexFileName)))
+            {
+                return new ColumnReader(
+                    pageIndexReader.ReadAll(),
+                    _sessionFactory.CreateReadStream(ixFileName),
+                    _sessionFactory.CreateReadStream(vectorFileName));
             }
         }
 

@@ -26,20 +26,7 @@ namespace Sir
             LogTrace($"database initiated");
         }
 
-        public ColumnReader CreateColumnReader(string directory, ulong collectionId, long keyId)
-        {
-            var ixFileName = Path.Combine(directory, string.Format("{0}.{1}.ix", collectionId, keyId));
-            var vectorFileName = Path.Combine(directory, $"{collectionId}.{keyId}.vec");
-            var pageIndexFileName = Path.Combine(directory, $"{collectionId}.{keyId}.ixtp");
-
-            using (var pageIndexReader = new PageIndexReader(CreateReadStream(pageIndexFileName)))
-            {
-                return new ColumnReader(
-                    pageIndexReader.ReadAll(),
-                    CreateReadStream(ixFileName),
-                    CreateReadStream(vectorFileName));
-            }
-        }
+        
 
         public IEnumerable<Document> Select(string directory, ulong collectionId, HashSet<string> select, int skip = 0, int take = 0)
         {
