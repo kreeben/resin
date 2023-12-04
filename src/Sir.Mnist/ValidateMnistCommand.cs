@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Sir.Images;
+using Sir.KeyValue;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -24,10 +25,10 @@ namespace Sir.Mnist
             var errors = 0;
             var model = new LinearClassifierImageModel();
 
-            using (var sessionFactory = new SessionFactory(logger: logger))
-            using (var querySession = new SearchSession(dataDirectory, sessionFactory, model, new SupervisedLogStructuredIndexingStrategy(model), logger))
+            using (var kvwriter = new KeyValueWriter(dataDirectory, collection.ToHash()))
+            using (var querySession = new SearchSession(dataDirectory, model, new SupervisedLogStructuredIndexingStrategy(model), kvwriter, logger))
             {
-                var queryParser = new QueryParser<IImage>(dataDirectory, sessionFactory, model, logger: logger);
+                var queryParser = new QueryParser<IImage>(dataDirectory, kvwriter, model, logger: logger);
 
                 foreach (var image in images)
                 {

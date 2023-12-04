@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Sir.Images\Sir.Images.csproj" />
-    <ProjectReference Include="..\Sir.Search\Sir.Session.csproj" />
+    <ProjectReference Include="..\Sir.InformationRetreival\Sir.InformationRetreival.csproj" />
   </ItemGroup>
 
 </Project>

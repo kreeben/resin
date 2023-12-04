@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Sir.IO;
+using Sir.KeyValue;
 using Sir.Strings;
 using System.Collections.Generic;
 using System.IO;
@@ -49,11 +50,12 @@ namespace Sir.Wikipedia
                 //}
 
                 using (var debugger = new IndexDebugger(logger, sampleSize))
-                using (var documents = new DocumentStreamSession(dataDirectory, streamDispatcher))
+                using(var kvWriter = new KeyValueWriter(dataDirectory, collectionId))
+                using (var documents = new DocumentStreamSession(dataDirectory, kvWriter))
                 {
                     foreach (var batch in documents.ReadDocuments(collectionId, fieldsOfInterest, skip, take).Batch(pageSize))
                     {
-                        using (var indexSession = new IndexSession<string>(model, indexStrategy, streamDispatcher, dataDirectory, collectionId, logger))
+                        using (var indexSession = new IndexSession<string>(model, indexStrategy, dataDirectory, collectionId, logger))
                         {
                             foreach (var document in batch)
                             {

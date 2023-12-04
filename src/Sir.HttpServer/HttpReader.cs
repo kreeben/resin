@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Sir.KeyValue;
 
 namespace Sir.HttpServer
 {
@@ -58,7 +59,7 @@ namespace Sir.HttpServer
             _logger.LogDebug($"parsed query: {queryLog}");
 #endif
 
-            using (var readSession = new SearchSession(_config.Get("data_dir"), _sessionFactory, model, new LogStructuredIndexingStrategy(model), _logger))
+            using (var readSession = new SearchSession(_config.Get("data_dir"), model, new LogStructuredIndexingStrategy(model), new KeyValueWriter(_config.Get("data_dir"), _config.Get("default_collection").ToHash()), _logger))
             {
                 return readSession.Search(query, skip, take);
             }

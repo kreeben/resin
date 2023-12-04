@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Sir.Documents;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -17,9 +18,9 @@ namespace Sir.IO
         private readonly ILogger _logger;
         private readonly ulong _collectionId;
 
-        public PostingsReader(string directory, ulong collectionId, long keyId, IStreamDispatcher streamDispatcher, ILogger logger = null)
+        public PostingsReader(string directory, ulong collectionId, long keyId, ILogger logger = null)
         {
-            _stream = streamDispatcher.CreateReadStream(Path.Combine(directory, $"{collectionId}.{keyId}.pos"));
+            _stream = DocumentReader.CreateReadStream(Path.Combine(directory, $"{collectionId}.{keyId}.pos"));
             _logger = logger;
             _collectionId = collectionId;
         }

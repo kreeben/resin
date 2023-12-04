@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Sir.Documents;
 using Sir.IO;
+using Sir.KeyValue;
 using Sir.Strings;
 
 namespace Sir.Cmd
@@ -19,9 +20,9 @@ namespace Sir.Cmd
             var model = new BagOfCharsModel();
             var embedding = new SortedList<int, float>();
 
-            using (var sessionFactory = new SessionFactory(logger))
-            using (var documents = new DocumentStreamSession(dataDirectory, sessionFactory))
-            using (var documentReader = new DocumentReader(dataDirectory, collectionId, sessionFactory))
+            using (var kvwriter = new KeyValueWriter(dataDirectory, collectionId))
+            using (var documents = new DocumentStreamSession(dataDirectory, kvwriter))
+            using (var documentReader = new DocumentReader(dataDirectory, collectionId))
             {
                 var doc = documents.ReadDocument((collectionId, documentId), select, documentReader);
 

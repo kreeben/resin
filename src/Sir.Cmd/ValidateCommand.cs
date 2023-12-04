@@ -24,13 +24,14 @@ namespace Sir.Cmd
             var count = 0;
             var embedding = new SortedList<int, float>();
 
+            using(var kvwriter = new KeyValue.KeyValueWriter(dir, collectionId))
             using (var sessionFactory = new SessionFactory(logger))
             using (var validateSession = new ValidateSession<string>(
                     collectionId,
-                    new SearchSession(dir, sessionFactory, model, new LogStructuredIndexingStrategy(model), logger),
-                    new QueryParser<string>(dir, sessionFactory, model, embedding: embedding, logger: logger)))
+                    new SearchSession(dir, model, new LogStructuredIndexingStrategy(model), kvwriter, logger),
+                    new QueryParser<string>(dir, kvwriter, model, embedding: embedding, logger: logger)))
             {
-                using (var documents = new DocumentStreamSession(dir, sessionFactory))
+                using (var documents = new DocumentStreamSession(dir, kvwriter))
                 {
                     foreach (var doc in documents.ReadDocuments(collectionId, selectFields, skip, take))
                     {

@@ -11,7 +11,7 @@ namespace Sir.IO
         /// <summary>
         /// Read posting list document IDs into memory.
         /// </summary>
-        public void Resolve(IQuery query, IStreamDispatcher sessionFactory, ILogger logger = null)
+        public void Resolve(IQuery query, ILogger logger = null)
         {
             foreach (var term in query.AllTerms())
             {
@@ -23,7 +23,7 @@ namespace Sir.IO
 
                 if (!_readers.TryGetValue(key, out reader))
                 {
-                    reader = new PostingsReader(term.Directory, term.CollectionId, term.KeyId, sessionFactory, logger);
+                    reader = new PostingsReader(term.Directory, term.CollectionId, term.KeyId, logger);
 
                     if (reader != null)
                     {

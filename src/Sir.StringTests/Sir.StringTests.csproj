@@ -16,7 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Sir.Core\Sir.Core.csproj" />
+    <ProjectReference Include="..\Sir.Core\Sir.InformationRetreival.csproj" />
+    <ProjectReference Include="..\Sir.InformationRetreival\Sir.InformationRetreival.csproj" />
     <ProjectReference Include="..\Sir.Strings\Sir.Strings.csproj" />
     <ProjectReference Include="..\Sir.Wikipedia\Sir.Wikipedia.csproj" />
   </ItemGroup>

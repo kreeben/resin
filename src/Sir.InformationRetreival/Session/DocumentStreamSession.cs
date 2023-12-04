@@ -1,5 +1,6 @@
 ﻿using Sir.Documents;
 using Sir.IO;
+using Sir.KeyValue;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,16 +10,15 @@ namespace Sir
     public class DocumentStreamSession : IDisposable
     {
         private readonly string _directory;
-        private readonly IStreamDispatcher _database;
+        private readonly KeyValueWriter _kvwriter;
         private readonly IDictionary<ulong, DocumentReader> _documentReaders;
 
-        public DocumentStreamSession(string directory, IStreamDispatcher database) 
+        public DocumentStreamSession(string directory, KeyValueWriter kvwriter) 
         {
             _directory = directory;
-            _database = database;
+            _kvwriter = kvwriter;
             _documentReaders = new Dictionary<ulong, DocumentReader>();
         }
-
 
         public int Count(ulong collectionId)
         {
@@ -105,7 +105,7 @@ namespace Sir
 
             var took = 0;
             long docId = skip;
-            var keyId = _database.GetKeyId(_directory, collectionId, field.ToHash());
+            var keyId = _kvwriter.GetKeyId(_directory, collectionId, field.ToHash());
 
             while (docId < docCount && took++ < take)
             {
@@ -250,7 +250,7 @@ namespace Sir
 
             if (!_documentReaders.TryGetValue(collectionId, out reader))
             {
-                reader = new DocumentReader(_directory, collectionId, _database);
+                reader = new DocumentReader(_directory, collectionId);
                 _documentReaders.Add(collectionId, reader);
             }
 
@@ -263,6 +263,8 @@ namespace Sir
             {
                 reader.Dispose();
             }
+
+            _kvwriter.Dispose();
         }
     }
 }

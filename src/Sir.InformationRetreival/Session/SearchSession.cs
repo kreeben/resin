@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
+using Sir.Documents;
 using Sir.IO;
+using Sir.KeyValue;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,7 +14,6 @@ namespace Sir
     /// </summary>
     public class SearchSession : DocumentStreamSession, IDisposable, ISearchSession
     {
-        private readonly IStreamDispatcher _sessionFactory;
         private readonly IModel _model;
         private readonly IIndexReadWriteStrategy _indexStrategy;
         private readonly PostingsResolver _postingsResolver;
@@ -22,14 +23,13 @@ namespace Sir
 
         public SearchSession(
             string directory,
-            IStreamDispatcher sessionFactory,
             IModel model,
             IIndexReadWriteStrategy indexStrategy,
+            KeyValueWriter kvwriter,
             ILogger logger = null,
             PostingsResolver postingsResolver = null,
-            Scorer scorer = null) : base(directory, sessionFactory)
+            Scorer scorer = null) : base(directory, kvwriter)
         {
-            _sessionFactory = sessionFactory;
             _model = model;
             _indexStrategy = indexStrategy;
             _postingsResolver = postingsResolver ?? new PostingsResolver();
@@ -96,7 +96,7 @@ namespace Sir
             timer.Restart();
 
             // Read postings lists
-            _postingsResolver.Resolve(query, _sessionFactory, _logger);
+            _postingsResolver.Resolve(query, _logger);
             LogDebug($"reading postings took {timer.Elapsed}");
             timer.Restart();
             
@@ -158,12 +158,12 @@ namespace Sir
             var vectorFileName = Path.Combine(directory, $"{collectionId}.{keyId}.vec");
             var pageIndexFileName = Path.Combine(directory, $"{collectionId}.{keyId}.ixtp");
 
-            using (var pageIndexReader = new PageIndexReader(_sessionFactory.CreateReadStream(pageIndexFileName)))
+            using (var pageIndexReader = new PageIndexReader(DocumentReader.CreateReadStream(pageIndexFileName)))
             {
                 return new ColumnReader(
                     pageIndexReader.ReadAll(),
-                    _sessionFactory.CreateReadStream(ixFileName),
-                    _sessionFactory.CreateReadStream(vectorFileName));
+                    DocumentReader.CreateReadStream(ixFileName),
+                    DocumentReader.CreateReadStream(vectorFileName));
             }
         }
 

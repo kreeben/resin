@@ -70,10 +70,6 @@ namespace Sir.Cmd
             {
                 TruncateIndex(flags["directory"], flags["collection"], logger);
             }
-            else if (command == "optimize")
-            {
-                Optimize(flags, logger);
-            }
             else if (command == "rename")
             {
                 Rename(flags["directory"], flags["collection"], flags["newCollection"], logger);
@@ -120,32 +116,6 @@ namespace Sir.Cmd
             }
 
             return dic;
-        }
-
-        private static void Optimize(IDictionary<string, string> args, ILogger logger)
-        {
-            var dataDirectory = args["directory"];
-            var collection = args["collection"];
-            var skip = int.Parse(args["skip"]);
-            var take = int.Parse(args["take"]);
-            var reportFrequency = int.Parse(args["reportFrequency"]);
-            var pageSize = int.Parse(args["pageSize"]);
-            var fields = new HashSet<string>(args["fields"].Split(','));
-            var model = new BagOfCharsModel();
-
-            using (var sessionFactory = new SessionFactory(logger))
-            {
-                sessionFactory.Optimize(
-                    dataDirectory,
-                    collection, 
-                    fields,
-                    model,
-                    new LogStructuredIndexingStrategy(model),
-                    skip,
-                    take,
-                    reportFrequency,
-                    pageSize);
-            }
         }
 
         private static void Slice(IDictionary<string, string> args)

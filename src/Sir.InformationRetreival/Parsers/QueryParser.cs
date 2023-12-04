@@ -1,20 +1,21 @@
 ﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Sir.KeyValue;
 using System.Collections.Generic;
 
 namespace Sir
 {
     public class QueryParser<T>
     {
-        private readonly IStreamDispatcher _sessionFactory;
+        private readonly KeyValueWriter _kvwriter;
         private readonly IModel<T> _model;
         private readonly ILogger _logger;
         private readonly string _directory;
         private readonly SortedList<int, float> _embedding;
 
-        public QueryParser(string directory, IStreamDispatcher sessionFactory, IModel<T> model, SortedList<int, float> embedding = null, ILogger logger = null)
+        public QueryParser(string directory, KeyValueWriter kvwriter, IModel<T> model, SortedList<int, float> embedding = null, ILogger logger = null)
         {
-            _sessionFactory = sessionFactory;
+            _kvwriter = kvwriter;
             _model = model;
             _logger = logger;
             _directory = directory;
@@ -242,7 +243,7 @@ namespace Sir
             long keyId;
             var terms = new List<Term>();
 
-            if (_sessionFactory.TryGetKeyId(_directory, collectionId, key.ToHash(), out keyId))
+            if (_kvwriter.TryGetKeyId(_directory, collectionId, key.ToHash(), out keyId))
             {
                 var tokens = _model.CreateEmbedding(value, label, _embedding);
 

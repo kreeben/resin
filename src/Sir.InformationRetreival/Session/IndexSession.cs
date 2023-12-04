@@ -11,7 +11,6 @@ namespace Sir
         private readonly IModel<T> _model;
         private readonly IIndexReadWriteStrategy _indexingStrategy;
         private readonly IDictionary<long, VectorNode> _index;
-        private readonly IStreamDispatcher _sessionFactory;
         private readonly string _directory;
         private readonly ulong _collectionId;
         private readonly ILogger _logger;
@@ -20,7 +19,6 @@ namespace Sir
         public IndexSession(
             IModel<T> model,
             IIndexReadWriteStrategy indexingStrategy,
-            IStreamDispatcher sessionFactory, 
             string directory,
             ulong collectionId,
             ILogger logger = null)
@@ -28,7 +26,6 @@ namespace Sir
             _model = model;
             _indexingStrategy = indexingStrategy;
             _index = new Dictionary<long, VectorNode>();
-            _sessionFactory = sessionFactory;
             _directory = directory;
             _collectionId = collectionId;
             _logger = logger;
@@ -91,7 +88,7 @@ namespace Sir
 
             var column = _index[keyId];
 
-            _indexingStrategy.Commit(_directory, _collectionId, keyId, column, _sessionFactory, _logger);
+            _indexingStrategy.Commit(_directory, _collectionId, keyId, column, _logger);
 
             if (_logger != null)
                 _logger.LogInformation($"committing index to disk for key {keyId} took {time.Elapsed}");

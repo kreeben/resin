@@ -46,7 +46,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Sir.Search\Sir.Session.csproj" />
+    <ProjectReference Include="..\Sir.Core\Sir.InformationRetreival.csproj" />
+    <ProjectReference Include="..\Sir.InformationRetreival\Sir.InformationRetreival.csproj" />
     <ProjectReference Include="..\Sir.Strings\Sir.Strings.csproj" />
   </ItemGroup>
 

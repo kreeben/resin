@@ -20,11 +20,11 @@ namespace Sir.HttpServer
             var model = new BagOfCharsModel();
             var sessionFactory = new SessionFactory(logger);
             var directory = config.Get("data_dir");
-            var qp = new QueryParser<string>(directory, sessionFactory, model, logger: logger);
+            var defaultCollection = config.Get("default_collection");
+            var qp = new QueryParser<string>(directory, new KeyValue.KeyValueWriter(directory, defaultCollection.ToHash()), model, logger: logger);
             var httpParser = new HttpQueryParser(qp);
 
             services.AddSingleton(typeof(IModel<string>), model);
-            services.AddSingleton(typeof(IStreamDispatcher), sessionFactory);
             services.AddSingleton(typeof(SessionFactory), sessionFactory);
             services.AddSingleton(typeof(QueryParser<string>), qp);
             services.AddSingleton(typeof(HttpQueryParser), httpParser);

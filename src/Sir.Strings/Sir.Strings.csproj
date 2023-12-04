@@ -22,12 +22,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Sir.Core\Sir.Core.csproj" />
-    <ProjectReference Include="..\Sir.Document\Sir.Documents.csproj" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="..\Sir.InformationRetreival\Sir.InformationRetreival.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

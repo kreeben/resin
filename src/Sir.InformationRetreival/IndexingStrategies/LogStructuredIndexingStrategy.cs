@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Sir.IO;
+using Sir.KeyValue;
 using System.Diagnostics;
 
 namespace Sir
@@ -23,14 +24,14 @@ namespace Sir
             column.AddOrAppend(node, _model);
         }
 
-        public void Commit(string directory, ulong collectionId, long keyId, VectorNode tree, IStreamDispatcher streamDispatcher, ILogger logger = null)
+        public void Commit(string directory, ulong collectionId, long keyId, VectorNode tree, ILogger logger = null)
         {
             var time = Stopwatch.StartNew();
 
-            using (var vectorStream = streamDispatcher.CreateAppendStream(directory, collectionId, keyId, "vec"))
-            using (var postingsStream = streamDispatcher.CreateAppendStream(directory, collectionId, keyId, "pos"))
-            using (var columnWriter = new ColumnWriter(streamDispatcher.CreateAppendStream(directory, collectionId, keyId, "ix")))
-            using (var pageIndexWriter = new PageIndexWriter(streamDispatcher.CreateAppendStream(directory, collectionId, keyId, "ixtp")))
+            using (var vectorStream = KeyValueWriter.CreateAppendStream(directory, collectionId, keyId, "vec"))
+            using (var postingsStream = KeyValueWriter.CreateAppendStream(directory, collectionId, keyId, "pos"))
+            using (var columnWriter = new ColumnWriter(KeyValueWriter.CreateAppendStream(directory, collectionId, keyId, "ix")))
+            using (var pageIndexWriter = new PageIndexWriter(KeyValueWriter.CreateAppendStream(directory, collectionId, keyId, "ixtp")))
             {
                 var size = columnWriter.CreatePage(tree, vectorStream, postingsStream, pageIndexWriter);
 

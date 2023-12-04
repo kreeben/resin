@@ -1,11 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Sir.Core\Sir.Core.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.6" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Sir.Document\Sir.Documents.csproj" />
   </ItemGroup>
 

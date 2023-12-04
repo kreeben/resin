@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Sir.CommonCrawl\Sir.CommonCrawl.csproj" />
+    <ProjectReference Include="..\Sir.InformationRetreival\Sir.InformationRetreival.csproj" />
     <ProjectReference Include="..\Sir.Mnist\Sir.Mnist.csproj" />
     <ProjectReference Include="..\Sir.Wikipedia\Sir.Wikipedia.csproj" />
   </ItemGroup>

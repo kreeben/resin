@@ -4,16 +4,16 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Sir.Core\Sir.Core.csproj" />
-  </ItemGroup>
-
   <PropertyGroup>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="..\AssemblyInfo.cs" Link="AssemblyInfo.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MathNet.Numerics" Version="4.15.0" />
   </ItemGroup>
 
 </Project>

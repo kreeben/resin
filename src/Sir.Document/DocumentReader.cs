@@ -19,14 +19,14 @@ namespace Sir.Documents
 
         public ulong CollectionId { get; }
 
-        public DocumentReader(string directory, ulong collectionId, IStreamDispatcher database)
+        public DocumentReader(string directory, ulong collectionId)
         {
-            var valueStream = database.CreateReadStream(Path.Combine(directory, string.Format("{0}.val", collectionId)));
-            var keyStream = database.CreateReadStream(Path.Combine(directory, string.Format("{0}.key", collectionId)));
-            var docStream = database.CreateReadStream(Path.Combine(directory, string.Format("{0}.docs", collectionId)));
-            var valueIndexStream = database.CreateReadStream(Path.Combine(directory, string.Format("{0}.vix", collectionId)));
-            var keyIndexStream = database.CreateReadStream(Path.Combine(directory, string.Format("{0}.kix", collectionId)));
-            var docIndexStream = database.CreateReadStream(Path.Combine(directory, string.Format("{0}.dix", collectionId)));
+            var valueStream = CreateReadStream(Path.Combine(directory, string.Format("{0}.val", collectionId)));
+            var keyStream = CreateReadStream(Path.Combine(directory, string.Format("{0}.key", collectionId)));
+            var docStream = CreateReadStream(Path.Combine(directory, string.Format("{0}.docs", collectionId)));
+            var valueIndexStream = CreateReadStream(Path.Combine(directory, string.Format("{0}.vix", collectionId)));
+            var keyIndexStream = CreateReadStream(Path.Combine(directory, string.Format("{0}.kix", collectionId)));
+            var docIndexStream = CreateReadStream(Path.Combine(directory, string.Format("{0}.dix", collectionId)));
 
             _vals = new ValueReader(valueStream);
             _keys = new ValueReader(keyStream);
@@ -36,6 +36,11 @@ namespace Sir.Documents
             _docIx = new DocIndexReader(docIndexStream);
 
             CollectionId = collectionId;
+        }
+
+        public static Stream CreateReadStream(string fileName)
+        {
+            return new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, FileOptions.SequentialScan);
         }
 
         public (long offset, int length) GetDocumentAddress(long docId)
