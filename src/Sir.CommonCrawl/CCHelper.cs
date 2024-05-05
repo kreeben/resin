@@ -35,7 +35,7 @@ namespace Sir.CommonCrawl
             };
 
             using (var sessionFactory = new SessionFactory(logger))
-            using (var writeSession = new WriteSession(new DocumentWriter(dataDirectory, collectionId)))
+            using (var writeSession = new WriteSession(new DocInfoWriter(dataDirectory, collectionId)))
             using (var indexSession = new IndexSession<string>(model, new LogStructuredIndexingStrategy(model), dataDirectory, collectionId, logger))
             {
                 using (var queue = new ProducerConsumerQueue<Document>(document =>

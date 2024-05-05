@@ -9,10 +9,10 @@ namespace Sir
     /// </summary>
     public class WriteSession : IDisposable
     {
-        private readonly DocumentWriter _documentWriter;
+        private readonly DocInfoWriter _documentWriter;
 
         public WriteSession(
-            DocumentWriter documentWriter)
+            DocInfoWriter documentWriter)
         {
             _documentWriter = documentWriter;
         }

@@ -154,7 +154,7 @@ namespace Sir
 
         public void StoreDataAndPersistIndex<T>(string directory, ulong collectionId, IEnumerable<Document> job, IModel<T> model, IIndexReadWriteStrategy indexStrategy, int reportSize = 1000)
         {
-            using (var writeSession = new WriteSession(new DocumentWriter(directory, collectionId)))
+            using (var writeSession = new WriteSession(new DocInfoWriter(directory, collectionId)))
             using (var indexSession = new IndexSession<T>(model, indexStrategy, directory, collectionId))
             {
                 StoreDataAndBuildInMemoryIndex(job, writeSession, indexSession, reportSize);
@@ -165,7 +165,7 @@ namespace Sir
 
         public void Store(string directory, ulong collectionId, IEnumerable<Document> job)
         {
-            using (var writeSession = new WriteSession(new DocumentWriter(directory, collectionId)))
+            using (var writeSession = new WriteSession(new DocInfoWriter(directory, collectionId)))
             {
                 foreach (var document in job)
                     writeSession.Put(document);
