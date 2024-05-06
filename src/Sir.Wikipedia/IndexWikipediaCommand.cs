@@ -50,8 +50,8 @@ namespace Sir.Wikipedia
                 //}
 
                 using (var debugger = new IndexDebugger(logger, sampleSize))
-                using(var kvWriter = new KeyValueWriter(dataDirectory, collectionId))
-                using (var documents = new DocumentStreamSession(dataDirectory, kvWriter))
+                using(var kvReader = new KeyValueReader(dataDirectory, collectionId))
+                using (var documents = new DocumentStreamSession(dataDirectory, kvReader))
                 {
                     foreach (var batch in documents.ReadDocuments(collectionId, fieldsOfInterest, skip, take).Batch(pageSize))
                     {

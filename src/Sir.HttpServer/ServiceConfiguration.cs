@@ -21,7 +21,7 @@ namespace Sir.HttpServer
             var sessionFactory = new SessionFactory(logger);
             var directory = config.Get("data_dir");
             var defaultCollection = config.Get("default_collection");
-            var qp = new QueryParser<string>(directory, new KeyValue.KeyValueWriter(directory, defaultCollection.ToHash()), model, logger: logger);
+            var qp = new QueryParser<string>(directory, new KeyValue.KeyValueReader(directory, defaultCollection.ToHash()), model, logger: logger);
             var httpParser = new HttpQueryParser(qp);
 
             services.AddSingleton(typeof(IModel<string>), model);

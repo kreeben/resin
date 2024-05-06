@@ -10,13 +10,13 @@ namespace Sir
     public class DocumentStreamSession : IDisposable
     {
         private readonly string _directory;
-        private readonly KeyValueWriter _kvwriter;
+        private readonly KeyValueReader _kvReader;
         private readonly IDictionary<ulong, DocumentInfoReader> _documentReaders;
 
-        public DocumentStreamSession(string directory, KeyValueWriter kvwriter) 
+        public DocumentStreamSession(string directory, KeyValueReader kvReader) 
         {
             _directory = directory;
-            _kvwriter = kvwriter;
+            _kvReader = kvReader;
             _documentReaders = new Dictionary<ulong, DocumentInfoReader>();
         }
 
@@ -105,7 +105,7 @@ namespace Sir
 
             var took = 0;
             long docId = skip;
-            var keyId = _kvwriter.GetKeyId(_directory, collectionId, field.ToHash());
+            var keyId = _kvReader.GetKeyId(field.ToHash());
 
             while (docId < docCount && took++ < take)
             {
@@ -236,7 +236,7 @@ namespace Sir
                 reader.Dispose();
             }
 
-            _kvwriter.Dispose();
+            _kvReader.Dispose();
         }
     }
 }

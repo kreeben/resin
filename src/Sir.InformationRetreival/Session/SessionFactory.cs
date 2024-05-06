@@ -174,15 +174,15 @@ namespace Sir
 
         public bool DocumentExists<T>(string directory, string collection, string key, T value, IModel<T> model, bool label = true)
         {
-            using (var kvwriter = new KeyValueWriter(directory, collection.ToHash()))
+            using (var kvReader = new KeyValueReader(directory, collection.ToHash()))
             {
-                var query = new QueryParser<T>(directory, kvwriter, model, logger: _logger)
+                var query = new QueryParser<T>(directory, kvReader, model, logger: _logger)
                                 .Parse(collection, value, key, key, and: true, or: false, label);
 
                 if (query != null)
                 {
 
-                    using (var searchSession = new SearchSession(directory, model, new LogStructuredIndexingStrategy(model), kvwriter, _logger))
+                    using (var searchSession = new SearchSession(directory, model, new LogStructuredIndexingStrategy(model), kvReader, _logger))
                     {
                         var document = searchSession.SearchScalar(query);
 
@@ -198,15 +198,45 @@ namespace Sir
             return false;
         }
 
-        public FileStream CreateLockFile(string directory, ulong collectionId)
-        {
-            return new FileStream(Path.Combine(directory, collectionId + ".lock"),
-                   FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None,
-                   4096, FileOptions.RandomAccess | FileOptions.DeleteOnClose);
-        }
-
         public void Dispose()
         {
+        }
+    }
+
+    public class Database
+    {
+        private readonly string _directory;
+        private readonly ulong _collectionId;
+        private readonly IIndexReadWriteStrategy _indexStrategy;
+        private readonly ILogger _logger;
+        private readonly IModel _model;
+
+        public Database(string directory, ulong collectionId, IModel model, IIndexReadWriteStrategy indexStrategy, ILogger logger = null)
+        {
+            _directory = directory ?? throw new ArgumentNullException(nameof(directory));
+            _collectionId = collectionId;
+            _model = model ?? throw new ArgumentNullException(nameof(model));
+            _indexStrategy = indexStrategy ?? throw new ArgumentNullException(nameof(indexStrategy));
+            _logger = logger;
+        }
+
+        public SearchResult Read(IQuery query, int skip, int take)
+        {
+            using (var kvReader = new KeyValueReader(_directory, _collectionId))
+            using (var searchSession = new SearchSession(_directory, _model, _indexStrategy, kvReader, _logger))
+            {
+                return searchSession.Search(query, skip, take);
+            }
+        }
+
+        public void Write()
+        {
+
+        }
+
+        public void OptimizeIndex()
+        {
+
         }
     }
 }

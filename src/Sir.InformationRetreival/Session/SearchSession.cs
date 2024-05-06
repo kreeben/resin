@@ -25,10 +25,10 @@ namespace Sir
             string directory,
             IModel model,
             IIndexReadWriteStrategy indexStrategy,
-            KeyValueWriter kvwriter,
+            KeyValueReader kvReader,
             ILogger logger = null,
             PostingsResolver postingsResolver = null,
-            Scorer scorer = null) : base(directory, kvwriter)
+            Scorer scorer = null) : base(directory, kvReader)
         {
             _model = model;
             _indexStrategy = indexStrategy;

@@ -17,6 +17,7 @@ namespace Sir.KeyValue
         private readonly string _directory;
         private readonly object _keyLock = new object();
         private ConcurrentDictionary<ulong, ConcurrentDictionary<ulong, long>> _keyCache;
+        private readonly KeyValueReader _kvReader;
 
         public KeyValueWriter(string directory, ulong collectionId)
             : this(
@@ -29,6 +30,7 @@ namespace Sir.KeyValue
             _collectionId = collectionId;
             _directory = directory;
             _keyCache = new ConcurrentDictionary<ulong, ConcurrentDictionary<ulong, long>>();
+            _kvReader = new KeyValueReader(directory, collectionId);
         }
 
         public KeyValueWriter(ValueWriter values, ValueWriter keys, ValueIndexWriter valIx, ValueIndexWriter keyIx)
@@ -78,11 +80,11 @@ namespace Sir.KeyValue
             var keyHash = keyStr.ToHash();
             long keyId;
 
-            if (!TryGetKeyId(_directory, _collectionId, keyHash, out keyId))
+            if (!_kvReader.TryGetKeyId(keyHash, out keyId))
             {
                 lock (_keyLock)
                 {
-                    if (!TryGetKeyId(_directory, _collectionId, keyHash, out keyId))
+                    if (!_kvReader.TryGetKeyId(keyHash, out keyId))
                     {
                         // We have a new key!
 
@@ -105,7 +107,7 @@ namespace Sir.KeyValue
             var keyHash = keyStr.ToHash();
             long keyId;
 
-            if (!TryGetKeyId(_directory, _collectionId, keyHash, out keyId))
+            if (!_kvReader.TryGetKeyId(keyHash, out keyId))
             {
                 // We have a new key!
 
@@ -176,84 +178,13 @@ namespace Sir.KeyValue
             });
         }
 
-        public long GetKeyId(string directory, ulong collectionId, ulong keyHash)
-        {
-            var key = Path.Combine(directory, collectionId.ToString()).ToHash();
-
-            ConcurrentDictionary<ulong, long> keys;
-
-            if (!_keyCache.TryGetValue(key, out keys))
-            {
-                ReadKeysIntoCache(directory);
-            }
-
-            if (keys != null || _keyCache.TryGetValue(key, out keys))
-            {
-                return keys[keyHash];
-            }
-
-            throw new Exception($"unable to find key {keyHash} for collection {collectionId} in directory {directory}.");
-        }
-
-        public bool TryGetKeyId(string directory, ulong collectionId, ulong keyHash, out long keyId)
-        {
-            var key = Path.Combine(directory, collectionId.ToString()).ToHash();
-
-            ConcurrentDictionary<ulong, long> keys;
-
-            if (!_keyCache.TryGetValue(key, out keys))
-            {
-                ReadKeysIntoCache(directory);
-            }
-
-            if (keys != null || _keyCache.TryGetValue(key, out keys))
-            {
-                if (keys.TryGetValue(keyHash, out keyId))
-                {
-                    return true;
-                }
-            }
-
-            keyId = -1;
-            return false;
-        }
-
-        private void ReadKeysIntoCache(string directory)
-        {
-            foreach (var keyFile in Directory.GetFiles(directory, "*.kmap"))
-            {
-                var collectionId = ulong.Parse(Path.GetFileNameWithoutExtension(keyFile));
-                var key = Path.Combine(directory, collectionId.ToString()).ToHash();
-
-                var keys = _keyCache.GetOrAdd(key, (k) =>
-                {
-                    var ks = new ConcurrentDictionary<ulong, long>();
-
-                    using (var stream = new FileStream(keyFile, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite))
-                    {
-                        long i = 0;
-                        var buf = new byte[sizeof(ulong)];
-                        var read = stream.Read(buf, 0, buf.Length);
-
-                        while (read > 0)
-                        {
-                            ks.TryAdd(BitConverter.ToUInt64(buf, 0), i++);
-
-                            read = stream.Read(buf, 0, buf.Length);
-                        }
-                    }
-
-                    return ks;
-                });
-            }
-        }
-
         public virtual void Dispose()
         {
             _vals.Dispose();
             _keys.Dispose();
             _valIx.Dispose();
             _keyIx.Dispose();
+            _kvReader.Dispose();
         }
     }
 }

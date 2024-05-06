@@ -25,10 +25,10 @@ namespace Sir.Mnist
             var errors = 0;
             var model = new LinearClassifierImageModel();
 
-            using (var kvwriter = new KeyValueWriter(dataDirectory, collection.ToHash()))
-            using (var querySession = new SearchSession(dataDirectory, model, new SupervisedLogStructuredIndexingStrategy(model), kvwriter, logger))
+            using (var kvReader = new KeyValueReader(dataDirectory, collection.ToHash()))
+            using (var querySession = new SearchSession(dataDirectory, model, new SupervisedLogStructuredIndexingStrategy(model), kvReader, logger))
             {
-                var queryParser = new QueryParser<IImage>(dataDirectory, kvwriter, model, logger: logger);
+                var queryParser = new QueryParser<IImage>(dataDirectory, kvReader, model, logger: logger);
 
                 foreach (var image in images)
                 {

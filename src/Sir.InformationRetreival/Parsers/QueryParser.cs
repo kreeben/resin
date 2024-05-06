@@ -7,15 +7,15 @@ namespace Sir
 {
     public class QueryParser<T>
     {
-        private readonly KeyValueWriter _kvwriter;
+        private readonly KeyValueReader _kvReader;
         private readonly IModel<T> _model;
         private readonly ILogger _logger;
         private readonly string _directory;
         private readonly SortedList<int, float> _embedding;
 
-        public QueryParser(string directory, KeyValueWriter kvwriter, IModel<T> model, SortedList<int, float> embedding = null, ILogger logger = null)
+        public QueryParser(string directory, KeyValueReader kvReader, IModel<T> model, SortedList<int, float> embedding = null, ILogger logger = null)
         {
-            _kvwriter = kvwriter;
+            _kvReader = kvReader;
             _model = model;
             _logger = logger;
             _directory = directory;
@@ -243,7 +243,7 @@ namespace Sir
             long keyId;
             var terms = new List<Term>();
 
-            if (_kvwriter.TryGetKeyId(_directory, collectionId, key.ToHash(), out keyId))
+            if (_kvReader.TryGetKeyId(key.ToHash(), out keyId))
             {
                 var tokens = _model.CreateEmbedding(value, label, _embedding);
 
