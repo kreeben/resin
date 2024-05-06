@@ -135,7 +135,7 @@ namespace Sir
             }
         }
 
-        public void StoreDataAndBuildInMemoryIndex<T>(
+        public void WriteAndIndexDocument<T>(
             Document document, 
             WriteSession writeSession, 
             IndexSession<T> indexSession, 

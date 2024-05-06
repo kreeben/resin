@@ -22,7 +22,7 @@ namespace Sir.Cmd
 
             using (var kvwriter = new KeyValueWriter(dataDirectory, collectionId))
             using (var documents = new DocumentStreamSession(dataDirectory, kvwriter))
-            using (var documentReader = new DocumentReader(dataDirectory, collectionId))
+            using (var documentReader = new DocumentInfoReader(dataDirectory, collectionId))
             {
                 var doc = documents.ReadDocument((collectionId, documentId), select, documentReader);
 

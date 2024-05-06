@@ -8,7 +8,7 @@ namespace Sir.Documents
     /// <summary>
     /// Read documents from storage.
     /// </summary>
-    public class DocumentReader : IDisposable
+    public class DocumentInfoReader : IDisposable
     {
         private readonly ValueReader _vals;
         private readonly ValueReader _keys;
@@ -19,7 +19,7 @@ namespace Sir.Documents
 
         public ulong CollectionId { get; }
 
-        public DocumentReader(string directory, ulong collectionId)
+        public DocumentInfoReader(string directory, ulong collectionId)
         {
             var valueStream = CreateReadStream(Path.Combine(directory, string.Format("{0}.val", collectionId)));
             var keyStream = CreateReadStream(Path.Combine(directory, string.Format("{0}.key", collectionId)));

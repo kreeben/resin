@@ -40,7 +40,7 @@ namespace Sir.CommonCrawl
             {
                 using (var queue = new ProducerConsumerQueue<Document>(document =>
                 {
-                    sessionFactory.StoreDataAndBuildInMemoryIndex(document, writeSession, indexSession);
+                    sessionFactory.WriteAndIndexDocument(document, writeSession, indexSession);
                 }))
                 {
                     foreach (var document in ReadWatFile(fileName, refFileName).Select(dic =>

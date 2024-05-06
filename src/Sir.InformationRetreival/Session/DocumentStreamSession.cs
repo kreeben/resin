@@ -11,13 +11,13 @@ namespace Sir
     {
         private readonly string _directory;
         private readonly KeyValueWriter _kvwriter;
-        private readonly IDictionary<ulong, DocumentReader> _documentReaders;
+        private readonly IDictionary<ulong, DocumentInfoReader> _documentReaders;
 
         public DocumentStreamSession(string directory, KeyValueWriter kvwriter) 
         {
             _directory = directory;
             _kvwriter = kvwriter;
-            _documentReaders = new Dictionary<ulong, DocumentReader>();
+            _documentReaders = new Dictionary<ulong, DocumentInfoReader>();
         }
 
         public int Count(ulong collectionId)
@@ -119,7 +119,7 @@ namespace Sir
         }
 
         public IEnumerable<Document> ReadDocuments(
-            DocumentReader documentReader,
+            DocumentInfoReader documentReader,
             HashSet<string> select,
             int skip = 0,
             int take = 0)
@@ -141,10 +141,10 @@ namespace Sir
         public T ReadDocumentValue<T>(
             (ulong collectionId, long docId) doc,
             long keyId,
-            DocumentReader streamReader)
+            DocumentInfoReader documentReader)
         {
-            var docInfo = streamReader.GetDocumentAddress(doc.docId);
-            var docMap = streamReader.GetDocumentMap(docInfo.offset, docInfo.length);
+            var docInfo = documentReader.GetDocumentAddress(doc.docId);
+            var docMap = documentReader.GetDocumentMap(docInfo.offset, docInfo.length);
             T value = default(T);
 
             for (int i = 0; i < docMap.Length; i++)
@@ -153,9 +153,9 @@ namespace Sir
 
                 if (kvp.keyId == keyId)
                 {
-                    var vInfo = streamReader.GetAddressOfValue(kvp.valId);
+                    var vInfo = documentReader.GetAddressOfValue(kvp.valId);
 
-                    value = (T)streamReader.GetValue(vInfo.offset, vInfo.len, vInfo.dataType);
+                    value = (T)documentReader.GetValue(vInfo.offset, vInfo.len, vInfo.dataType);
 
                     break;
                 }
@@ -167,7 +167,7 @@ namespace Sir
         public IEnumerable<VectorNode> ReadDocumentValuesAsVectors<T>(
             (ulong collectionId, long docId) doc,
             HashSet<string> select,
-            DocumentReader streamReader,
+            DocumentInfoReader streamReader,
             IModel<T> model,
             bool label,
             SortedList<int, float> embedding = null)
@@ -216,23 +216,23 @@ namespace Sir
         public Document ReadDocument(
             (ulong collectionId, long docId) doc,
             HashSet<string> select,
-            DocumentReader streamReader,
+            DocumentInfoReader documentReader,
             double? score = null)
         {
-            var docInfo = streamReader.GetDocumentAddress(doc.docId);
-            var docMap = streamReader.GetDocumentMap(docInfo.offset, docInfo.length);
+            var docInfo = documentReader.GetDocumentAddress(doc.docId);
+            var docMap = documentReader.GetDocumentMap(docInfo.offset, docInfo.length);
             var fields = new List<Field>();
 
             for (int i = 0; i < docMap.Length; i++)
             {
                 var kvp = docMap[i];
-                var kInfo = streamReader.GetAddressOfKey(kvp.keyId);
-                var key = (string)streamReader.GetKey(kInfo.offset, kInfo.len, kInfo.dataType);
+                var kInfo = documentReader.GetAddressOfKey(kvp.keyId);
+                var key = (string)documentReader.GetKey(kInfo.offset, kInfo.len, kInfo.dataType);
 
                 if (select.Contains(key))
                 {
-                    var vInfo = streamReader.GetAddressOfValue(kvp.valId);
-                    var val = streamReader.GetValue(vInfo.offset, vInfo.len, vInfo.dataType);
+                    var vInfo = documentReader.GetAddressOfValue(kvp.valId);
+                    var val = documentReader.GetValue(vInfo.offset, vInfo.len, vInfo.dataType);
 
                     fields.Add(new Field(key, val, kvp.keyId));
                 }
@@ -241,16 +241,16 @@ namespace Sir
             return new Document(fields, collectionId:doc.collectionId, documentId:doc.docId, score:(score.HasValue ? score.Value : 0));
         }
 
-        private DocumentReader GetOrCreateDocumentReader(ulong collectionId)
+        private DocumentInfoReader GetOrCreateDocumentReader(ulong collectionId)
         {
             if (!File.Exists(Path.Combine(_directory, string.Format("{0}.val", collectionId))))
                 return null;
 
-            DocumentReader reader;
+            DocumentInfoReader reader;
 
             if (!_documentReaders.TryGetValue(collectionId, out reader))
             {
-                reader = new DocumentReader(_directory, collectionId);
+                reader = new DocumentInfoReader(_directory, collectionId);
                 _documentReaders.Add(collectionId, reader);
             }
 

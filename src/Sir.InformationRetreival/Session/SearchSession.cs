@@ -158,12 +158,12 @@ namespace Sir
             var vectorFileName = Path.Combine(directory, $"{collectionId}.{keyId}.vec");
             var pageIndexFileName = Path.Combine(directory, $"{collectionId}.{keyId}.ixtp");
 
-            using (var pageIndexReader = new PageIndexReader(DocumentReader.CreateReadStream(pageIndexFileName)))
+            using (var pageIndexReader = new PageIndexReader(DocumentInfoReader.CreateReadStream(pageIndexFileName)))
             {
                 return new ColumnReader(
                     pageIndexReader.ReadAll(),
-                    DocumentReader.CreateReadStream(ixFileName),
-                    DocumentReader.CreateReadStream(vectorFileName));
+                    DocumentInfoReader.CreateReadStream(ixFileName),
+                    DocumentInfoReader.CreateReadStream(vectorFileName));
             }
         }
 
