@@ -47,7 +47,7 @@ namespace Sir
 
             while (docId < docCount && took++ < take)
             {
-                yield return ReadDocument((collectionId, docId++), select, documentReader);
+                yield return DocumentReader.Read(docId++, select, documentReader);
             }
         }
 
@@ -109,7 +109,7 @@ namespace Sir
 
             while (docId < docCount && took++ < take)
             {
-                var value = ReadDocumentValue<T>((collectionId, docId), keyId, documentReader);
+                var value = ReadDocumentValue<T>(docId, keyId, documentReader);
 
                 if (value != null)
                     yield return value;
@@ -134,16 +134,16 @@ namespace Sir
 
             while (docId <= docCount && took++ < take)
             {
-                yield return ReadDocument((documentReader.CollectionId, docId++), select, documentReader);
+                yield return DocumentReader.Read(docId++, select, documentReader);
             }
         }
 
         public T ReadDocumentValue<T>(
-            (ulong collectionId, long docId) doc,
+            long docId,
             long keyId,
             DocumentInfoReader documentReader)
         {
-            var docInfo = documentReader.GetDocumentAddress(doc.docId);
+            var docInfo = documentReader.GetDocumentAddress(docId);
             var docMap = documentReader.GetDocumentMap(docInfo.offset, docInfo.length);
             T value = default(T);
 
@@ -167,7 +167,7 @@ namespace Sir
         public IEnumerable<VectorNode> ReadDocumentValuesAsVectors<T>(
             (ulong collectionId, long docId) doc,
             HashSet<string> select,
-            DocumentInfoReader streamReader,
+            DocumentInfoReader documentReader,
             IModel<T> model,
             bool label,
             SortedList<int, float> embedding = null)
@@ -175,22 +175,22 @@ namespace Sir
             if (embedding == null)
                 embedding = new SortedList<int, float>();
 
-            var docInfo = streamReader.GetDocumentAddress(doc.docId);
-            var docMap = streamReader.GetDocumentMap(docInfo.offset, docInfo.length);
+            var docInfo = documentReader.GetDocumentAddress(doc.docId);
+            var docMap = documentReader.GetDocumentMap(docInfo.offset, docInfo.length);
 
             // for each key, create a tree
             for (int i = 0; i < docMap.Length; i++)
             {
                 var kvp = docMap[i];
-                var kInfo = streamReader.GetAddressOfKey(kvp.keyId);
-                var key = (string)streamReader.GetKey(kInfo.offset, kInfo.len, kInfo.dataType);
+                var kInfo = documentReader.GetAddressOfKey(kvp.keyId);
+                var key = (string)documentReader.GetKey(kInfo.offset, kInfo.len, kInfo.dataType);
                 var tree = new VectorNode(keyId:kvp.keyId);
 
                 if (select.Contains(key))
                 {
-                    var vInfo = streamReader.GetAddressOfValue(kvp.valId);
+                    var vInfo = documentReader.GetAddressOfValue(kvp.valId);
 
-                    foreach (var vector in streamReader.GetValueConvertedToVectors<T>(vInfo.offset, vInfo.len, vInfo.dataType, value => model.CreateEmbedding(value, label, embedding)))
+                    foreach (var vector in documentReader.GetValueConvertedToVectors<T>(vInfo.offset, vInfo.len, vInfo.dataType, value => model.CreateEmbedding(value, label, embedding)))
                     {
                         tree.AddIfUnique(new VectorNode(vector, docId:doc.docId, keyId:kvp.keyId), model);
                     }
@@ -210,35 +210,7 @@ namespace Sir
             if (reader == null)
                 return null;
 
-            return ReadDocument(docId, select, reader, score);
-        }
-
-        public Document ReadDocument(
-            (ulong collectionId, long docId) doc,
-            HashSet<string> select,
-            DocumentInfoReader documentReader,
-            double? score = null)
-        {
-            var docInfo = documentReader.GetDocumentAddress(doc.docId);
-            var docMap = documentReader.GetDocumentMap(docInfo.offset, docInfo.length);
-            var fields = new List<Field>();
-
-            for (int i = 0; i < docMap.Length; i++)
-            {
-                var kvp = docMap[i];
-                var kInfo = documentReader.GetAddressOfKey(kvp.keyId);
-                var key = (string)documentReader.GetKey(kInfo.offset, kInfo.len, kInfo.dataType);
-
-                if (select.Contains(key))
-                {
-                    var vInfo = documentReader.GetAddressOfValue(kvp.valId);
-                    var val = documentReader.GetValue(vInfo.offset, vInfo.len, vInfo.dataType);
-
-                    fields.Add(new Field(key, val, kvp.keyId));
-                }
-            }
-
-            return new Document(fields, collectionId:doc.collectionId, documentId:doc.docId, score:(score.HasValue ? score.Value : 0));
+            return DocumentReader.Read(docId.docId, select, reader, score);
         }
 
         private DocumentInfoReader GetOrCreateDocumentReader(ulong collectionId)

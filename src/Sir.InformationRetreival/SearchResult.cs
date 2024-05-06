@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Sir.Documents;
+using System.Collections.Generic;
 
 namespace Sir
 {

@@ -3,7 +3,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 
-namespace Sir
+namespace Sir.Documents
 {
     [JsonConverter(typeof(DocumentJsonConverter))]
     public class Document
@@ -71,28 +71,13 @@ namespace Sir
         }
     }
 
-    public class AnalyzedDocument
-    {
-        public IList<VectorNode> Nodes { get; }
-
-        public AnalyzedDocument(params VectorNode[] nodes)
-        {
-            Nodes = nodes;
-        }
-
-        public AnalyzedDocument(IList<VectorNode> nodes)
-        {
-            Nodes = nodes;
-        }
-    }
-
     public class DocumentJsonConverter : JsonConverter
     {
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             var document = (Document)value;
             var jo = new JObject();
-            
+
             jo.Add(SystemFields.DocumentId, JToken.FromObject(document.Id));
             jo.Add(SystemFields.Score, JToken.FromObject(document.Score));
 

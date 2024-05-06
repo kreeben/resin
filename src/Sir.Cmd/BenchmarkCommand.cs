@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Sir.Documents;
 using Sir.Strings;
 using Sir.Wikipedia;
 using System;

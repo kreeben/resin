@@ -2,14 +2,13 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Sir
+namespace Sir.Documents
 {
     [DebuggerDisplay("{Name}")]
     public class Field
     {
         private IEnumerable<ISerializableVector> _tokens;
 
-        public VectorNode Tree { get; private set; }
         public long KeyId { get; set; }
         public long DocumentId { get; set; }
         public string Name { get; }

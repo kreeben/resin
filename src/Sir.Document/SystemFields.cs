@@ -1,4 +1,4 @@
-﻿namespace Sir
+﻿namespace Sir.Documents
 {
     public static class SystemFields
     {

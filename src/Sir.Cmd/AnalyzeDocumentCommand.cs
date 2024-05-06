@@ -21,10 +21,9 @@ namespace Sir.Cmd
             var embedding = new SortedList<int, float>();
 
             using (var kvwriter = new KeyValueWriter(dataDirectory, collectionId))
-            using (var documents = new DocumentStreamSession(dataDirectory, kvwriter))
             using (var documentReader = new DocumentInfoReader(dataDirectory, collectionId))
             {
-                var doc = documents.ReadDocument((collectionId, documentId), select, documentReader);
+                var doc = DocumentReader.Read(documentId, select, documentReader);
 
                 foreach (var field in doc.Fields)
                 {
