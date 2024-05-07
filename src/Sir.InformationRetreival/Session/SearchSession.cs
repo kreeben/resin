@@ -168,6 +168,11 @@ namespace Sir
             var vectorFileName = Path.Combine(directory, $"{collectionId}.{keyId}.vec");
             var pageIndexFileName = Path.Combine(directory, $"{collectionId}.{keyId}.ixtp");
 
+            if (!File.Exists(pageIndexFileName))
+            {
+                return null;
+            }
+
             using (var pageIndexReader = new PageIndexReader(DocumentRegistryReader.CreateReadStream(pageIndexFileName)))
             {
                 return new ColumnReader(

@@ -69,11 +69,11 @@ namespace Sir
             }
         }
 
-        public void OptimizeIndex(int skip, int take, int pageSize = 10000, int sampleSize = 1000, HashSet<string> select = null)
+        public void OptimizeAllIndices(int skipDocuments = 0, int takeDocuments = int.MaxValue, int pageSize = 10000, int sampleSize = 1000, HashSet<string> select = null)
         {
             using (var debugger = new IndexDebugger(_logger, sampleSize))
             {
-                foreach (var batch in _searchSession.ReadDocuments<T>(_collectionId, select, skip, take).Batch(pageSize))
+                foreach (var batch in _searchSession.ReadDocuments<T>(_collectionId, select, skipDocuments, takeDocuments).Batch(pageSize))
                 {
                     foreach (var document in batch)
                     {

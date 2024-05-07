@@ -34,7 +34,7 @@ namespace Sir.Wikipedia
 
             using (var database = new DocumentDatabase<string>(dataDirectory, collectionId, model, indexStrategy, logger))
             {
-                database.OptimizeIndex(skip, take, pageSize, sampleSize, fieldsOfInterest);
+                database.OptimizeAllIndices(skip, take, pageSize, sampleSize, fieldsOfInterest);
             }
         }
 

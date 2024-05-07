@@ -19,11 +19,11 @@ namespace Sir.StringTests
         public void Can_stream()
         {
             var model = new BagOfCharsModel();
-            var strat = new LogStructuredIndexingStrategy(model);
-            var collectionId = "BagOfCharsDatabaseTests.Can_stream_documents".ToHash();
+            var strategy = new LogStructuredIndexingStrategy(model);
+            var collectionId = "BagOfCharsDatabaseTests.Can_stream".ToHash();
             var documents = _data.Select(x => new Document(new Field[] {new Field("title", x)})).ToList();
 
-            using (var database = new DocumentDatabase<string>(_directory, collectionId, model, strat, _loggerFactory.CreateLogger("Debug")))
+            using (var database = new DocumentDatabase<string>(_directory, collectionId, model, strategy, _loggerFactory.CreateLogger("Debug")))
             {
                 database.Truncate();
 
@@ -53,14 +53,14 @@ namespace Sir.StringTests
         }
 
         [Test]
-        public void Can_read()
+        public void Can_read_and_write()
         {
             var model = new BagOfCharsModel();
-            var strat = new LogStructuredIndexingStrategy(model);
-            var collectionId = "BagOfCharsDatabaseTests.Can_read".ToHash();
+            var strategy = new LogStructuredIndexingStrategy(model);
+            var collectionId = "BagOfCharsDatabaseTests.Can_read_and_write".ToHash();
             var documents = _data.Select(x => new Document(new Field[] { new Field("title", x) })).ToList();
 
-            using (var database = new DocumentDatabase<string>(_directory, collectionId, model, strat, _loggerFactory.CreateLogger("Debug")))
+            using (var database = new DocumentDatabase<string>(_directory, collectionId, model, strategy, _loggerFactory.CreateLogger("Debug")))
             {
                 database.Truncate();
 
@@ -93,13 +93,57 @@ namespace Sir.StringTests
         }
 
         [Test]
-        public void Can_write()
-        {
-        }
-
-        [Test]
         public void Can_optimize_index()
         {
+            var model = new BagOfCharsModel();
+            var strategy = new LogStructuredIndexingStrategy(model);
+            var collectionId = "BagOfCharsDatabaseTests.Can_optimize_index".ToHash();
+            var documents = _data.Select(x => new Document(new Field[] { new Field("title", x) })).ToList();
+
+            using (var database = new DocumentDatabase<string>(_directory, collectionId, model, strategy, _loggerFactory.CreateLogger("Debug")))
+            {
+                database.Truncate();
+
+                foreach (var document in documents)
+                {
+                    database.Write(document, store:true, index:false); // note: no indexing going on here
+                }
+
+                database.Commit();
+
+                var queryParser = database.CreateQueryParser();
+
+                foreach (var word in _data)
+                {
+                    Assert.DoesNotThrow(() =>
+                    {
+                        var query = queryParser.Parse(collectionId, word, "title", "title", and: true, or: false, label: true);
+                        var result = database.Read(query, skip: 0, take: 1);
+
+                        if (result.Count > 0)
+                            throw new Exception("For unknown reasons we can search the index without having to had to create it, which is very wierd.");
+                    });
+                }
+
+                database.OptimizeAllIndices();
+
+                foreach (var word in _data)
+                {
+                    Assert.DoesNotThrow(() =>
+                    {
+                        var query = queryParser.Parse(collectionId, word, "title", "title", and: true, or: false, label: true);
+                        var result = database.Read(query, skip: 0, take: 1);
+
+                        var documentWas = result.Documents.First().Get("title").Value;
+                        var documentShouldBe = word;
+
+                        if (!documentShouldBe.Equals(documentWas))
+                        {
+                            throw new Exception($"documentShouldBe: {documentShouldBe} documentWas: {documentWas} ");
+                        }
+                    });
+                }
+            }
         }
 
         [SetUp]
