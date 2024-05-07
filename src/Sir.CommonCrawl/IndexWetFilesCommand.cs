@@ -21,22 +21,18 @@ namespace Sir.CommonCrawl
             var storeFields = new HashSet<string> { "url" };
             var indexFields = new HashSet<string> { "description" };
 
-            using (var sessionFactory = new SessionFactory(logger))
+            using (var database = new DocumentDatabase<string>(dataDirectory, collectionId, model, indexStrategy, logger))
             {
-                sessionFactory.Truncate(dataDirectory, collectionId);
-
-                sessionFactory.StoreDataAndPersistIndex(
-                    dataDirectory,
-                    collectionId,
-                    ReadWetFile(fileName)
+                database.Truncate();
+                foreach(var document in ReadWetFile(fileName)
                                 .Select(dic =>
                                     new Document(
                                         dic.Select(kvp => new Field(
                                             kvp.Key,
-                                            kvp.Value)).ToList())),
-                    model,
-                    indexStrategy,
-                    reportSize: 1000);
+                                            kvp.Value)))))
+                {
+                    database.Write(document);                        
+                }
             }
         }
 

@@ -8,18 +8,18 @@ namespace Sir.Documents
     /// <summary>
     /// Read documents from storage.
     /// </summary>
-    public class DocumentInfoReader : IDisposable
+    public class DocumentRegistryReader : IDisposable
     {
         private readonly ValueReader _vals;
         private readonly ValueReader _keys;
-        private readonly DocMapReader _docs;
+        private readonly DocmentMapReader _docs;
         private readonly ValueIndexReader _valIx;
         private readonly ValueIndexReader _keyIx;
-        private readonly DocIndexReader _docIx;
+        private readonly DocumentIndexReader _docIx;
 
         public ulong CollectionId { get; }
 
-        public DocumentInfoReader(string directory, ulong collectionId)
+        public DocumentRegistryReader(string directory, ulong collectionId)
         {
             var valueStream = CreateReadStream(Path.Combine(directory, string.Format("{0}.val", collectionId)));
             var keyStream = CreateReadStream(Path.Combine(directory, string.Format("{0}.key", collectionId)));
@@ -30,10 +30,10 @@ namespace Sir.Documents
 
             _vals = new ValueReader(valueStream);
             _keys = new ValueReader(keyStream);
-            _docs = new DocMapReader(docStream);
+            _docs = new DocmentMapReader(docStream);
             _valIx = new ValueIndexReader(valueIndexStream);
             _keyIx = new ValueIndexReader(keyIndexStream);
-            _docIx = new DocIndexReader(docIndexStream);
+            _docIx = new DocumentIndexReader(docIndexStream);
 
             CollectionId = collectionId;
         }

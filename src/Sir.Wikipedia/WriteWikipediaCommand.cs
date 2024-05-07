@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Sir.Documents;
+using Sir.Strings;
 using System.Collections.Generic;
 using System.IO;
 
@@ -36,18 +37,15 @@ namespace Sir.Wikipedia
 
             var payload = WikipediaHelper.Read(fileName, skip, take, fieldsOfInterest);
 
-            using (var sessionFactory = new SessionFactory(logger))
+            var debugger = new BatchDebugger("write session", logger, sampleSize);
+
+            using (var database = new DocumentDatabase<string>(dataDirectory, collectionId, new BagOfCharsModel(), new LogStructuredIndexingStrategy(new BagOfCharsModel()), logger))
             {
-                var debugger = new BatchDebugger("write session", logger, sampleSize);
-
-                using (var writeSession = new WriteSession(new DocInfoWriter(dataDirectory, collectionId)))
+                foreach (var document in payload)
                 {
-                    foreach (var document in payload)
-                    {
-                        writeSession.Put(document);
+                    database.Write(document);
 
-                        debugger.Step();
-                    }
+                    debugger.Step();
                 }
             }
         }

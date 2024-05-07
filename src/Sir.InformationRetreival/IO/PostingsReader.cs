@@ -20,7 +20,7 @@ namespace Sir.IO
 
         public PostingsReader(string directory, ulong collectionId, long keyId, ILogger logger = null)
         {
-            _stream = DocumentInfoReader.CreateReadStream(Path.Combine(directory, $"{collectionId}.{keyId}.pos"));
+            _stream = DocumentRegistryReader.CreateReadStream(Path.Combine(directory, $"{collectionId}.{keyId}.pos"));
             _logger = logger;
             _collectionId = collectionId;
         }

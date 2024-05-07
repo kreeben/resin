@@ -28,33 +28,26 @@ namespace Sir.Mnist
             VectorNode tree;
             var debugger = new IndexDebugger(logger);
             var model = new LinearClassifierImageModel();
-            using (var sessionFactory = new SessionFactory(logger))
+            using (var database = new DocumentDatabase<IImage>(dataDirectory, collectionId, model, new SupervisedLogStructuredIndexingStrategy(model), logger))
             {
-                sessionFactory.Truncate(dataDirectory, collectionId);
+                database.Truncate();
 
-                using (var writeSession = new WriteSession(new DocInfoWriter(dataDirectory, collectionId)))
-                using (var indexSession = new IndexSession<IImage>(model, new SupervisedLogStructuredIndexingStrategy(model), dataDirectory, collectionId))
+                var imageIndexId = database.GetKeyId("image");
+
+                foreach (var image in images)
                 {
-                    var imageIndexId = writeSession.EnsureKeyExists("image");
+                    var imageField = new Field("image", image.Pixels);
+                    var labelField = new Field("label", image.Label);
+                    var document = new Document(new Field[] { imageField, labelField });
 
-                    foreach (var image in images)
-                    {
-                        var imageField = new Field("image", image.Pixels);
-                        var labelField = new Field("label", image.Label);
-                        var document = new Document(new Field[] { imageField, labelField });
+                    database.Write(document);
 
-                        writeSession.Put(document);
-                        indexSession.Put(document.Id, imageField.KeyId, image, true);
-
-                        debugger.Step(indexSession);
-                    }
-
-                    var indices = indexSession.GetInMemoryIndices();
-
-                    tree = indices[imageIndexId];
-
-                    indexSession.Commit();
+                    debugger.Step(database.IndexSession);
                 }
+
+                var indices = database.IndexSession.GetInMemoryIndices();
+
+                tree = indices[imageIndexId];
             }
 
             logger.LogInformation($"indexed {debugger.Steps} mnist images in {time.Elapsed}");

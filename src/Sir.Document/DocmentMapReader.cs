@@ -7,11 +7,11 @@ namespace Sir.Documents
     /// Read document maps (key_id/val_id) from the document map stream.
     /// A document map is needed to re-contruct a complete document.
     /// </summary>
-    public class DocMapReader : IDisposable
+    public class DocmentMapReader : IDisposable
     {
         private readonly Stream _stream;
 
-        public DocMapReader(Stream stream)
+        public DocmentMapReader(Stream stream)
         {
             _stream = stream;
         }

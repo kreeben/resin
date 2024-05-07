@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Sir.Documents;
-using Sir.KeyValue;
 
 namespace Sir.HttpServer
 {
@@ -15,18 +14,15 @@ namespace Sir.HttpServer
     public class HttpReader : IHttpReader
     {
         private readonly ILogger<HttpReader> _logger;
-        private readonly SessionFactory _sessionFactory;
         private readonly HttpQueryParser _httpQueryParser;
         private readonly IConfigurationProvider _config;
 
         public HttpReader(
-            SessionFactory sessionFactory, 
             HttpQueryParser httpQueryParser,
             IConfigurationProvider config,
             ILogger<HttpReader> logger)
         {
             _logger = logger;
-            _sessionFactory = sessionFactory;
             _httpQueryParser = httpQueryParser;
             _config = config;
         }
@@ -60,7 +56,9 @@ namespace Sir.HttpServer
             _logger.LogDebug($"parsed query: {queryLog}");
 #endif
 
-            using (var readSession = new SearchSession(_config.Get("data_dir"), model, new LogStructuredIndexingStrategy(model), new KeyValueReader(_config.Get("data_dir"), _config.Get("default_collection").ToHash()), _logger))
+            var directory = _config.Get("data_dir");
+
+            using (var readSession = new SearchSession(directory, model, new LogStructuredIndexingStrategy(model), _logger))
             {
                 return readSession.Search(query, skip, take);
             }

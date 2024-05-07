@@ -7,18 +7,18 @@ namespace Sir.Documents
     /// <summary>
     /// Writes documents to a database.
     /// </summary>
-    public class DocInfoWriter : KeyValueWriter, IDisposable
+    public class DocumentRegistryWriter : KeyValueWriter, IDisposable
     {
-        private readonly DocMapWriter _docs;
-        private readonly DocIndexWriter _docIx;
+        private readonly DocumentMapWriter _docs;
+        private readonly DocumentIndexWriter _docIx;
         
-        public DocInfoWriter(string directory, ulong collectionId) : base(directory, collectionId)
+        public DocumentRegistryWriter(string directory, ulong collectionId) : base(directory, collectionId)
         {
             var docStream = CreateAppendStream(directory, collectionId, "docs");
             var docIndexStream = CreateAppendStream(directory, collectionId, "dix");
 
-            _docs = new DocMapWriter(docStream);
-            _docIx = new DocIndexWriter(docIndexStream);
+            _docs = new DocumentMapWriter(docStream);
+            _docIx = new DocumentIndexWriter(docIndexStream);
         }
 
         public long IncrementDocId()

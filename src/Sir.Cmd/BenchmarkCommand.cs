@@ -27,7 +27,7 @@ namespace Sir.Cmd
             int skip = int.Parse(args["skip"]);
             int take = int.Parse(args["take"]);
             var fileName = args["file"];
-            var model = new NGramModel(new BagOfCharsModel());
+            var model = new BagOfCharsModel();
             var documents = new List<Document>(WikipediaHelper.Read(fileName, skip, take, new HashSet<string> { "text" }));
             var timer = Stopwatch.StartNew();
             var embedding = new SortedList<int, float>();
@@ -57,7 +57,7 @@ namespace Sir.Cmd
 
             for (int i = 0; i < numOfRuns; i++)
             {
-                new SessionFactory(logger).Truncate(args["directory"], "wikipedia".ToHash());
+                new DocumentDatabase<string>(args["directory"], "wikipedia".ToHash(), logger: logger).Truncate();
                 new IndexWikipediaCommand().Run(args, logger);
             }
 

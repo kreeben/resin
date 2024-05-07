@@ -6,12 +6,12 @@ namespace Sir.Documents
     /// <summary>
     /// Stores offset and length of document map to a stream.
     /// </summary>
-    public class DocIndexWriter :IDisposable
+    public class DocumentIndexWriter :IDisposable
     {
         private readonly Stream _stream;
         public const int BlockSize = sizeof(long)+sizeof(int);
 
-        public DocIndexWriter(Stream stream)
+        public DocumentIndexWriter(Stream stream)
         {
             _stream = stream;
         }

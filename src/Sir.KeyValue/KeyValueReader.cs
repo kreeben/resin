@@ -10,6 +10,9 @@ namespace Sir.KeyValue
         private readonly string _directory;
         private ConcurrentDictionary<ulong, ConcurrentDictionary<ulong, long>> _keyCache;
 
+        public string Directory { get { return _directory; } }
+        public ulong CollectionId { get { return _collectionId; } }
+
         public KeyValueReader(string directory, ulong collectionId)
         {
             _collectionId = collectionId;
@@ -61,7 +64,7 @@ namespace Sir.KeyValue
 
         private void ReadKeysIntoCache()
         {
-            foreach (var keyFile in Directory.GetFiles(_directory, "*.kmap"))
+            foreach (var keyFile in System.IO.Directory.GetFiles(_directory, "*.kmap"))
             {
                 var collectionId = ulong.Parse(Path.GetFileNameWithoutExtension(keyFile));
                 var key = Path.Combine(_directory, collectionId.ToString()).ToHash();

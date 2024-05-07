@@ -12,7 +12,6 @@ namespace Sir.StringTests
     public class BagOfCharsModelTests
     {
         private ILoggerFactory _loggerFactory;
-        private SessionFactory _sessionFactory;
 
         private readonly string[] _data = new string[] { "Ferriman–Gallwey score", "apples", "apricote", "apricots", "avocado", "avocados", "banana", "bananas", "blueberry", "blueberries", "cantalope" };
 
@@ -124,13 +123,11 @@ namespace Sir.StringTests
                     .AddDebug();
             });
 
-            _sessionFactory = new SessionFactory(logger: _loggerFactory.CreateLogger<SessionFactory>());
         }
 
         [TearDown]
         public void TearDown()
         {
-            _sessionFactory.Dispose();
         }
     }
 }

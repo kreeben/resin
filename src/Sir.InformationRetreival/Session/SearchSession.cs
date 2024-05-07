@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Sir.Documents;
 using Sir.IO;
-using Sir.KeyValue;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -25,10 +24,9 @@ namespace Sir
             string directory,
             IModel model,
             IIndexReadWriteStrategy indexStrategy,
-            KeyValueReader kvReader,
             ILogger logger = null,
             PostingsResolver postingsResolver = null,
-            Scorer scorer = null) : base(directory, kvReader)
+            Scorer scorer = null) : base(directory)
         {
             _model = model;
             _indexStrategy = indexStrategy;
@@ -158,12 +156,12 @@ namespace Sir
             var vectorFileName = Path.Combine(directory, $"{collectionId}.{keyId}.vec");
             var pageIndexFileName = Path.Combine(directory, $"{collectionId}.{keyId}.ixtp");
 
-            using (var pageIndexReader = new PageIndexReader(DocumentInfoReader.CreateReadStream(pageIndexFileName)))
+            using (var pageIndexReader = new PageIndexReader(DocumentRegistryReader.CreateReadStream(pageIndexFileName)))
             {
                 return new ColumnReader(
                     pageIndexReader.ReadAll(),
-                    DocumentInfoReader.CreateReadStream(ixFileName),
-                    DocumentInfoReader.CreateReadStream(vectorFileName));
+                    DocumentRegistryReader.CreateReadStream(ixFileName),
+                    DocumentRegistryReader.CreateReadStream(vectorFileName));
             }
         }
 

@@ -12,7 +12,6 @@ namespace Sir.StringTests
     public class NGramModelTests
     {
         private ILoggerFactory _loggerFactory;
-        private SessionFactory _sessionFactory;
 
         private readonly string[] _data = new string[] { "I would like an apple.", "apples are sour", "that's an apricote", "apricots are sweet", "a green avocado", "there are many avocados", "here's a banana", "I like bananas because they are yellow", "one blueberry fell on the floor", "blueberries all over the kitcheh", "cantalope" };
 
@@ -124,14 +123,11 @@ namespace Sir.StringTests
                     .AddFilter("System", LogLevel.Warning)
                     .AddDebug();
             });
-
-            _sessionFactory = new SessionFactory(logger: _loggerFactory.CreateLogger<SessionFactory>());
         }
 
         [TearDown]
         public void TearDown()
         {
-            _sessionFactory.Dispose();
         }
     }
 }

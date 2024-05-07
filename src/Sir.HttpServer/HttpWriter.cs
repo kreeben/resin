@@ -12,12 +12,10 @@ namespace Sir.HttpServer
     /// </summary>
     public class HttpWriter : IHttpWriter
     {
-        private readonly SessionFactory _sessionFactory;
         private readonly IConfigurationProvider _config;
 
-        public HttpWriter(SessionFactory sessionFactory, IConfigurationProvider config)
+        public HttpWriter(IConfigurationProvider config)
         {
-            _sessionFactory = sessionFactory;
             _config = config;
         }
 
@@ -25,13 +23,15 @@ namespace Sir.HttpServer
         {
             var documents = Deserialize<IEnumerable<Document>>(request.Body);
             var collectionId = request.Query["collection"].First().ToHash();
+            var directory = _config.Get("data_dir");
 
-            _sessionFactory.StoreDataAndPersistIndex(
-                _config.Get("data_dir"),
-                collectionId,
-                documents,
-                model,
-                indexStrategy);
+            using (var database = new DocumentDatabase<string>(directory, collectionId, model, indexStrategy))
+            {
+                foreach(var document in documents)
+                {
+                    database.Write(document);
+                }
+            }
         }
 
         private static T Deserialize<T>(Stream stream)

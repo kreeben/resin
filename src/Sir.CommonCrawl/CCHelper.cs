@@ -34,13 +34,11 @@ namespace Sir.CommonCrawl
                 "title","description", "url"
             };
 
-            using (var sessionFactory = new SessionFactory(logger))
-            using (var writeSession = new WriteSession(new DocInfoWriter(dataDirectory, collectionId)))
-            using (var indexSession = new IndexSession<string>(model, new LogStructuredIndexingStrategy(model), dataDirectory, collectionId, logger))
+            using (var database = new DocumentDatabase<string>(dataDirectory, collectionId, model, new LogStructuredIndexingStrategy(model), logger))
             {
                 using (var queue = new ProducerConsumerQueue<Document>(document =>
                 {
-                    sessionFactory.WriteAndIndexDocument(document, writeSession, indexSession);
+                    database.Write(document);
                 }))
                 {
                     foreach (var document in ReadWatFile(fileName, refFileName).Select(dic =>
@@ -52,8 +50,6 @@ namespace Sir.CommonCrawl
                         queue.Enqueue(document);
                     }
                 }
-
-                indexSession.Commit();
             }
 
             logger.LogInformation($"indexed {fileName} in {time.Elapsed}");

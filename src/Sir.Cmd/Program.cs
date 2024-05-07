@@ -138,9 +138,9 @@ namespace Sir.Cmd
         {
             var collectionId = collection.ToHash();
 
-            using (var sessionFactory = new SessionFactory(log))
+            using (var database = new DocumentDatabase<string>(dataDirectory, collectionId, logger: log))
             {
-                sessionFactory.Truncate(dataDirectory, collectionId);
+                database.Truncate();
             }
         }
 
@@ -148,17 +148,17 @@ namespace Sir.Cmd
         {
             var collectionId = collection.ToHash();
 
-            using (var sessionFactory = new SessionFactory(log))
+            using (var database = new DocumentDatabase<string>(dataDirectory, collectionId, logger: log))
             {
-                sessionFactory.TruncateIndex(dataDirectory, collectionId);
+                database.TruncateIndex();
             }
         }
 
         private static void Rename(string dataDirectory, string currentCollectionName, string newCollectionName, ILogger log)
         {
-            using (var sessionFactory = new SessionFactory(log))
+            using (var database = new DocumentDatabase<string>(dataDirectory, currentCollectionName.ToHash(), logger: log))
             {
-                sessionFactory.Rename(dataDirectory, currentCollectionName.ToHash(), newCollectionName.ToHash());
+                database.Rename(newCollectionName.ToHash());
             }
         }
 

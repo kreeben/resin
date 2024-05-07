@@ -9,15 +9,17 @@ namespace Sir
 {
     public class DocumentStreamSession : IDisposable
     {
-        private readonly string _directory;
-        private readonly KeyValueReader _kvReader;
-        private readonly IDictionary<ulong, DocumentInfoReader> _documentReaders;
+        private readonly IDictionary<ulong, KeyValueReader> _kvReaders; // kv readers by collection ID
+        private readonly IDictionary<ulong, DocumentRegistryReader> _documentReaders; // document readers by collection ID
 
-        public DocumentStreamSession(string directory, KeyValueReader kvReader) 
+        public string Directory { get; }
+
+        public DocumentStreamSession(string directory) 
         {
-            _directory = directory;
-            _kvReader = kvReader;
-            _documentReaders = new Dictionary<ulong, DocumentInfoReader>();
+            _kvReaders = new Dictionary<ulong, KeyValueReader>();
+            _documentReaders = new Dictionary<ulong, DocumentRegistryReader>();
+
+            Directory = directory;
         }
 
         public int Count(ulong collectionId)
@@ -26,7 +28,7 @@ namespace Sir
             return reader == null ? 0 : reader.DocumentCount();
         }
 
-        public IEnumerable<Document> ReadDocuments(
+        public IEnumerable<Document> ReadDocuments<T>(
             ulong collectionId, 
             HashSet<string> select,
             int skip = 0, 
@@ -47,7 +49,7 @@ namespace Sir
 
             while (docId < docCount && took++ < take)
             {
-                yield return DocumentReader.Read(docId++, select, documentReader);
+                yield return DocumentReader.Read(docId++, documentReader, select);
             }
         }
 
@@ -98,6 +100,11 @@ namespace Sir
             if (documentReader == null)
                 yield break;
 
+            var kvReader = GetOrCreateKeyValueReader(collectionId);
+
+            if (kvReader == null)
+                yield break;
+
             var docCount = documentReader.DocumentCount();
 
             if (take == 0)
@@ -105,7 +112,7 @@ namespace Sir
 
             var took = 0;
             long docId = skip;
-            var keyId = _kvReader.GetKeyId(field.ToHash());
+            var keyId = kvReader.GetKeyId(field.ToHash());
 
             while (docId < docCount && took++ < take)
             {
@@ -119,7 +126,7 @@ namespace Sir
         }
 
         public IEnumerable<Document> ReadDocuments(
-            DocumentInfoReader documentReader,
+            DocumentRegistryReader documentReader,
             HashSet<string> select,
             int skip = 0,
             int take = 0)
@@ -134,14 +141,14 @@ namespace Sir
 
             while (docId <= docCount && took++ < take)
             {
-                yield return DocumentReader.Read(docId++, select, documentReader);
+                yield return DocumentReader.Read(docId++, documentReader, select);
             }
         }
 
         public T ReadDocumentValue<T>(
             long docId,
             long keyId,
-            DocumentInfoReader documentReader)
+            DocumentRegistryReader documentReader)
         {
             var docInfo = documentReader.GetDocumentAddress(docId);
             var docMap = documentReader.GetDocumentMap(docInfo.offset, docInfo.length);
@@ -167,7 +174,7 @@ namespace Sir
         public IEnumerable<VectorNode> ReadDocumentValuesAsVectors<T>(
             (ulong collectionId, long docId) doc,
             HashSet<string> select,
-            DocumentInfoReader documentReader,
+            DocumentRegistryReader documentReader,
             IModel<T> model,
             bool label,
             SortedList<int, float> embedding = null)
@@ -210,20 +217,36 @@ namespace Sir
             if (reader == null)
                 return null;
 
-            return DocumentReader.Read(docId.docId, select, reader, score);
+            return DocumentReader.Read(docId.docId, reader, select, score);
         }
 
-        private DocumentInfoReader GetOrCreateDocumentReader(ulong collectionId)
+        private DocumentRegistryReader GetOrCreateDocumentReader(ulong collectionId)
         {
-            if (!File.Exists(Path.Combine(_directory, string.Format("{0}.val", collectionId))))
+            if (!File.Exists(Path.Combine(Directory, string.Format("{0}.val", collectionId))))
                 return null;
 
-            DocumentInfoReader reader;
+            DocumentRegistryReader reader;
 
             if (!_documentReaders.TryGetValue(collectionId, out reader))
             {
-                reader = new DocumentInfoReader(_directory, collectionId);
+                reader = new DocumentRegistryReader(Directory, collectionId);
                 _documentReaders.Add(collectionId, reader);
+            }
+
+            return reader;
+        }
+
+        private KeyValueReader GetOrCreateKeyValueReader(ulong collectionId)
+        {
+            if (!File.Exists(Path.Combine(Directory, string.Format("{0}.val", collectionId))))
+                return null;
+
+            KeyValueReader reader;
+
+            if (!_kvReaders.TryGetValue(collectionId, out reader))
+            {
+                reader = new KeyValueReader(Directory, collectionId);
+                _kvReaders.Add(collectionId, reader);
             }
 
             return reader;
@@ -231,12 +254,21 @@ namespace Sir
 
         public virtual void Dispose()
         {
-            foreach (var reader in _documentReaders.Values)
+            if (_documentReaders != null)
             {
-                reader.Dispose();
+                foreach (var reader in _documentReaders.Values)
+                {
+                    reader.Dispose();
+                }
             }
 
-            _kvReader.Dispose();
+            if (_documentReaders != null)
+            {
+                foreach (var reader in _kvReaders.Values)
+                {
+                    reader.Dispose();
+                }
+            }
         }
     }
 }

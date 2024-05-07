@@ -20,10 +20,9 @@ namespace Sir.Cmd
             var model = new BagOfCharsModel();
             var embedding = new SortedList<int, float>();
 
-            using (var kvwriter = new KeyValueWriter(dataDirectory, collectionId))
-            using (var documentReader = new DocumentInfoReader(dataDirectory, collectionId))
+            using (var documentReader = new DocumentRegistryReader(dataDirectory, collectionId))
             {
-                var doc = DocumentReader.Read(documentId, select, documentReader);
+                var doc = DocumentReader.Read(documentId, documentReader, select);
 
                 foreach (var field in doc.Fields)
                 {

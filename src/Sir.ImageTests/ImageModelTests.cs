@@ -13,7 +13,6 @@ namespace Sir.ImageTests
     public class ImageModelTests
     {
         private ILoggerFactory _loggerFactory;
-        private SessionFactory _sessionFactory;
 
         private readonly IImage[] _data = new MnistReader(
                 @"resources\t10k-images.idx3-ubyte",
@@ -155,8 +154,6 @@ namespace Sir.ImageTests
                     .AddFilter("System", LogLevel.Warning)
                     .AddDebug();
             });
-
-            _sessionFactory = new SessionFactory(logger: _loggerFactory.CreateLogger<SessionFactory>());
         }
     }
 }

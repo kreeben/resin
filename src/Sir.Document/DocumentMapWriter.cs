@@ -7,11 +7,11 @@ namespace Sir.Documents
     /// <summary>
     /// Writes document maps (key_id/val_id) to a bitmap.
     /// </summary>
-    public class DocMapWriter : IDisposable
+    public class DocumentMapWriter : IDisposable
     {
         private readonly Stream _stream;
 
-        public DocMapWriter(Stream stream)
+        public DocumentMapWriter(Stream stream)
         {
             _stream = stream;
         }

@@ -7,7 +7,7 @@ namespace Sir.Documents
     /// <summary>
     /// Lookup the offset and length of a document map consisting of key IDs and value IDs.
     /// </summary>
-    public class DocIndexReader : IDisposable
+    public class DocumentIndexReader : IDisposable
     {
         private readonly Stream _stream;
 
@@ -15,11 +15,11 @@ namespace Sir.Documents
         {
             get
             {
-                return ((int)_stream.Length / DocIndexWriter.BlockSize);
+                return ((int)_stream.Length / DocumentIndexWriter.BlockSize);
             }
         }
 
-        public DocIndexReader(Stream stream)
+        public DocumentIndexReader(Stream stream)
         {
             _stream = stream;
         }
@@ -31,11 +31,11 @@ namespace Sir.Documents
         /// <returns>The offset and length of a document's key_id/value_id map</returns>
         public (long offset, int length) Get(long docId)
         {
-            var offs = docId * DocIndexWriter.BlockSize;
+            var offs = docId * DocumentIndexWriter.BlockSize;
 
             _stream.Seek(offs, SeekOrigin.Begin);
 
-            var buf = ArrayPool<byte>.Shared.Rent(DocIndexWriter.BlockSize);
+            var buf = ArrayPool<byte>.Shared.Rent(DocumentIndexWriter.BlockSize);
 
             var read = _stream.Read(buf);
 

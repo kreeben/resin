@@ -66,7 +66,6 @@ namespace Sir.HttpServer
 
         private void OnShutdown()
         {
-            ((SessionFactory)ServiceProvider.GetService(typeof(SessionFactory))).Dispose();
         }
     }
 }
