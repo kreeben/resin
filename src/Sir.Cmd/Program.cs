@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Sir.Strings;
 
 namespace Sir.Cmd
 {

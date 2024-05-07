@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Sir.Documents;
 using Sir.Strings;
 using System.Collections.Generic;
 using System.IO;

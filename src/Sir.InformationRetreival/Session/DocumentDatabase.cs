@@ -3,7 +3,6 @@ using Sir.Documents;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 
 namespace Sir
 {
