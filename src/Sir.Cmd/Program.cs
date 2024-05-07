@@ -150,7 +150,7 @@ namespace Sir.Cmd
 
             using (var database = new DocumentDatabase<string>(dataDirectory, collectionId, logger: log))
             {
-                database.TruncateIndex();
+                database.TruncateIndexOnly();
             }
         }
 

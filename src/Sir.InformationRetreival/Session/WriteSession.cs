@@ -48,7 +48,7 @@ namespace Sir
         private void Write(long keyId, object val, IList<(long, long)> docMap)
         {
             // store value
-            var kvmap = _documentWriter.PutValue(keyId, val, out _);
+            var kvmap = _documentWriter.KeyValueWriter.PutValue(keyId, val, out _);
 
             // store refs to k/v pair
             docMap.Add(kvmap);
@@ -56,12 +56,17 @@ namespace Sir
 
         public long EnsureKeyExists(string key)
         {
-            return _documentWriter.EnsureKeyExists(key);
+            return _documentWriter.KeyValueWriter.EnsureKeyExists(key);
         }
 
         public long EnsureKeyExistsSafely(string key)
         {
-            return _documentWriter.EnsureKeyExistsSafely(key);
+            return _documentWriter.KeyValueWriter.EnsureKeyExistsSafely(key);
+        }
+
+        public void Commit()
+        {
+            _documentWriter.Commit();
         }
 
         public void Dispose()

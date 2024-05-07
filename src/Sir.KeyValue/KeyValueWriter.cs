@@ -43,9 +43,9 @@ namespace Sir.KeyValue
 
         public static Stream CreateAppendStream(string directory, ulong collectionId, string fileExtension)
         {
-            if (!Directory.Exists(directory))
+            if (!System.IO.Directory.Exists(directory))
             {
-                Directory.CreateDirectory(directory);
+                System.IO.Directory.CreateDirectory(directory);
             }
 
             var fileName = Path.Combine(directory, $"{collectionId}.{fileExtension}");
@@ -60,9 +60,9 @@ namespace Sir.KeyValue
 
         public static Stream CreateAppendStream(string directory, ulong collectionId, long keyId, string fileExtension)
         {
-            if (!Directory.Exists(directory))
+            if (!System.IO.Directory.Exists(directory))
             {
-                Directory.CreateDirectory(directory);
+                System.IO.Directory.CreateDirectory(directory);
             }
 
             var fileName = Path.Combine(directory, $"{collectionId}.{keyId}.{fileExtension}");
@@ -178,7 +178,7 @@ namespace Sir.KeyValue
             });
         }
 
-        public virtual void Dispose()
+        public void Dispose()
         {
             _vals.Dispose();
             _keys.Dispose();

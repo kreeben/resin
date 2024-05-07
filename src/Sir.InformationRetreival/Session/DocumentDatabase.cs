@@ -3,6 +3,7 @@ using Sir.Documents;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 
 namespace Sir
 {
@@ -15,9 +16,9 @@ namespace Sir
         private readonly string _directory;
         private ulong _collectionId;
         private readonly IIndexReadWriteStrategy _indexStrategy;
-        private readonly WriteSession _writeSession;
-        private readonly IndexSession<T> _indexSession;
-        private readonly SearchSession _searchSession;
+        private WriteSession _writeSession;
+        private IndexSession<T> _indexSession;
+        private SearchSession _searchSession;
         private readonly IModel<T> _model;
         private readonly ILogger _logger;
 
@@ -45,7 +46,7 @@ namespace Sir
             return _searchSession.Search(query, skip, take);
         }
 
-        public void Write(Document document, bool store = true, bool index = true, bool label = true)
+        public void Write(Document document, bool store = true, bool index = true, bool label = false)
         {
             if (store)
                 _writeSession.Put(document);
@@ -82,12 +83,18 @@ namespace Sir
 
         public void Commit()
         {
+            _writeSession.Commit();
             _indexSession.Commit();
             _searchSession.ClearCachedReaders();
         }
 
         public void Truncate()
         {
+            DisposeInternal();
+            _writeSession = null;
+            _indexSession = null;
+            _searchSession = null;
+
             var count = 0;
 
             if (Directory.Exists(_directory))
@@ -100,10 +107,16 @@ namespace Sir
             }
 
             LogInformation($"truncated collection {_collectionId} ({count} files affected)");
+
+            _writeSession = new WriteSession(new DocumentRegistryWriter(_directory, _collectionId));
+            _indexSession = new IndexSession<T>(_directory, _collectionId, _model, _indexStrategy, _logger);
+            _searchSession = new SearchSession(_directory, _model, _indexStrategy, _logger);
         }
 
-        public void TruncateIndex()
+        public void TruncateIndexOnly()
         {
+            DisposeInternal();
+
             var count = 0;
 
             foreach (var file in Directory.GetFiles(_directory, $"{_collectionId}*.ix"))
@@ -133,6 +146,10 @@ namespace Sir
             }
 
             LogInformation($"truncated index {_collectionId} ({count} files affected)");
+
+            _writeSession = new WriteSession(new DocumentRegistryWriter(_directory, _collectionId));
+            _indexSession = new IndexSession<T>(_directory, _collectionId, _model, _indexStrategy, _logger);
+            _searchSession = new SearchSession(_directory, _model, _indexStrategy, _logger);
         }
 
         public void Rename(ulong newCollectionId)
@@ -168,6 +185,11 @@ namespace Sir
         {
             Commit();
 
+            DisposeInternal();
+        }
+
+        private void DisposeInternal()
+        {
             if (_writeSession != null)
                 _writeSession.Dispose();
 

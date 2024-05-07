@@ -16,11 +16,6 @@ namespace Sir.Documents
             _stream = stream;
         }
 
-        public void Flush()
-        {
-            _stream.Flush();
-        }
-
         public (long offset, int length) Put(IList<(long keyId, long valId)> doc)
         {
             if (doc.Count == 0)
