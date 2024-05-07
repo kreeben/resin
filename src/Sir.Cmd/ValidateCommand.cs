@@ -27,8 +27,8 @@ namespace Sir.Cmd
             using (var kvReader = new KeyValue.KeyValueReader(dir, collectionId))
             using (var validateSession = new ValidateSession<string>(
                     collectionId,
-                    new SearchSession(dir, model, new LogStructuredIndexingStrategy(model), logger),
-                    new QueryParser<string>(dir, kvReader, model, embedding: embedding, logger: logger)))
+                    new SearchSession<string>(dir, model, new LogStructuredIndexingStrategy(model), logger),
+                    new QueryParser<string>(kvReader, model, embedding: embedding, logger: logger)))
             using (var documents = new DocumentStreamSession(dir))
             {
                 foreach (var doc in documents.ReadDocuments<string>(collectionId, selectFields, skip, take))

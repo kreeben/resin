@@ -25,6 +25,11 @@ namespace Sir
             Directory = directory;
         }
 
+        public KeyValueReader GetKeyValueReader(ulong collectionId)
+        {
+            return GetOrCreateKeyValueReader(collectionId);
+        }
+
         public virtual void ClearCachedReaders()
         {
             foreach(var reader in _kvReaders.Values)

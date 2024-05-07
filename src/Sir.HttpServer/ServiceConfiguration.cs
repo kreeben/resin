@@ -20,7 +20,7 @@ namespace Sir.HttpServer
             var model = new BagOfCharsModel();
             var directory = config.Get("data_dir");
             var defaultCollection = config.Get("default_collection");
-            var qp = new QueryParser<string>(directory, new KeyValue.KeyValueReader(directory, defaultCollection.ToHash()), model, logger: logger);
+            var qp = new QueryParser<string>(new KeyValue.KeyValueReader(directory, defaultCollection.ToHash()), model, logger: logger);
             var httpParser = new HttpQueryParser(qp);
 
             services.AddSingleton(typeof(IModel<string>), model);

@@ -58,7 +58,7 @@ namespace Sir.HttpServer
 
             var directory = _config.Get("data_dir");
 
-            using (var readSession = new SearchSession(directory, model, new LogStructuredIndexingStrategy(model), _logger))
+            using (var readSession = new SearchSession<string>(directory, model, new LogStructuredIndexingStrategy(model), _logger))
             {
                 return readSession.Search(query, skip, take);
             }

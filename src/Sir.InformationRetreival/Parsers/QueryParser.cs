@@ -10,15 +10,13 @@ namespace Sir
         private readonly KeyValueReader _kvReader;
         private readonly IModel<T> _model;
         private readonly ILogger _logger;
-        private readonly string _directory;
         private readonly SortedList<int, float> _embedding;
 
-        public QueryParser(string directory, KeyValueReader kvReader, IModel<T> model, SortedList<int, float> embedding = null, ILogger logger = null)
+        public QueryParser(KeyValueReader kvReader, IModel<T> model, SortedList<int, float> embedding = null, ILogger logger = null)
         {
             _kvReader = kvReader;
             _model = model;
             _logger = logger;
-            _directory = directory;
             _embedding = embedding ?? new SortedList<int, float>();
         }
 
@@ -249,7 +247,7 @@ namespace Sir
 
                 foreach (var term in tokens)
                 {
-                    terms.Add(new Term(_directory, collectionId, keyId, key, term, and, or, not));
+                    terms.Add(new Term(_kvReader.Directory, collectionId, keyId, key, term, and, or, not));
                 }
             }
 

@@ -18,11 +18,12 @@ namespace Sir
         private readonly IIndexReadWriteStrategy _indexStrategy;
         private WriteSession _writeSession;
         private IndexSession<T> _indexSession;
-        private SearchSession _searchSession;
+        private SearchSession<T> _searchSession;
         private readonly IModel<T> _model;
         private readonly ILogger _logger;
 
         public IndexSession<T> IndexSession { get { return _indexSession; } }
+        public SearchSession<T> SearchSession { get { return _searchSession; } }
 
         public DocumentDatabase(string directory, ulong collectionId, IModel<T> model = null, IIndexReadWriteStrategy indexStrategy = null, ILogger logger = null)
         {
@@ -32,8 +33,13 @@ namespace Sir
             _indexStrategy = indexStrategy ?? throw new ArgumentNullException(nameof(indexStrategy));
             _writeSession = new WriteSession(new DocumentRegistryWriter(directory, collectionId));
             _indexSession = new IndexSession<T>(directory, collectionId, model, indexStrategy, logger);
-            _searchSession = new SearchSession(directory, _model, _indexStrategy, logger);
+            _searchSession = new SearchSession<T>(directory, _model, _indexStrategy, logger);
             _logger = logger;
+        }
+
+        public QueryParser<T> CreateQueryParser()
+        {
+            return new QueryParser<T>(SearchSession.GetKeyValueReader(_collectionId), _model, IndexSession.EmptyEmbedding, _logger);
         }
 
         public IEnumerable<Document> StreamDocuments(HashSet<string> fieldsOfInterest, int skip, int take)
@@ -110,7 +116,7 @@ namespace Sir
 
             _writeSession = new WriteSession(new DocumentRegistryWriter(_directory, _collectionId));
             _indexSession = new IndexSession<T>(_directory, _collectionId, _model, _indexStrategy, _logger);
-            _searchSession = new SearchSession(_directory, _model, _indexStrategy, _logger);
+            _searchSession = new SearchSession<T>(_directory, _model, _indexStrategy, _logger);
         }
 
         public void TruncateIndexOnly()
@@ -149,7 +155,7 @@ namespace Sir
 
             _writeSession = new WriteSession(new DocumentRegistryWriter(_directory, _collectionId));
             _indexSession = new IndexSession<T>(_directory, _collectionId, _model, _indexStrategy, _logger);
-            _searchSession = new SearchSession(_directory, _model, _indexStrategy, _logger);
+            _searchSession = new SearchSession<T>(_directory, _model, _indexStrategy, _logger);
         }
 
         public void Rename(ulong newCollectionId)

@@ -11,9 +11,9 @@ namespace Sir
     /// <summary>
     /// Read across multiple collections.
     /// </summary>
-    public class SearchSession : DocumentStreamSession, IDisposable, ISearchSession
+    public class SearchSession<T> : DocumentStreamSession, IDisposable, ISearchSession
     {
-        private readonly IModel _model;
+        private readonly IModel<T> _model;
         private readonly IIndexReadWriteStrategy _indexStrategy;
         private readonly PostingsResolver _postingsResolver;
         private readonly Scorer _scorer;
@@ -22,7 +22,7 @@ namespace Sir
 
         public SearchSession(
             string directory,
-            IModel model,
+            IModel<T> model,
             IIndexReadWriteStrategy indexStrategy,
             ILogger logger = null,
             PostingsResolver postingsResolver = null,

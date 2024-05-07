@@ -26,14 +26,14 @@ namespace Sir.Mnist
             var model = new LinearClassifierImageModel();
 
             using (var kvReader = new KeyValueReader(dataDirectory, collection.ToHash()))
-            using (var querySession = new SearchSession(dataDirectory, model, new SupervisedLogStructuredIndexingStrategy(model), logger))
+            using (var searchSession = new SearchSession<IImage>(dataDirectory, model, new SupervisedLogStructuredIndexingStrategy(model), logger))
             {
-                var queryParser = new QueryParser<IImage>(dataDirectory, kvReader, model, logger: logger);
+                var queryParser = new QueryParser<IImage>(kvReader, model, logger: logger);
 
                 foreach (var image in images)
                 {
                     var query = queryParser.Parse(collection, image, field: "image", select: "label", and: true, or: false, true);
-                    var result = querySession.Search(query, 0, 1);
+                    var result = searchSession.Search(query, 0, 1);
 
                     count++;
 

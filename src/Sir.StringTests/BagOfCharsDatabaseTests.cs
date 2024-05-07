@@ -16,11 +16,11 @@ namespace Sir.StringTests
         private readonly string[] _data = ["Ferriman–Gallwey score", "apples", "apricote", "apricots", "avocado", "avocados", "banana", "bananas", "blueberry", "blueberries", "cantalope"];
 
         [Test]
-        public void Can_stream_documents()
+        public void Can_stream()
         {
             var model = new BagOfCharsModel();
             var strat = new LogStructuredIndexingStrategy(model);
-            var collectionId = "Can_stream_documents".ToHash();
+            var collectionId = "BagOfCharsDatabaseTests.Can_stream_documents".ToHash();
             var documents = _data.Select(x => new Document(new Field[] {new Field("title", x)})).ToList();
 
             using (var database = new DocumentDatabase<string>(_directory, collectionId, model, strat, _loggerFactory.CreateLogger("Debug")))
@@ -55,6 +55,41 @@ namespace Sir.StringTests
         [Test]
         public void Can_read()
         {
+            var model = new BagOfCharsModel();
+            var strat = new LogStructuredIndexingStrategy(model);
+            var collectionId = "BagOfCharsDatabaseTests.Can_read".ToHash();
+            var documents = _data.Select(x => new Document(new Field[] { new Field("title", x) })).ToList();
+
+            using (var database = new DocumentDatabase<string>(_directory, collectionId, model, strat, _loggerFactory.CreateLogger("Debug")))
+            {
+                database.Truncate();
+
+                foreach (var document in documents)
+                {
+                    database.Write(document);
+                }
+
+                database.Commit();
+
+                var queryParser = database.CreateQueryParser();
+
+                foreach (var word in _data)
+                {
+                    Assert.DoesNotThrow(() =>
+                    {
+                        var query = queryParser.Parse(collectionId, word, "title", "title", and:true, or:false, label:true);
+                        var result = database.Read(query, skip: 0, take: 1);
+
+                        var documentWas = result.Documents.First().Get("title").Value;
+                        var documentShouldBe = word;
+
+                        if (!documentShouldBe.Equals(documentWas))
+                        {
+                            throw new Exception($"documentShouldBe: {documentShouldBe} documentWas: {documentWas} ");
+                        }
+                    });
+                }
+            }
         }
 
         [Test]

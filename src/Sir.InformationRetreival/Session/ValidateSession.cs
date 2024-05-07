@@ -10,12 +10,12 @@ namespace Sir
     {
         public ulong CollectionId { get; }
 
-        private readonly SearchSession _readSession;
+        private readonly SearchSession<T> _readSession;
         private readonly QueryParser<T> _queryParser;
 
         public ValidateSession(
             ulong collectionId,
-            SearchSession searchSession,
+            SearchSession<T> searchSession,
             QueryParser<T> queryParser
             )
         {

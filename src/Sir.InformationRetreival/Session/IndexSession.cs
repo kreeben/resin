@@ -18,7 +18,8 @@ namespace Sir
         private readonly string _directory;
         private readonly ulong _collectionId;
         private readonly ILogger _logger;
-        private readonly SortedList<int, float> _embedding = new SortedList<int, float>();
+
+        public SortedList<int, float> EmptyEmbedding = new SortedList<int, float>();
 
         public IndexSession(
             string directory,
@@ -37,7 +38,7 @@ namespace Sir
 
         public void Put(long docId, long keyId, T value, bool label)
         {
-            var tokens = _model.CreateEmbedding(value, label, _embedding);
+            var tokens = _model.CreateEmbedding(value, label, EmptyEmbedding);
 
             Put(docId, keyId, tokens);
         }
