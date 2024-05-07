@@ -6,6 +6,10 @@ using System.IO;
 
 namespace Sir
 {
+    /// <summary>
+    /// Perform read/write operations on a document collection.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class DocumentDatabase<T> : IDisposable
     {
         private readonly string _directory;
@@ -14,7 +18,6 @@ namespace Sir
         private readonly WriteSession _writeSession;
         private readonly IndexSession<T> _indexSession;
         private readonly SearchSession _searchSession;
-        private readonly DocumentStreamSession _documentStreamSession;
         private readonly IModel<T> _model;
         private readonly ILogger _logger;
 
@@ -27,15 +30,14 @@ namespace Sir
             _model = model ?? throw new ArgumentNullException(nameof(model));
             _indexStrategy = indexStrategy ?? throw new ArgumentNullException(nameof(indexStrategy));
             _writeSession = new WriteSession(new DocumentRegistryWriter(directory, collectionId));
-            _indexSession = new IndexSession<T>(model, indexStrategy, directory, collectionId, logger);
+            _indexSession = new IndexSession<T>(directory, collectionId, model, indexStrategy, logger);
             _searchSession = new SearchSession(directory, _model, _indexStrategy, logger);
-            _documentStreamSession = new DocumentStreamSession(directory);
             _logger = logger;
         }
 
         public IEnumerable<Document> StreamDocuments(HashSet<string> fieldsOfInterest, int skip, int take)
         {
-            return _documentStreamSession.ReadDocuments<string>(_collectionId, fieldsOfInterest, skip, take);
+            return _searchSession.ReadDocuments<string>(_collectionId, fieldsOfInterest, skip, take);
         }
 
         public SearchResult Read(IQuery query, int skip, int take)
@@ -64,7 +66,7 @@ namespace Sir
         {
             using (var debugger = new IndexDebugger(_logger, sampleSize))
             {
-                foreach (var batch in _documentStreamSession.ReadDocuments<T>(_collectionId, select, skip, take).Batch(pageSize))
+                foreach (var batch in _searchSession.ReadDocuments<T>(_collectionId, select, skip, take).Batch(pageSize))
                 {
                     foreach (var document in batch)
                     {
@@ -76,6 +78,12 @@ namespace Sir
                     _indexSession.Commit();
                 }
             }
+        }
+
+        public void Commit()
+        {
+            _indexSession.Commit();
+            _searchSession.ClearCachedReaders();
         }
 
         public void Truncate()
@@ -158,6 +166,8 @@ namespace Sir
 
         public void Dispose()
         {
+            Commit();
+
             if (_writeSession != null)
                 _writeSession.Dispose();
 
@@ -166,9 +176,6 @@ namespace Sir
 
             if (_searchSession != null)
                 _searchSession.Dispose();
-
-            if (_documentStreamSession != null)
-                _documentStreamSession.Dispose();
         }
     }
 }

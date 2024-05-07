@@ -5,7 +5,7 @@ using System.Collections.Generic;
 namespace Sir
 {
     /// <summary>
-    /// Write session targeting a single collection.
+    /// Write documents to disk.
     /// </summary>
     public class WriteSession : IDisposable
     {

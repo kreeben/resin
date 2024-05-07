@@ -9,7 +9,7 @@ using System.IO;
 namespace Sir
 {
     /// <summary>
-    /// Read session targeting multiple collections.
+    /// Read across multiple collections.
     /// </summary>
     public class SearchSession : DocumentStreamSession, IDisposable, ISearchSession
     {
@@ -34,6 +34,18 @@ namespace Sir
             _scorer = scorer ?? new Scorer();
             _logger = logger;
             _readers = new Dictionary<(string, ulong, long), ColumnReader>();
+        }
+
+        public override void ClearCachedReaders()
+        {
+            foreach (var reader in _readers.Values)
+            {
+                reader.Dispose();
+            }
+
+            _readers.Clear();
+
+            base.ClearCachedReaders();
         }
 
         public SearchResult Search(IQuery query, int skip, int take)

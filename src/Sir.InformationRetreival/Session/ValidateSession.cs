@@ -4,7 +4,7 @@ using System;
 namespace Sir
 {
     /// <summary>
-    /// Validate a collection.
+    /// Validate that documents in a collection can be found by all of their terms.
     /// </summary>
     public class ValidateSession<T> : IDisposable
     {

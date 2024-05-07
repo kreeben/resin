@@ -4,6 +4,9 @@ using System.Collections.Generic;
 
 namespace Sir
 {
+    /// <summary>
+    /// Write a collection of indices to disk.
+    /// </summary>
     public class IndexWriter : IDisposable
     {
         private readonly string _directory;

@@ -7,6 +7,9 @@ using System.IO;
 
 namespace Sir
 {
+    /// <summary>
+    /// Cross-collection document stream service.
+    /// </summary>
     public class DocumentStreamSession : IDisposable
     {
         private readonly IDictionary<ulong, KeyValueReader> _kvReaders; // kv readers by collection ID
@@ -20,6 +23,23 @@ namespace Sir
             _documentReaders = new Dictionary<ulong, DocumentRegistryReader>();
 
             Directory = directory;
+        }
+
+        public virtual void ClearCachedReaders()
+        {
+            foreach(var reader in _kvReaders.Values)
+            {
+                reader.Dispose();
+            }
+
+            _kvReaders.Clear();
+
+            foreach (var reader in _documentReaders.Values)
+            {
+                reader.Dispose();
+            }
+
+            _documentReaders.Clear();
         }
 
         public int Count(ulong collectionId)

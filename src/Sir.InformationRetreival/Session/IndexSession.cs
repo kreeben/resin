@@ -6,6 +6,10 @@ using System.Diagnostics;
 
 namespace Sir
 {
+    /// <summary>
+    /// Write a paged index.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class IndexSession<T> : IIndexSession<T>, IDisposable
     {
         private readonly IModel<T> _model;
@@ -17,10 +21,10 @@ namespace Sir
         private readonly SortedList<int, float> _embedding = new SortedList<int, float>();
 
         public IndexSession(
-            IModel<T> model,
-            IIndexReadWriteStrategy indexingStrategy,
             string directory,
             ulong collectionId,
+            IModel<T> model,
+            IIndexReadWriteStrategy indexingStrategy,
             ILogger logger = null)
         {
             _model = model;
