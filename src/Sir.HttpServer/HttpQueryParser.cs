@@ -32,7 +32,7 @@ namespace Sir.HttpServer
                 var fields = request.Query["field"].ToArray();
 
                 var naturalLanguage = request.Query["q"].ToString();
-                bool and = request.Query.ContainsKey("AND");
+                bool and = !request.Query.ContainsKey("NOT") || request.Query.ContainsKey("AND");
                 bool or = !and && request.Query.ContainsKey("OR");
 
                 return _parser.Parse(collections, naturalLanguage, fields.ToArray(), select, and, or, true);

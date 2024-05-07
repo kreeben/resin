@@ -1,4 +1,4 @@
-# &#9084; CrawlCrawler
+# &#9084; Resin.Search
 
 [Overview](https://github.com/kreeben/resin/blob/master/README.md) | [How to install](https://github.com/kreeben/resin/blob/master/INSTALL.md) | [User guide](https://github.com/kreeben/resin/blob/master/USER-GUIDE.md) 
 
@@ -65,9 +65,3 @@ Accept: application/json
 }
 ```
 
-### Web GUI
-
-Search page designed for humans is here:  
-
-HTTP GET `[host]/` (e.g. "http://localhost:54866/")  
-Accept: text/html

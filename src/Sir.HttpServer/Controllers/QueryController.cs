@@ -12,11 +12,11 @@ namespace Sir.HttpServer.Controllers
     [Route("query")]
     public class QueryController : Controller
     {
-        private readonly IHttpReader _reader;
+        private readonly HttpReader _reader;
         private readonly IModel<string> _model;
         private readonly ILogger<QueryController> _logger;
 
-        public QueryController(IHttpReader reader, IModel<string> model, ILogger<QueryController> logger)
+        public QueryController(HttpReader reader, IModel<string> model, ILogger<QueryController> logger)
         {
             _reader = reader;
             _model = model;

@@ -87,13 +87,6 @@ namespace Sir
             }
         }
 
-        public void Commit()
-        {
-            _writeSession.Commit();
-            _indexSession.Commit();
-            _searchSession.ClearCachedReaders();
-        }
-
         public void Truncate()
         {
             DisposeInternal();
@@ -160,8 +153,12 @@ namespace Sir
 
         public void Rename(ulong newCollectionId)
         {
-            var count = 0;
+            DisposeInternal();
+            _writeSession = null;
+            _indexSession = null;
+            _searchSession = null;
 
+            var count = 0;
             var from = _collectionId.ToString();
             var to = newCollectionId.ToString();
 
@@ -174,6 +171,9 @@ namespace Sir
             LogInformation($"renamed collection {_collectionId} to {newCollectionId} ({count} files affected)");
 
             _collectionId = newCollectionId;
+            _writeSession = new WriteSession(new DocumentRegistryWriter(_directory, _collectionId));
+            _indexSession = new IndexSession<T>(_directory, _collectionId, _model, _indexStrategy, _logger);
+            _searchSession = new SearchSession<T>(_directory, _model, _indexStrategy, _logger);
         }
 
         public long GetKeyId(string key)
@@ -187,10 +187,16 @@ namespace Sir
                 _logger.LogInformation(message);
         }
 
+        public void Commit()
+        {
+            _writeSession.Commit();
+            _indexSession.Commit();
+            _searchSession.ClearCachedReaders();
+        }
+
         public void Dispose()
         {
             Commit();
-
             DisposeInternal();
         }
 

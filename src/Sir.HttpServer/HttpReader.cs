@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -11,20 +12,23 @@ namespace Sir.HttpServer
     /// <summary>
     /// Query a collection.
     /// </summary>
-    public class HttpReader : IHttpReader
+    public class HttpReader
     {
         private readonly ILogger<HttpReader> _logger;
-        private readonly HttpQueryParser _httpQueryParser;
         private readonly IConfigurationProvider _config;
+        private readonly IModel<string> _model;
+        private readonly IIndexReadWriteStrategy _strategy;
 
         public HttpReader(
-            HttpQueryParser httpQueryParser,
+            IModel<string> model,
+            IIndexReadWriteStrategy strategy,
             IConfigurationProvider config,
             ILogger<HttpReader> logger)
         {
             _logger = logger;
-            _httpQueryParser = httpQueryParser;
             _config = config;
+            _model = model;
+            _strategy = strategy;
         }
 
         public async Task<SearchResult> Read(HttpRequest request, IModel<string> model)
@@ -39,28 +43,31 @@ namespace Sir.HttpServer
             if (request.Query.ContainsKey("skip"))
                 skip = int.Parse(request.Query["skip"]);
 
-            var query = await _httpQueryParser.ParseRequest(request);
-
-            if (query == null)
-            {
-                return new SearchResult(null, 0, 0, new Document[0]);
-            }
-
-#if DEBUG
-            var debug = new Dictionary<string, object>();
-
-            _httpQueryParser.ParseQuery(query, debug);
-
-            var queryLog = JsonConvert.SerializeObject(debug);
-
-            _logger.LogDebug($"parsed query: {queryLog}");
-#endif
-
+            var collection = request.Query["collection"].First();
+            var collectionId = collection.ToHash();
             var directory = _config.Get("data_dir");
 
-            using (var readSession = new SearchSession<string>(directory, model, new LogStructuredIndexingStrategy(model), _logger))
+            using (var database = new DocumentDatabase<string>(directory, collectionId, _model, _strategy, _logger))
             {
-                return readSession.Search(query, skip, take);
+                var httpQueryParser = new HttpQueryParser(database.CreateQueryParser());
+                var query = await httpQueryParser.ParseRequest(request);
+
+                if (query == null)
+                {
+                    return new SearchResult(null, 0, 0, new Document[0]);
+                }
+
+#if DEBUG
+                var debug = new Dictionary<string, object>();
+
+                httpQueryParser.ParseQuery(query, debug);
+
+                var queryLog = JsonConvert.SerializeObject(debug);
+
+                _logger.LogDebug($"parsed query: {queryLog}");
+#endif
+
+                return database.Read(query, skip, take);
             }
         }
     }

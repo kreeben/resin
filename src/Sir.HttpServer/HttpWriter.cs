@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using Sir.Documents;
@@ -10,7 +11,7 @@ namespace Sir.HttpServer
     /// <summary>
     /// Write to a collection.
     /// </summary>
-    public class HttpWriter : IHttpWriter
+    public class HttpWriter
     {
         private readonly IConfigurationProvider _config;
 
@@ -19,29 +20,35 @@ namespace Sir.HttpServer
             _config = config;
         }
 
-        public void Write(HttpRequest request, IModel<string> model, IIndexReadWriteStrategy indexStrategy)
+        public async Task Write(HttpRequest request, IModel<string> model, IIndexReadWriteStrategy indexStrategy)
         {
-            var documents = Deserialize<IEnumerable<Document>>(request.Body);
+            var documents = await Deserialize<IEnumerable<Document>>(request.Body);
             var collectionId = request.Query["collection"].First().ToHash();
             var directory = _config.Get("data_dir");
 
             using (var database = new DocumentDatabase<string>(directory, collectionId, model, indexStrategy))
             {
-                foreach(var document in documents)
+                foreach (var document in documents)
                 {
                     database.Write(document);
                 }
             }
         }
 
-        private static T Deserialize<T>(Stream stream)
+        private static async Task<T> Deserialize<T>(Stream stream)
         {
-            using (StreamReader reader = new StreamReader(stream))
-            using (JsonTextReader jsonReader = new JsonTextReader(reader))
+            using (var sr = new StreamReader(stream))
             {
-                JsonSerializer ser = new JsonSerializer();
-                return ser.Deserialize<T>(jsonReader);
+                var json = await sr.ReadToEndAsync();
+                return JsonConvert.DeserializeObject<T>(json);
             }
+
+            //using (StreamReader reader = new StreamReader(stream))
+            //using (JsonTextReader jsonReader = new JsonTextReader(reader))
+            //{
+            //    JsonSerializer ser = new JsonSerializer();
+            //    return ser.Deserialize<T>(jsonReader);
+            //}
         }
     }
 }

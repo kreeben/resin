@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -8,14 +9,14 @@ namespace Sir.HttpServer.Controllers
     [Route("write")]
     public class WriteController : Controller
     {
-        private readonly IHttpWriter _writer;
+        private readonly HttpWriter _writer;
         private readonly IModel<string> _model;
         private readonly ILogger<WriteController> _logger;
         private readonly IConfigurationProvider _config;
         private readonly IIndexReadWriteStrategy _indexStrategy;
 
         public WriteController(
-            IHttpWriter writer,
+            HttpWriter writer,
             IModel<string> tokenizer,
             IIndexReadWriteStrategy indexStrategy,
             ILogger<WriteController> logger,
@@ -30,7 +31,7 @@ namespace Sir.HttpServer.Controllers
 
         [HttpPost]
         [DisableRequestSizeLimit]
-        public IActionResult Post(string accessToken)
+        public async Task<IActionResult> Post(string accessToken)
         {
             if (!IsValidToken(accessToken))
             {
@@ -44,7 +45,7 @@ namespace Sir.HttpServer.Controllers
 
             try
             {
-                _writer.Write(Request, _model, _indexStrategy);
+                await _writer.Write(Request, _model, _indexStrategy);
 
                 return Ok();
             }

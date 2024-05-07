@@ -1,4 +1,4 @@
-# &#9084; Resin.Search
+# &#9084; Resin Information Retreival
 
 [Overview](https://github.com/kreeben/resin/blob/master/README.md) | [How to install](https://github.com/kreeben/resin/blob/master/INSTALL.md) | User guide 
 

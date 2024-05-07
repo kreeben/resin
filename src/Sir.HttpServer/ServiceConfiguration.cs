@@ -20,17 +20,13 @@ namespace Sir.HttpServer
             var model = new BagOfCharsModel();
             var directory = config.Get("data_dir");
             var defaultCollection = config.Get("default_collection");
-            var qp = new QueryParser<string>(new KeyValue.KeyValueReader(directory, defaultCollection.ToHash()), model, logger: logger);
-            var httpParser = new HttpQueryParser(qp);
 
-            services.AddSingleton(typeof(IModel<string>), model);
-            services.AddSingleton(typeof(QueryParser<string>), qp);
-            services.AddSingleton(typeof(HttpQueryParser), httpParser);
-            services.AddSingleton(typeof(IHttpWriter), new HttpWriter(config));
-            services.AddSingleton(typeof(IHttpReader), new HttpReader(
-                httpParser,
-                config,
-                loggerFactory.CreateLogger<HttpReader>()));
+            services.AddTransient<IModel<string>, BagOfCharsModel>();
+            services.AddTransient<IModel, BagOfCharsModel>();
+            services.AddTransient<IIndexReadWriteStrategy, LogStructuredIndexingStrategy>();
+            services.AddTransient<IConfigurationProvider>((x) => { return new KeyValueConfiguration(Path.Combine(assemblyPath, "sir.ini")); } );
+            services.AddTransient<HttpWriter>();
+            services.AddTransient<HttpReader>();
 
             return services.BuildServiceProvider();
         }

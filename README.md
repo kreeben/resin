@@ -1,34 +1,102 @@
-# &#9084; Resin.Search
-
-[![NuGet version (Resin.Search)](https://img.shields.io/nuget/v/Resin.Search.svg?style=flat-square)](https://www.nuget.org/packages/Resin.Search/) 
+# &#9084; Resin Information Retreival
 
 Overview | [How to install](https://github.com/kreeben/resin/blob/master/INSTALL.md) | [User guide](https://github.com/kreeben/resin/blob/master/USER-GUIDE.md) 
 
 ## HTTP search engine/embedded library
-Launch a Resin HTTP server or use the Resin search library to search through any vector space. With hardware accelerated vector operations from 
-[MathNet](https://github.com/mathnet/mathnet-numerics) Resin is especially well suited for problem spaces that can be defined as such.
 
-Vector spaces are configured by implementing [IModel<T>](https://github.com/kreeben/resin/blob/master/src/Sir.VectorSpace/IModel.cs). 
+Resin is a vector space index based search engine that's available as a HTTP service or as an embedded library. 
+
+### How to use
+
+#### Write a document remotely
+
+HTTP POST `[host]/write?collection=[collection]`  
+(e.g. http://localhost/write?collection=mycollection)  
+Content-Type: application/json  
+```
+[
+	{
+		"field1": "value1",
+		"field2": "value2"
+	}
+]
+```
+
+#### Write a document locally
+
+```
+using (var database = new DocumentDatabase<string>(_directory, collectionId, model, strategy))
+{
+    foreach (var document in documents)
+    {
+        database.Write(document);
+    }
+
+    database.Commit();
+}
+```
+
+#### Query
+
+##### GET query
+HTTP GET `[host]/query/?collection=mycollection&q=[my_query]&field=field1&field=field2&select=field1&skip=0&take=10`  
+(e.g. http://localhost/write?collection=mycollection&q=value1&field=field1&field=field2&select=field1&skip=0&take=10)  
+Accept: application/json  
+
+##### POST query
+HTTP POST `[host]/query/?select=field1&skip=0&take=10`  
+Content-Type: application/json  
+Accept: application/json  
+
+```
+{
+	"and":
+	{
+		"collection": "film,music",
+		"title": "rocky eye of the tiger",
+		"or":
+		{
+			"title": "rambo",
+			"or": 
+			{
+				"title": "cobra"
+				"or":
+				{
+					"cast": "antonio banderas"
+				}			
+			}	
+		},
+		"and":
+		{
+			"year": 1980,
+			"operator": "gt"
+		},
+		"not":
+		{
+			"title": "first blood"
+		}
+	}
+}
+```
+
+##### Local query
+
+```
+using (var database = new DocumentDatabase<string>(_directory, collectionId, model, strategy))
+{
+    var queryParser = database.CreateQueryParser();
+	var query = queryParser.Parse(collectionId, word, "title", "title", and:true, or:false, label:true);
+	var result = database.Read(query, skip: 0, take: 1);
+}
+```
 
 ## Document database
-Resin stores data as document collections. It applies your prefered IModel<T> onto your data while you write and query it. 
-The write pipeline produces a set of indices (graphs), one for each document field, that you may interact with by using the Resin web GUI, 
-the Resin read/write JSON HTTP API, or programmatically.
+Resin stores data as document collections. It applies your prefered IModel<T>and indexing strategy onto your data while you write and query it. 
+The write pipeline produces a set of indices (graphs), one for each document field, that you may interact with by using the Resin read/write JSON HTTP API or programmatically.
 
 ## Vector-based indices
-Resin indices are binary search trees and creates clusters of those vectors that are similar to each other, as you populate them with your data. 
-Graph nodes are created in the [Tokenize](https://github.com/kreeben/resin/blob/master/src/Sir.VectorSpace/IModel.cs#L12) method of your model. 
+Resin indices are binary search trees that create clusters of vectors that are similar to each other, as you populate them with your data. 
 When a node is added to the graph its cosine angle, i.e. its similarity to other nodes, determine its position (path) within the graph.
-
-## Customizable vector spaces
-Resin comes pre-loaded with two IModel vector space configurations: one for [text](https://github.com/kreeben/resin/blob/master/src/Sir.Search/Models/BagOfCharsModel.cs) 
-and [another](https://github.com/kreeben/resin/blob/master/src/Sir.Search/Models/LinearClassifierImageModel.cs) for [MNIST](http://yann.lecun.com/exdb/mnist/) images. 
-The text model has been tested by validating indices generated from [Wikipedia search engine backup files](https://dumps.wikimedia.org/other/cirrussearch/current/) as well as by parsing 
-[Common Crawl](http://commoncrawl.org/) [WAT](https://commoncrawl.org/the-data/get-started/#WAT-Format), [WET](https://commoncrawl.org/the-data/get-started/#WET-Format) 
-and [WARC](https://commoncrawl.org/the-data/get-started/#WARC-Format) files, to determine at which scale Resin may operate in and at what accuracy. 
-
-The image model is included mostly as an example of how to implement your own prefered machine-learning algorithm for building custom-made search indices. 
-The error rate of the image classifier is ~5%. 
 
 ## Performance
 Currently, Wikipedia size data sets produce indices capable of sub-second phrase searching. 
@@ -39,44 +107,3 @@ Currently, Wikipedia size data sets produce indices capable of sub-second phrase
 - implement messaging formats such as XML (or any other, really) if JSON is not suitable for your use case
 - construct queries that join between fields and even between collections, that you may post as JSON to the read endpoint or create programatically.
 - construct any type of indexing scheme that produces any type of embeddings with virtually any dimensionality using either sparse or dense vectors.
-
-## Applications
-
-### Executables
-
-- __[Sir.HttpServer](https://github.com/kreeben/resin/blob/master/src/Sir.HttpServer/README.md)__: HTTP search service with HTML GUI and HTTP JSON API for reading and writing.  
-- __[Sir.Cmd](https://github.com/kreeben/resin/blob/master/src/Sir.Cmd/README.md)__: Command line tool that executes commands that implement `Sir.ICommand`. Write, validate, optimize and more via command-line.
-
-### Libraries
-
-- __[Sir.Search](https://github.com/kreeben/resin/blob/master/src/Sir.Search/README.md)__: In-process search engine.  
-- __Sir.Core__: Core types and shared interfaces, such as `IModel`, `ICommand` and `IVector`.
-- __Sir.CommonCrawl__: Command for downloading and indexing Common Crawl WAT and WET files.  
-- __Sir.Mnist__: Command for training and testing the accuracy of a index of MNIST images.  
-- __Sir.Wikipedia__: Command for indexing Wikipedia.  
-
-## Roadmap
-
-- [x] v0.1a - bag-of-characters vector space language model
-- [x] v0.2a - HTTP API
-- [x] v0.3a - query language
-- [x] v0.4 - linear classifier image model
-- [ ] v0.5 - semantic language model
-- [ ] v1.0 - voice model
-- [ ] v2.0 - image-to-voice
-- [ ] v2.1 - voice-to-text
-- [ ] v2.2 - text-to-image
-- [ ] v2.3 - AI
-
-## Backlog
-
-### Huge
-- Distribute data set across many servers (sharding, replication; RPC) or in other ways allow for horisontal scaling
-
-### Big
-- Memory mapping (to increase speed of querying and perhaps also writing; to increase scalability)
-- Update index (allow removal of documents; allow appending to an already persisted index token's postings list)
-- Async IO (for scalability)
-- Indexing of types other than string
-- Enable combining fields with different types in a document/model
-- Split application into "crawler" and "search"
