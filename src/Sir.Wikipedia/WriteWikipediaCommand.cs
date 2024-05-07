@@ -36,14 +36,14 @@ namespace Sir.Wikipedia
                 take = int.MaxValue;
 
             var payload = WikipediaHelper.Read(fileName, skip, take, fieldsOfInterest);
-
+            var model = new BagOfCharsModel();
             var debugger = new BatchDebugger("write session", logger, sampleSize);
 
-            using (var database = new DocumentDatabase<string>(dataDirectory, collectionId, new BagOfCharsModel(), new LogStructuredIndexingStrategy(new BagOfCharsModel()), logger))
+            using (var database = new DocumentDatabase<string>(dataDirectory, collectionId, model, new LogStructuredIndexingStrategy(model), logger))
             {
                 foreach (var document in payload)
                 {
-                    database.Write(document);
+                    database.Write(document, index:false);
 
                     debugger.Step();
                 }

@@ -32,26 +32,9 @@ namespace Sir.Wikipedia
             var model = new BagOfCharsModel();
             var indexStrategy = new LogStructuredIndexingStrategy(model);
 
-            using (var debugger = new IndexDebugger(logger, sampleSize))
-            using (var documents = new DocumentStreamSession(dataDirectory))
+            using (var database = new DocumentDatabase<string>(dataDirectory, collectionId, model, indexStrategy, logger))
             {
-                foreach (var batch in documents.ReadDocuments<string>(collectionId, fieldsOfInterest, skip, take).Batch(pageSize))
-                {
-                    using (var indexSession = new IndexSession<string>(model, indexStrategy, dataDirectory, collectionId, logger))
-                    {
-                        foreach (var document in batch)
-                        {
-                            foreach (var field in document.Fields)
-                            {
-                                indexSession.Put(document.Id, field.KeyId, (string)field.Value, label: false);
-                            }
-
-                            debugger.Step(indexSession);
-                        }
-
-                        indexSession.Commit();
-                    }
-                }
+                database.OptimizeIndex(skip, take, pageSize, sampleSize, fieldsOfInterest);
             }
         }
 

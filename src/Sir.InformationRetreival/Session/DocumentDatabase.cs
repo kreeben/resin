@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Sir.Documents;
-using Sir.KeyValue;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,6 +14,7 @@ namespace Sir
         private readonly WriteSession _writeSession;
         private readonly IndexSession<T> _indexSession;
         private readonly SearchSession _searchSession;
+        private readonly DocumentStreamSession _documentStreamSession;
         private readonly IModel<T> _model;
         private readonly ILogger _logger;
 
@@ -29,7 +29,13 @@ namespace Sir
             _writeSession = new WriteSession(new DocumentRegistryWriter(directory, collectionId));
             _indexSession = new IndexSession<T>(model, indexStrategy, directory, collectionId, logger);
             _searchSession = new SearchSession(directory, _model, _indexStrategy, logger);
+            _documentStreamSession = new DocumentStreamSession(directory);
             _logger = logger;
+        }
+
+        public IEnumerable<Document> StreamDocuments(HashSet<string> fieldsOfInterest, int skip, int take)
+        {
+            return _documentStreamSession.ReadDocuments<string>(_collectionId, fieldsOfInterest, skip, take);
         }
 
         public SearchResult Read(IQuery query, int skip, int take)
@@ -37,9 +43,10 @@ namespace Sir
             return _searchSession.Search(query, skip, take);
         }
 
-        public void Write(Document document, bool index = true, bool label = true)
+        public void Write(Document document, bool store = true, bool index = true, bool label = true)
         {
-            _writeSession.Put(document);
+            if (store)
+                _writeSession.Put(document);
 
             if (index)
             {
@@ -53,28 +60,20 @@ namespace Sir
             }
         }
 
-        public void OptimizeIndex(int skip, int take, int pageSize, HashSet<string> select = null)
+        public void OptimizeIndex(int skip, int take, int pageSize = 10000, int sampleSize = 1000, HashSet<string> select = null)
         {
-            using (var debugger = new IndexDebugger(_logger))
-            using (var kvReader = new KeyValueReader(_directory, _collectionId))
-            using (var documents = new DocumentStreamSession(_directory))
+            using (var debugger = new IndexDebugger(_logger, sampleSize))
             {
-                foreach (var batch in documents.ReadDocuments<T>(_collectionId, select, skip, take).Batch(pageSize))
+                foreach (var batch in _documentStreamSession.ReadDocuments<T>(_collectionId, select, skip, take).Batch(pageSize))
                 {
-                    using (var indexSession = new IndexSession<T>(_model, _indexStrategy, _directory, _collectionId, _logger))
+                    foreach (var document in batch)
                     {
-                        foreach (var document in batch)
-                        {
-                            foreach (var field in document.Fields)
-                            {
-                                indexSession.Put(document.Id, field.KeyId, (T)field.Value, label: false);
-                            }
+                        Write(document, store: false, index: true, label: false);
 
-                            debugger.Step(indexSession);
-                        }
-
-                        indexSession.Commit();
+                        debugger.Step(_indexSession);
                     }
+
+                    _indexSession.Commit();
                 }
             }
         }
@@ -167,6 +166,9 @@ namespace Sir
 
             if (_searchSession != null)
                 _searchSession.Dispose();
+
+            if (_documentStreamSession != null)
+                _documentStreamSession.Dispose();
         }
     }
 }
