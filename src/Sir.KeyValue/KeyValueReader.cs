@@ -48,10 +48,24 @@ namespace Sir.KeyValue
             if (!_keyCache.TryGetValue(key, out keys))
             {
                 ReadKeysIntoCache();
+
+                if (!_keyCache.TryGetValue(key, out keys))
+                {
+                    // there are no keys registered for this collection, even on disk.
+
+                    keyId = -1;
+                    return false;
+                }
             }
 
-            if (keys != null || _keyCache.TryGetValue(key, out keys))
+            if (keys.TryGetValue(keyHash, out keyId))
             {
+                return true;
+            }
+            else
+            {
+                ReadKeysIntoCache();
+
                 if (keys.TryGetValue(keyHash, out keyId))
                 {
                     return true;
@@ -64,31 +78,29 @@ namespace Sir.KeyValue
 
         private void ReadKeysIntoCache()
         {
+            _keyCache.Clear();
+
             foreach (var keyFile in System.IO.Directory.GetFiles(_directory, "*.kmap"))
             {
                 var collectionId = ulong.Parse(Path.GetFileNameWithoutExtension(keyFile));
                 var key = Path.Combine(_directory, collectionId.ToString()).ToHash();
+                var keys = new ConcurrentDictionary<ulong, long>();
 
-                var keys = _keyCache.GetOrAdd(key, (k) =>
+                using (var stream = new FileStream(keyFile, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite))
                 {
-                    var ks = new ConcurrentDictionary<ulong, long>();
+                    long i = 0;
+                    var buf = new byte[sizeof(ulong)];
+                    var read = stream.Read(buf, 0, buf.Length);
 
-                    using (var stream = new FileStream(keyFile, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite))
+                    while (read > 0)
                     {
-                        long i = 0;
-                        var buf = new byte[sizeof(ulong)];
-                        var read = stream.Read(buf, 0, buf.Length);
+                        keys.TryAdd(BitConverter.ToUInt64(buf, 0), i++);
 
-                        while (read > 0)
-                        {
-                            ks.TryAdd(BitConverter.ToUInt64(buf, 0), i++);
-
-                            read = stream.Read(buf, 0, buf.Length);
-                        }
+                        read = stream.Read(buf, 0, buf.Length);
                     }
+                }
 
-                    return ks;
-                });
+                _keyCache.GetOrAdd(key, keys);
             }
         }
 

@@ -4,7 +4,7 @@ using System.IO;
 namespace Sir.Documents
 {
     /// <summary>
-    /// Read document maps (key_id/val_id) from the document map stream.
+    /// Read document maps (key_id/val_id, each pair 2*sizeof(long)) from the document map stream.
     /// A document map is needed to re-contruct a complete document.
     /// </summary>
     public class DocmentMapReader : IDisposable

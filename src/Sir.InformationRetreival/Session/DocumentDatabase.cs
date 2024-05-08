@@ -28,8 +28,8 @@ namespace Sir
         {
             _directory = directory ?? throw new ArgumentNullException(nameof(directory));
             _collectionId = collectionId;
-            _model = model ?? throw new ArgumentNullException(nameof(model));
-            _indexStrategy = indexStrategy ?? throw new ArgumentNullException(nameof(indexStrategy));
+            _model = model;
+            _indexStrategy = indexStrategy;
             _writeSession = new WriteSession(new DocumentRegistryWriter(directory, collectionId));
             _indexSession = new IndexSession<T>(directory, collectionId, model, indexStrategy, logger);
             _searchSession = new SearchSession<T>(directory, _model, _indexStrategy, logger);
@@ -89,9 +89,6 @@ namespace Sir
         public void Truncate()
         {
             DisposeInternal();
-            _writeSession = null;
-            _indexSession = null;
-            _searchSession = null;
 
             var count = 0;
 
@@ -153,9 +150,6 @@ namespace Sir
         public void Rename(ulong newCollectionId)
         {
             DisposeInternal();
-            _writeSession = null;
-            _indexSession = null;
-            _searchSession = null;
 
             var count = 0;
             var from = _collectionId.ToString();
@@ -186,7 +180,7 @@ namespace Sir
                 _logger.LogInformation(message);
         }
 
-        public void Commit()
+        public void CommitIndexAndClearSearchCache()
         {
             _writeSession.Commit();
             _indexSession.Commit();
@@ -195,7 +189,7 @@ namespace Sir
 
         public void Dispose()
         {
-            Commit();
+            CommitIndexAndClearSearchCache();
             DisposeInternal();
         }
 

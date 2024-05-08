@@ -32,7 +32,7 @@ namespace Sir.StringTests
                     database.Write(document, index: false);
                 }
 
-                database.Commit();
+                database.CommitIndexAndClearSearchCache();
 
                 var i = 0;
 
@@ -69,7 +69,7 @@ namespace Sir.StringTests
                     database.Write(document);
                 }
 
-                database.Commit();
+                database.CommitIndexAndClearSearchCache();
 
                 var queryParser = database.CreateQueryParser();
 
@@ -109,7 +109,7 @@ namespace Sir.StringTests
                     database.Write(document, store:true, index:false); // note: no indexing going on here
                 }
 
-                database.Commit();
+                database.CommitIndexAndClearSearchCache();
 
                 var queryParser = database.CreateQueryParser();
 

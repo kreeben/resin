@@ -29,7 +29,7 @@ namespace Sir
 
                 if (field.Value != null)
                 {
-                    Write(field, docMap);
+                    WriteField(field, docMap);
                 }
             }
 
@@ -38,7 +38,7 @@ namespace Sir
             _documentWriter.PutDocumentAddress(document.Id, docMeta.offset, docMeta.length);
         }
 
-        private void Write(Field field, IList<(long, long)> docMap)
+        private void WriteField(Field field, IList<(long, long)> docMap)
         {
             field.KeyId = EnsureKeyExists(field.Name);
 
@@ -57,11 +57,6 @@ namespace Sir
         public long EnsureKeyExists(string key)
         {
             return _documentWriter.KeyValueWriter.EnsureKeyExists(key);
-        }
-
-        public long EnsureKeyExistsSafely(string key)
-        {
-            return _documentWriter.KeyValueWriter.EnsureKeyExistsSafely(key);
         }
 
         public void Commit()

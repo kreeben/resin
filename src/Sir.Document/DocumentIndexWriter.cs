@@ -16,11 +16,6 @@ namespace Sir.Documents
             _stream = stream;
         }
 
-        public void Flush()
-        {
-            _stream.Flush();
-        }
-
         /// <summary>
         /// Get the next auto-incrementing doc id
         /// </summary>

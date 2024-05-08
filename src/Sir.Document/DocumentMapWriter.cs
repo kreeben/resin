@@ -5,7 +5,7 @@ using System.IO;
 namespace Sir.Documents
 {
     /// <summary>
-    /// Writes document maps (key_id/val_id) to a bitmap.
+    /// Writes document maps (key_id/val_id, each pair 2*sizeof(long)) to a bitmap.
     /// </summary>
     public class DocumentMapWriter : IDisposable
     {

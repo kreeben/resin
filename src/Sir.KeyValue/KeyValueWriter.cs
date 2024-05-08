@@ -15,9 +15,8 @@ namespace Sir.KeyValue
         private readonly ValueIndexWriter _keyIx;
         private readonly ulong _collectionId;
         private readonly string _directory;
-        private readonly object _keyLock = new object();
-        private ConcurrentDictionary<ulong, ConcurrentDictionary<ulong, long>> _keyCache;
         private readonly KeyValueReader _kvReader;
+        private static object _keyLock = new object();
 
         public KeyValueWriter(string directory, ulong collectionId)
             : this(
@@ -29,7 +28,6 @@ namespace Sir.KeyValue
         {
             _collectionId = collectionId;
             _directory = directory;
-            _keyCache = new ConcurrentDictionary<ulong, ConcurrentDictionary<ulong, long>>();
             _kvReader = new KeyValueReader(directory, collectionId);
         }
 
@@ -75,7 +73,7 @@ namespace Sir.KeyValue
             return new FileStream(fileName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
         }
 
-        public long EnsureKeyExistsSafely(string keyStr)
+        public long EnsureKeyExists(string keyStr)
         {
             var keyHash = keyStr.ToHash();
             long keyId;
@@ -94,30 +92,12 @@ namespace Sir.KeyValue
                         keyId = PutKeyInfo(keyInfo.offset, keyInfo.len, keyInfo.dataType);
 
                         // store key mapping
-                        RegisterKeyMapping(_directory, _collectionId, keyHash, keyId);
+                        using (var stream = CreateAppendStream(_directory, _collectionId, "kmap"))
+                        {
+                            stream.Write(BitConverter.GetBytes(keyHash), 0, sizeof(ulong));
+                        }
                     }
                 }
-            }
-
-            return keyId;
-        }
-
-        public long EnsureKeyExists(string keyStr)
-        {
-            var keyHash = keyStr.ToHash();
-            long keyId;
-
-            if (!_kvReader.TryGetKeyId(keyHash, out keyId))
-            {
-                // We have a new key!
-
-                // store key
-                var keyInfo = PutKey(keyStr);
-
-                keyId = PutKeyInfo(keyInfo.offset, keyInfo.len, keyInfo.dataType);
-
-                // store key mapping
-                RegisterKeyMapping(_directory, _collectionId, keyHash, keyId);
             }
 
             return keyId;
@@ -162,20 +142,6 @@ namespace Sir.KeyValue
 
             _vals.Stream.Seek(offset, System.IO.SeekOrigin.Begin);
             _vals.Put(value);
-        }
-
-        public void RegisterKeyMapping(string directory, ulong collectionId, ulong keyHash, long keyId)
-        {
-            var key = Path.Combine(directory, collectionId.ToString()).ToHash();
-            var keys = _keyCache.GetOrAdd(key, (key) => { return new ConcurrentDictionary<ulong, long>(); });
-            var keyMapping = keys.GetOrAdd(keyHash, (key) =>
-            {
-                using (var stream = CreateAppendStream(directory, collectionId, "kmap"))
-                {
-                    stream.Write(BitConverter.GetBytes(keyHash), 0, sizeof(ulong));
-                }
-                return keyId;
-            });
         }
 
         public void Dispose()

@@ -21,7 +21,7 @@ namespace Sir.Documents
                     var vInfo = documentReader.GetAddressOfValue(kvp.valId);
                     var val = documentReader.GetValue(vInfo.offset, vInfo.len, vInfo.dataType);
 
-                    fields.Add(new Field(key, val, kvp.keyId));
+                    fields.Add(new Field(key, val, kvp.keyId, documentId));
                 }
             }
 
