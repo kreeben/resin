@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Sir.InformationRetreival\Sir.InformationRetreival.csproj" />
+    <ProjectReference Include="..\Sir.InformationRetreival\Sir.InformationRetrieval.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

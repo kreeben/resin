@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.6.33927.249
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sir.InformationRetreival", "Sir.InformationRetreival\Sir.InformationRetreival.csproj", "{2002DD08-0083-4184-BB1A-2469B608DE95}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sir.InformationRetrieval", "Sir.InformationRetreival\Sir.InformationRetrieval.csproj", "{2002DD08-0083-4184-BB1A-2469B608DE95}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "resources", "resources", "{CA96B574-72B3-4954-8B51-4C961A6F6622}"
 	ProjectSection(SolutionItems) = preProject
