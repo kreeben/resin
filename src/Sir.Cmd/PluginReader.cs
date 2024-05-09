@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Loader;
 
-namespace Sir
+namespace Sir.Cmd
 {
     public class PluginReader
     {
