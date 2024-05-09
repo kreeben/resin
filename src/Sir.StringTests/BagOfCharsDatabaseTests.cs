@@ -32,7 +32,7 @@ namespace Sir.StringTests
                     database.Write(document, index: false);
                 }
 
-                database.CommitIndexAndClearSearchCache();
+                database.Commit();
 
                 var i = 0;
 
@@ -69,7 +69,7 @@ namespace Sir.StringTests
                     database.Write(document);
                 }
 
-                database.CommitIndexAndClearSearchCache();
+                database.Commit();
 
                 var queryParser = database.CreateQueryParser();
 
@@ -109,7 +109,7 @@ namespace Sir.StringTests
                     database.Write(document, store:true, index:false); // note: no indexing going on here
                 }
 
-                database.CommitIndexAndClearSearchCache();
+                database.Commit();
 
                 var queryParser = database.CreateQueryParser();
 
@@ -121,7 +121,7 @@ namespace Sir.StringTests
                         var result = database.Read(query, skip: 0, take: 1);
 
                         if (result.Count > 0)
-                            throw new Exception("For unknown reasons we can search the index without having to had to create it, which is very wierd.");
+                            throw new Exception("For unknown reasons we can search the index without having created it, which is very, very strange, so this should never happen.");
                     });
                 }
 

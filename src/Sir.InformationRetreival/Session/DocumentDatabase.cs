@@ -180,7 +180,7 @@ namespace Sir
                 _logger.LogInformation(message);
         }
 
-        public void CommitIndexAndClearSearchCache()
+        public void Commit()
         {
             _writeSession.Commit();
             _indexSession.Commit();
@@ -189,7 +189,7 @@ namespace Sir
 
         public void Dispose()
         {
-            CommitIndexAndClearSearchCache();
+            Commit();
             DisposeInternal();
         }
 
