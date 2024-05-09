@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.IO;
 
 namespace Sir.KeyValue
 {
@@ -20,10 +18,10 @@ namespace Sir.KeyValue
 
         public KeyValueWriter(string directory, ulong collectionId)
             : this(
-                new ValueWriter(CreateAppendStream(directory, collectionId, "val")),
-                new ValueWriter(CreateAppendStream(directory, collectionId, "key")),
-                new ValueIndexWriter(CreateAppendStream(directory, collectionId, "vix")),
-                new ValueIndexWriter(CreateAppendStream(directory, collectionId, "kix"))
+                new ValueWriter(StreamFactory.CreateAppendStream(directory, collectionId, "val")),
+                new ValueWriter(StreamFactory.CreateAppendStream(directory, collectionId, "key")),
+                new ValueIndexWriter(StreamFactory.CreateAppendStream(directory, collectionId, "vix")),
+                new ValueIndexWriter(StreamFactory.CreateAppendStream(directory, collectionId, "kix"))
                 )
         {
             _collectionId = collectionId;
@@ -37,40 +35,6 @@ namespace Sir.KeyValue
             _keys = keys;
             _valIx = valIx;
             _keyIx = keyIx;
-        }
-
-        public static Stream CreateAppendStream(string directory, ulong collectionId, string fileExtension)
-        {
-            if (!System.IO.Directory.Exists(directory))
-            {
-                System.IO.Directory.CreateDirectory(directory);
-            }
-
-            var fileName = Path.Combine(directory, $"{collectionId}.{fileExtension}");
-
-            if (!File.Exists(fileName))
-            {
-                using (var fs = new FileStream(fileName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)) { }
-            }
-
-            return new FileStream(fileName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
-        }
-
-        public static Stream CreateAppendStream(string directory, ulong collectionId, long keyId, string fileExtension)
-        {
-            if (!System.IO.Directory.Exists(directory))
-            {
-                System.IO.Directory.CreateDirectory(directory);
-            }
-
-            var fileName = Path.Combine(directory, $"{collectionId}.{keyId}.{fileExtension}");
-
-            if (!File.Exists(fileName))
-            {
-                using (var fs = new FileStream(fileName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)) { }
-            }
-
-            return new FileStream(fileName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
         }
 
         public long EnsureKeyExists(string keyStr)
@@ -92,7 +56,7 @@ namespace Sir.KeyValue
                         keyId = PutKeyInfo(keyInfo.offset, keyInfo.len, keyInfo.dataType);
 
                         // store key mapping
-                        using (var stream = CreateAppendStream(_directory, _collectionId, "kmap"))
+                        using (var stream = StreamFactory.CreateAppendStream(_directory, _collectionId, "kmap"))
                         {
                             stream.Write(BitConverter.GetBytes(keyHash), 0, sizeof(ulong));
                         }

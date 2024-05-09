@@ -28,12 +28,12 @@ namespace Sir
         {
             var time = Stopwatch.StartNew();
 
-            using (var vectorStream = KeyValueWriter.CreateAppendStream(directory, collectionId, keyId, "vec"))
-            using (var postingsStream = KeyValueWriter.CreateAppendStream(directory, collectionId, keyId, "pos"))
-            using (var columnWriter = new ColumnWriter(KeyValueWriter.CreateAppendStream(directory, collectionId, keyId, "ix")))
-            using (var pageIndexWriter = new PageIndexWriter(KeyValueWriter.CreateAppendStream(directory, collectionId, keyId, "ixtp")))
+            using (var vectorStream = StreamFactory.CreateAppendStream(directory, collectionId, keyId, "vec"))
+            using (var postingsWriter = new PostingsWriter(StreamFactory.CreateAppendStream(directory, collectionId, keyId, "pos")))
+            using (var columnWriter = new ColumnWriter(StreamFactory.CreateAppendStream(directory, collectionId, keyId, "ix")))
+            using (var pageIndexWriter = new PageIndexWriter(StreamFactory.CreateAppendStream(directory, collectionId, keyId, "ixtp")))
             {
-                var size = columnWriter.CreatePage(tree, vectorStream, postingsStream, pageIndexWriter);
+                var size = columnWriter.CreatePage(tree, vectorStream, postingsWriter, pageIndexWriter);
 
                 if (logger != null)
                     logger.LogInformation($"serialized column {keyId}, weight {tree.Weight} {size} in {time.Elapsed}");

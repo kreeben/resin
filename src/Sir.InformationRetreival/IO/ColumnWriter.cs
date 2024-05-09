@@ -14,9 +14,9 @@ namespace Sir.IO
             _keepIndexStreamOpen = keepStreamOpen;
         }
 
-        public (int depth, int width) CreatePage(VectorNode column, Stream vectorStream, Stream postingsStream, PageIndexWriter pageIndexWriter)
+        public (int depth, int width) CreatePage(VectorNode column, Stream vectorStream, PostingsWriter postingsWriter, PageIndexWriter pageIndexWriter)
         {
-            var page = column.SerializeTree(_ixStream, vectorStream, postingsStream);
+            var page = column.SerializeTree(_ixStream, vectorStream, postingsWriter);
 
             pageIndexWriter.Put(page.offset, page.length);
 

@@ -15,7 +15,7 @@ namespace Sir
     {
         private readonly IModel<T> _model;
         private readonly IIndexReadWriteStrategy _indexStrategy;
-        private readonly PostingsResolver _postingsResolver;
+        private readonly PostingsReadOrchestrator _postingsReadOrchestrator;
         private readonly Scorer _scorer;
         private readonly ILogger _logger;
         private readonly Dictionary<(string, ulong, long), ColumnReader> _readers;
@@ -25,12 +25,12 @@ namespace Sir
             IModel<T> model,
             IIndexReadWriteStrategy indexStrategy,
             ILogger logger = null,
-            PostingsResolver postingsResolver = null,
+            PostingsReadOrchestrator postingsResolver = null,
             Scorer scorer = null) : base(directory)
         {
             _model = model;
             _indexStrategy = indexStrategy;
-            _postingsResolver = postingsResolver ?? new PostingsResolver();
+            _postingsReadOrchestrator = postingsResolver ?? new PostingsReadOrchestrator(logger);
             _scorer = scorer ?? new Scorer();
             _logger = logger;
             _readers = new Dictionary<(string, ulong, long), ColumnReader>();
@@ -50,7 +50,7 @@ namespace Sir
 
         public SearchResult Search(IQuery query, int skip, int take)
         {
-            var result = Execute(query, skip, take, false);
+            var result = OrchestrateSearch(query, skip, take, false);
 
             if (result != null)
             {
@@ -66,7 +66,7 @@ namespace Sir
 
         public Document SearchScalar(IQuery query)
         {
-            var result = Execute(query, 0, 1, true);
+            var result = OrchestrateSearch(query, 0, 1, true);
 
             if (result != null)
             {
@@ -82,7 +82,7 @@ namespace Sir
 
         public SearchResult SearchIdentical(IQuery query, int take)
         {
-            var result = Execute(query, 0, take, true);
+            var result = OrchestrateSearch(query, 0, take, true);
 
             if (result != null)
             {
@@ -96,28 +96,32 @@ namespace Sir
             return new SearchResult(query, 0, 0, System.Linq.Enumerable.Empty<Document>());
         }
 
-        private ScoredResult Execute(IQuery query, int skip, int take, bool identicalMatchesOnly)
+        private ScoredResult OrchestrateSearch(IQuery query, int skip, int take, bool identicalMatchesOnly)
         {
             var timer = Stopwatch.StartNew();
 
-            // Scan index
+            // Scan index to find posting addresses for each query term.
             Scan(query, identicalMatchesOnly);
+
             LogDebug($"scanning took {timer.Elapsed}");
             timer.Restart();
 
-            // Read postings lists
-            _postingsResolver.Resolve(query, _logger);
+            // Read postings.
+            _postingsReadOrchestrator.ReadAndMapPostings(query);
+
             LogDebug($"reading postings took {timer.Elapsed}");
             timer.Restart();
             
-            // Score
+            // Score postings.
             IDictionary<(ulong CollectionId, long DocumentId), double> scoredResult = new Dictionary<(ulong, long), double>();
             _scorer.Score(query, ref scoredResult);
+
             LogDebug($"scoring took {timer.Elapsed}");
             timer.Restart();
 
-            // Sort
+            // Sort postings by score.
             var sorted = Sort(scoredResult, skip, take);
+
             LogDebug($"sorting took {timer.Elapsed}");
 
             return sorted;
@@ -152,7 +156,7 @@ namespace Sir
 
                     if (hit != null)
                     {
-                        if ((identicalMatchesOnly && hit.Score >= _model.IdenticalAngle) || !identicalMatchesOnly)
+                        if (!identicalMatchesOnly || (hit.Score >= _model.IdenticalAngle))
                         {
                             term.Score = hit.Score;
                             term.PostingsOffsets = hit.PostingsOffsets;
@@ -253,8 +257,8 @@ namespace Sir
 
         public override void Dispose()
         {
-            if (_postingsResolver!= null)
-                _postingsResolver.Dispose();
+            if (_postingsReadOrchestrator!= null)
+                _postingsReadOrchestrator.Dispose();
 
             foreach (var reader in _readers.Values)
             {

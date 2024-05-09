@@ -19,8 +19,8 @@ namespace Sir.Documents
 
         public DocumentRegistryWriter(string directory, ulong collectionId)
         {
-            _documentMapWriter = new DocumentMapWriter(KeyValueWriter.CreateAppendStream(directory, collectionId, "docs"));
-            _documentIndexWriter = new DocumentIndexWriter(KeyValueWriter.CreateAppendStream(directory, collectionId, "dix"));
+            _documentMapWriter = new DocumentMapWriter(StreamFactory.CreateAppendStream(directory, collectionId, "docs"));
+            _documentIndexWriter = new DocumentIndexWriter(StreamFactory.CreateAppendStream(directory, collectionId, "dix"));
             _kvWriter = new KeyValueWriter(directory, collectionId);
             _directory = directory;
             _collectionId = collectionId;
@@ -52,8 +52,8 @@ namespace Sir.Documents
             _documentIndexWriter.Dispose();
             _kvWriter.Dispose();
 
-            _documentMapWriter = new DocumentMapWriter(KeyValueWriter.CreateAppendStream(_directory, _collectionId, "docs"));
-            _documentIndexWriter = new DocumentIndexWriter(KeyValueWriter.CreateAppendStream(_directory, _collectionId, "dix"));
+            _documentMapWriter = new DocumentMapWriter(StreamFactory.CreateAppendStream(_directory, _collectionId, "docs"));
+            _documentIndexWriter = new DocumentIndexWriter(StreamFactory.CreateAppendStream(_directory, _collectionId, "dix"));
             _kvWriter = new KeyValueWriter(_directory, _collectionId);
         }
 

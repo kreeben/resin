@@ -84,7 +84,7 @@ namespace Sir.IO
                     }
                 }
 
-                if (hit.Score >= model.IdenticalAngle)
+                if (hit.Score.Approximates(model.IdenticalAngle))
                     break;
             }
 

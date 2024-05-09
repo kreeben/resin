@@ -282,7 +282,7 @@ namespace Sir.IO
         /// <param name="vectorStream">stream to persist vectors into</param>
         /// <param name="postingsStream">stream to persist postings into</param>
         /// <returns></returns>
-        public static (long offset, long length) SerializeTree(this VectorNode node, Stream indexStream = null, Stream vectorStream = null, Stream postingsStream = null)
+        public static (long offset, long length) SerializeTree(this VectorNode node, Stream indexStream = null, Stream vectorStream = null, PostingsWriter postingsWriter = null)
         {
             var stack = new Stack<VectorNode>();
             var offset = indexStream.Position;
@@ -295,9 +295,9 @@ namespace Sir.IO
 
             while (node != null)
             {
-                if (node.PostingsOffset == -1 && postingsStream != null)
+                if (node.PostingsOffset == -1 && postingsWriter != null)
                 {
-                    SerializePostings(node, postingsStream);
+                    postingsWriter.SerializePostings(node);
                 }
 
                 if (vectorStream != null)
@@ -326,24 +326,6 @@ namespace Sir.IO
             }
 
             return (offset, length);
-        }
-
-        public static void SerializePostings(VectorNode node, Stream postingsStream)
-        {
-            if (node.DocIds.Count == 0) throw new ArgumentException("can't be empty", nameof(node.DocIds));
-
-            node.PostingsOffset = postingsStream.Position;
-
-            // serialize item count
-            postingsStream.Write(BitConverter.GetBytes((long)node.DocIds.Count));
-
-            // serialize address of next page (unknown at this time)
-            postingsStream.Write(BitConverter.GetBytes((long)0));
-
-            foreach (var docId in node.DocIds)
-            {
-                postingsStream.Write(BitConverter.GetBytes(docId));
-            }
         }
     }
 }

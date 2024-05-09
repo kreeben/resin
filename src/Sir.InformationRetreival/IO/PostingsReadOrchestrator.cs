@@ -4,14 +4,20 @@ using System.Collections.Generic;
 
 namespace Sir.IO
 {
-    public class PostingsResolver : IDisposable
+    /// <summary>
+    /// Read postings lists from storage and map them to query terms
+    /// </summary>
+    public class PostingsReadOrchestrator : IDisposable
     {
         private readonly Dictionary<(string, ulong, long), PostingsReader> _readers = new Dictionary<(string, ulong, long), PostingsReader>();
+        private readonly ILogger _logger;
 
-        /// <summary>
-        /// Read posting list document IDs into memory.
-        /// </summary>
-        public void Resolve(IQuery query, ILogger logger = null)
+        public PostingsReadOrchestrator(ILogger logger = null)
+        {
+            _logger = logger;
+        }
+
+        public void ReadAndMapPostings(IQuery query)
         {
             foreach (var term in query.AllTerms())
             {
@@ -23,7 +29,7 @@ namespace Sir.IO
 
                 if (!_readers.TryGetValue(key, out reader))
                 {
-                    reader = new PostingsReader(term.Directory, term.CollectionId, term.KeyId, logger);
+                    reader = new PostingsReader(term.Directory, term.CollectionId, term.KeyId, _logger);
 
                     if (reader != null)
                     {
