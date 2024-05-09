@@ -85,8 +85,8 @@ Accept: application/json
 using (var database = new DocumentDatabase<string>(_directory, collectionId, model, strategy))
 {
     var queryParser = database.CreateQueryParser();
-	var query = queryParser.Parse(collectionId, word, "title", "title", and:true, or:false, label:true);
-	var result = database.Read(query, skip: 0, take: 1);
+    var query = queryParser.Parse(collectionId, word, "title", "title", and:true, or:false, label:true);
+    var result = database.Read(query, skip: 0, take: 1);
 }
 ```
 
