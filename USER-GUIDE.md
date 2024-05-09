@@ -4,11 +4,15 @@
 
 ## User guide
 
-### Sir.Cmd command-line tool
-[Instructions for Sir.Cmd](https://github.com/kreeben/resin/blob/master/src/Sir.Cmd/README.md).
+### Use Resin locally and programmatically
+[Overview](https://github.com/kreeben/resin/blob/master/README.md).
+
+### Use Resin through the command-line tool
+[How to use the command-line tool](https://github.com/kreeben/resin/blob/master/src/Sir.Cmd/README.md).
 
 ### Sir.HttpServer
-[Instructions for Sir.HttpServer](https://github.com/kreeben/resin/blob/master/src/Sir.HttpServer/README.md).
+[How to use Resin's HTTP API](https://github.com/kreeben/resin/blob/master/src/Sir.HttpServer/README.md).
+[How to install](https://github.com/kreeben/resin/blob/master/INSTALL.md)
 
 ### How to index Wikipedia
 

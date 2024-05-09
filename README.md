@@ -2,7 +2,7 @@
 
 Overview | [How to install](https://github.com/kreeben/resin/blob/master/INSTALL.md) | [User guide](https://github.com/kreeben/resin/blob/master/USER-GUIDE.md) 
 
-## HTTP search engine/embedded library
+## Resin is a remote HTTP search engine and an embedded library
 
 Resin is a vector space index based search engine that's available as a HTTP service or as an embedded library. 
 
