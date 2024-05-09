@@ -36,7 +36,7 @@ namespace Sir
                 var size = columnWriter.CreatePage(tree, vectorStream, postingsStream, pageIndexWriter);
 
                 if (logger != null)
-                    logger.LogDebug($"serialized column {keyId}, weight {tree.Weight} {size} in {time.Elapsed}");
+                    logger.LogInformation($"serialized column {keyId}, weight {tree.Weight} {size} in {time.Elapsed}");
             }
         }
     }
