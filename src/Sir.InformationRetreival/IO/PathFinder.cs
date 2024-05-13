@@ -25,7 +25,7 @@ namespace Sir.IO
                         best = cursor;
                     }
 
-                    if (angle >= model.IdenticalAngle)
+                    if (angle >= model.IdenticalAngle || angle.Approximates(model.IdenticalAngle))
                     {
                         break;
                     }

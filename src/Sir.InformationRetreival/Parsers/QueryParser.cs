@@ -20,7 +20,7 @@ namespace Sir
             _embedding = embedding ?? new SortedList<int, float>();
         }
 
-        public IQuery Parse(
+        public Query Parse(
             ulong collectionId,
             T query,
             string field,
@@ -41,7 +41,7 @@ namespace Sir
             return new Query(terms, new string[] { select }, and, or, !and && !or);
         }
 
-        public IQuery Parse(
+        public Query Parse(
             string collection,
             T query,
             string field,
@@ -62,7 +62,7 @@ namespace Sir
             return new Query(terms, new string[] { select }, and, or, !and && !or);
         }
 
-        public IQuery Parse(
+        public Query Parse(
             IEnumerable<string> collections,
             T q, 
             string[] fields, 
@@ -141,7 +141,7 @@ namespace Sir
             return Parse(root, select, label);
         }
 
-        public IQuery Parse(dynamic document, IEnumerable<string> select, bool label)
+        public Query Parse(dynamic document, IEnumerable<string> select, bool label)
         {
             Query root = null;
             Query cursor = null;

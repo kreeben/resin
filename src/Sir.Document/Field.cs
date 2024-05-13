@@ -7,15 +7,13 @@ namespace Sir.Documents
     [DebuggerDisplay("{Name}")]
     public class Field
     {
-        private IEnumerable<ISerializableVector> _tokens;
-
         public long KeyId { get; set; }
         public long DocumentId { get; set; }
         public string Name { get; }
         public object Value { get; set; }
-        public IEnumerable<ISerializableVector> Tokens { get { return _tokens; } }
+        public IEnumerable<ISerializableVector> Tokens { get; }
 
-        public Field(string name, object value, long keyId = -1, long documentId = -1)
+        public Field(string name, object value, long keyId = -1, long documentId = -1, IEnumerable<ISerializableVector> tokens = null)
         {
             if (name is null) throw new ArgumentNullException(nameof(name));
             if (value == null) throw new ArgumentNullException(nameof(value));
@@ -24,6 +22,7 @@ namespace Sir.Documents
             Value = value;
             KeyId = keyId;
             DocumentId = documentId;
+            Tokens = tokens;
         }
     }
 }

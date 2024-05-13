@@ -14,13 +14,13 @@ namespace Sir
     ///     }
     /// }
     /// </example>
-    public class Query : BooleanStatement, IQuery
+    public class Query : BooleanStatement
     {
         public IList<Term> Terms { get; }
         public HashSet<string> Select { get; }
-        public IQuery AndQuery { get; set; }
-        public IQuery OrQuery { get; set; }
-        public IQuery NotQuery { get; set; }
+        public Query AndQuery { get; set; }
+        public Query OrQuery { get; set; }
+        public Query NotQuery { get; set; }
 
         public Query(
             IList<Term> terms,
@@ -90,7 +90,7 @@ namespace Sir
                     yield return term;
         }
 
-        public IEnumerable<IQuery> All()
+        public IEnumerable<Query> All()
         {
             yield return this;
 

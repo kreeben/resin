@@ -13,7 +13,8 @@ namespace Sir.StringTests
     {
         private ILoggerFactory _loggerFactory;
         private string _directory = Path.Combine(Environment.CurrentDirectory, "testdata");
-        private readonly string[] _data = ["Ferriman–Gallwey score", "apples", "apricote", "apricots", "avocado", "avocados", "banana", "bananas", "blueberry", "blueberries", "cantalope"];
+        private readonly string[] _dataPage0 = ["Ferriman–Gallwey score", "apples", "apricote", "apricots", "avocado", "avocados", "banana", "bananas", "blueberry", "blueberries", "cantalope"];
+        private readonly string[] _dataPage1 = ["score", "apples and teddybears", "apricote sauce", "hey baberibba", "avocado sundae", "avocados are nice", "banana split", "I'm going bananas", "blueberry pie", "blueberries and sauce", "cantalope"];
 
         [Test]
         public void Can_stream()
@@ -21,7 +22,7 @@ namespace Sir.StringTests
             var model = new BagOfCharsModel();
             var strategy = new LogStructuredIndexingStrategy(model);
             var collectionId = "BagOfCharsDatabaseTests.Can_stream".ToHash();
-            var documents = _data.Select(x => new Document(new Field[] {new Field("title", x)})).ToList();
+            var documents = _dataPage0.Select(x => new Document(new Field[] {new Field("title", x)})).ToList();
 
             using (var database = new DocumentDatabase<string>(_directory, collectionId, model, strategy, _loggerFactory.CreateLogger("Debug")))
             {
@@ -41,7 +42,7 @@ namespace Sir.StringTests
                     Assert.DoesNotThrow(() =>
                     {
                         var documentWas = document.Get("title").Value;
-                        var documentShouldBe = _data[i++];
+                        var documentShouldBe = _dataPage0[i++];
 
                         if (!documentShouldBe.Equals(documentWas))
                         {
@@ -58,7 +59,7 @@ namespace Sir.StringTests
             var model = new BagOfCharsModel();
             var strategy = new LogStructuredIndexingStrategy(model);
             var collectionId = "BagOfCharsDatabaseTests.Can_read_and_write".ToHash();
-            var documents = _data.Select(x => new Document(new Field[] { new Field("title", x) })).ToList();
+            var documents = _dataPage0.Select(x => new Document(new Field[] { new Field("title", x) })).ToList();
 
             using (var database = new DocumentDatabase<string>(_directory, collectionId, model, strategy, _loggerFactory.CreateLogger("Debug")))
             {
@@ -73,7 +74,7 @@ namespace Sir.StringTests
 
                 var queryParser = database.CreateQueryParser();
 
-                foreach (var word in _data)
+                foreach (var word in _dataPage0)
                 {
                     Assert.DoesNotThrow(() =>
                     {
@@ -93,12 +94,96 @@ namespace Sir.StringTests
         }
 
         [Test]
+        public void Can_read_and_write_paged()
+        {
+            // This test fails because BagOfCharsModel is also a bag of words model thus it scores 1 if there's a hit in a phrase that's not identical to the term.
+            var model = new BagOfCharsModel();
+            var strategy = new LogStructuredIndexingStrategy(model);
+            var collectionId = "BagOfCharsDatabaseTests.Can_read_and_write_paged".ToHash();
+            var page0 = _dataPage0.Select(x => new Document(new Field[] { new Field("title", x) })).ToList();
+            var page1 = _dataPage1.Select(x => new Document(new Field[] { new Field("title", x) })).ToList();
+
+            using (var database = new DocumentDatabase<string>(_directory, collectionId, model, strategy, _loggerFactory.CreateLogger("Debug")))
+            {
+                database.Truncate();
+
+                foreach (var document in page0)
+                {
+                    database.Write(document, label: true);
+                }
+
+                database.Commit(); // create page
+
+                foreach (var document in page1)
+                {
+                    database.Write(document, label:true);
+                }
+
+                database.Commit(); // create another page
+
+                var queryParser = database.CreateQueryParser();
+
+                foreach (var word in _dataPage0)
+                {
+                    Assert.DoesNotThrow(() =>
+                    {
+                        var query = queryParser.Parse(collectionId, word, "title", "title", and: true, or: false, label: true);
+                        var result = database.Read(query, skip: 0, take: 1);
+
+                        var documentWas = result.Documents.First().Get("title").Value;
+                        var documentShouldBe = word;
+
+                        if (!documentShouldBe.Equals(documentWas))
+                        {
+                            throw new Exception($"documentShouldBe: {documentShouldBe} documentWas: {documentWas} ");
+                        }
+                    });
+                }
+
+                foreach (var word in _dataPage1)
+                {
+                    Assert.DoesNotThrow(() =>
+                    {
+                        var query = queryParser.Parse(collectionId, word, "title", "title", and: true, or: false, label: true);
+                        var result = database.Read(query, skip: 0, take: 2);
+
+                        var documentWas = result.Documents.First().Get("title").Value;
+                        var documentShouldBe = word;
+
+                        if (!documentShouldBe.Equals(documentWas))
+                        {
+                            throw new Exception($"documentShouldBe: {documentShouldBe} documentWas: {documentWas} ");
+                        }
+
+                        //var found = false;
+
+                        //foreach(var document in result.Documents)
+                        //{
+                        //    var documentWas = result.Documents.First().Get("title").Value;
+                        //    var documentShouldBe = word;
+
+                        //    if (documentShouldBe.Equals(documentWas))
+                        //    {
+                        //        found = true;
+                        //        break;
+                        //    }
+                        //}
+
+                        //if (!found)
+                        //    throw new Exception($"document not found. documentShouldBe: {word} ");
+
+                    });
+                }
+            }
+        }
+
+        [Test]
         public void Can_optimize_index()
         {
             var model = new BagOfCharsModel();
             var strategy = new LogStructuredIndexingStrategy(model);
             var collectionId = "BagOfCharsDatabaseTests.Can_optimize_index".ToHash();
-            var documents = _data.Select(x => new Document(new Field[] { new Field("title", x) })).ToList();
+            var documents = _dataPage0.Select(x => new Document(new Field[] { new Field("title", x) })).ToList();
 
             using (var database = new DocumentDatabase<string>(_directory, collectionId, model, strategy, _loggerFactory.CreateLogger("Debug")))
             {
@@ -113,7 +198,7 @@ namespace Sir.StringTests
 
                 var queryParser = database.CreateQueryParser();
 
-                foreach (var word in _data)
+                foreach (var word in _dataPage0)
                 {
                     Assert.DoesNotThrow(() =>
                     {
@@ -127,7 +212,7 @@ namespace Sir.StringTests
 
                 database.OptimizeAllIndices();
 
-                foreach (var word in _data)
+                foreach (var word in _dataPage0)
                 {
                     Assert.DoesNotThrow(() =>
                     {

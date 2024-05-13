@@ -37,5 +37,22 @@ namespace Sir.KeyValue
 
             return new FileStream(fileName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
         }
+
+        public static Stream CreateSeekableWriteStream(string directory, ulong collectionId, long keyId, string fileExtension)
+        {
+            if (!System.IO.Directory.Exists(directory))
+            {
+                System.IO.Directory.CreateDirectory(directory);
+            }
+
+            var fileName = Path.Combine(directory, $"{collectionId}.{keyId}.{fileExtension}");
+
+            if (!File.Exists(fileName))
+            {
+                using (var fs = new FileStream(fileName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)) { }
+            }
+
+            return new FileStream(fileName, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
+        }
     }
 }

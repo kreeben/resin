@@ -12,8 +12,16 @@ namespace Sir
 
         public Hit (VectorNode node, double score)
         {
+            Node = node ?? throw new System.ArgumentNullException(nameof(node));
+            Score = score;
+            PostingsOffsets = new List<long> { node.PostingsOffset };
+        }
+
+        public Hit(VectorNode node, double score, long postingsOffset)
+        {
             Score = score;
             Node = node;
+            PostingsOffsets = new List<long> { postingsOffset };
         }
 
         public override string ToString()

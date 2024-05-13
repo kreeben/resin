@@ -12,10 +12,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Sir.CommonCrawl\Sir.CommonCrawl.csproj" />
+    <ProjectReference Include="..\Sir.CommonCrawl\Sir.DataProvider.CommonCrawl.csproj" />
+    <ProjectReference Include="..\Sir.Images\Sir.Model.Images.csproj" />
     <ProjectReference Include="..\Sir.InformationRetreival\Sir.InformationRetrieval.csproj" />
-    <ProjectReference Include="..\Sir.Mnist\Sir.Mnist.csproj" />
-    <ProjectReference Include="..\Sir.Wikipedia\Sir.Wikipedia.csproj" />
+    <ProjectReference Include="..\Sir.Mnist\Sir.DataProvider.Mnist.csproj" />
+    <ProjectReference Include="..\Sir.Strings\Sir.Model.Strings.csproj" />
+    <ProjectReference Include="..\Sir.Wikipedia\Sir.DataProvider.Wikipedia.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

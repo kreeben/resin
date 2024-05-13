@@ -25,10 +25,10 @@ namespace Sir.IO
             _collectionId = collectionId;
         }
 
-        public IList<(ulong, long)> Read(long keyId, IList<long> offsets)
+        public HashSet<(ulong, long)> Read(long keyId, IList<long> offsets)
         {
             var time = Stopwatch.StartNew();
-            var documents = new List<(ulong, long)>();
+            var documents = new HashSet<(ulong, long)>(); // collection ID, document ID
 
             foreach (var offset in offsets)
                 GetPostingsFromStream(keyId, offset, documents);
@@ -39,20 +39,21 @@ namespace Sir.IO
             return documents;
         }
 
-        private void GetPostingsFromStream(long keyId, long postingsOffset, List<(ulong collectionId, long docId)> documents)
+        private void GetPostingsFromStream(long keyId, long postingsOffset, HashSet<(ulong collectionId, long docId)> postings)
         {
+            // seek to page
             _stream.Seek(postingsOffset, SeekOrigin.Begin);
 
             var headerLen = sizeof(long) * 2;
+
+            // read header
             var headerBuf = ArrayPool<byte>.Shared.Rent(headerLen);
-
             _stream.Read(headerBuf, 0, headerLen);
-
             var numOfPostings = BitConverter.ToInt64(headerBuf);
             var addressOfNextPage = BitConverter.ToInt64(headerBuf, sizeof(long));
-
             ArrayPool<byte>.Shared.Return(headerBuf);
 
+            // read postings
             var listLen = sizeof(long) * numOfPostings;
             var listBuf = new byte[listLen];
             var read = _stream.Read(listBuf);
@@ -62,12 +63,12 @@ namespace Sir.IO
 
             foreach (var docId in MemoryMarshal.Cast<byte, long>(listBuf))
             {
-                documents.Add((_collectionId, docId));
+                postings.Add((_collectionId, docId));
             }
 
             if (addressOfNextPage > 0)
             {
-                GetPostingsFromStream(keyId, addressOfNextPage, documents);
+                GetPostingsFromStream(keyId, addressOfNextPage, postings);
             }
         }
 

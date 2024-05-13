@@ -5,19 +5,19 @@ using System.Collections.Generic;
 namespace Sir.IO
 {
     /// <summary>
-    /// Read postings lists from storage and map them to query terms
+    /// Read postings from storage and map them to query terms.
     /// </summary>
-    public class PostingsReadOrchestrator : IDisposable
+    public class TermPostingsMapper : IDisposable
     {
-        private readonly Dictionary<(string, ulong, long), PostingsReader> _readers = new Dictionary<(string, ulong, long), PostingsReader>();
+        private readonly Dictionary<(string directory, ulong collectionId, long keyId), PostingsReader> _readers = new Dictionary<(string, ulong, long), PostingsReader>();
         private readonly ILogger _logger;
 
-        public PostingsReadOrchestrator(ILogger logger = null)
+        public TermPostingsMapper(ILogger logger = null)
         {
             _logger = logger;
         }
 
-        public void ReadAndMapPostings(IQuery query)
+        public void ReadAndMap(Query query)
         {
             foreach (var term in query.AllTerms())
             {
@@ -30,11 +30,7 @@ namespace Sir.IO
                 if (!_readers.TryGetValue(key, out reader))
                 {
                     reader = new PostingsReader(term.Directory, term.CollectionId, term.KeyId, _logger);
-
-                    if (reader != null)
-                    {
-                        _readers.Add(key, reader);
-                    }
+                    _readers.Add(key, reader);
                 }
 
                 if (reader != null)

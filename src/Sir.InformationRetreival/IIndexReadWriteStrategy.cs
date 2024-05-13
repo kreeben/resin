@@ -7,6 +7,6 @@ namespace Sir
     {
         void Put<T>(VectorNode column, VectorNode node);
         Hit GetMatchOrNull(ISerializableVector vector, IModel model, ColumnReader reader);
-        void Commit(string directory, ulong collectionId, long keyId, VectorNode tree, ILogger logger = null);
+        void SerializePage(string directory, ulong collectionId, long keyId, VectorNode tree, IndexCache indexCache, ILogger logger = null);
     }
 }

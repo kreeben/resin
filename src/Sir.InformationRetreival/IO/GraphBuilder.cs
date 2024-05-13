@@ -33,7 +33,7 @@ namespace Sir.IO
             {
                 var angle = cursor.Vector == null ? 0 : model.CosAngle(node.Vector, cursor.Vector);
 
-                if (angle >= model.IdenticalAngle)
+                if (angle >= model.IdenticalAngle || angle.Approximates(model.IdenticalAngle))
                 {
                     if (!cursor.Vector.Label.Equals(node.Vector.Label))
                         throw new InvalidOperationException($"IdenticalAngle {model.IdenticalAngle} is too low. Angle was {angle}");
@@ -79,7 +79,7 @@ namespace Sir.IO
             {
                 var angle = cursor.Vector == null ? 0 : model.CosAngle(node.Vector, cursor.Vector);
 
-                if (angle >= model.IdenticalAngle)
+                if (angle.Approximates(model.IdenticalAngle))
                 {
                     AppendDocIds(cursor, node);
 
@@ -123,7 +123,7 @@ namespace Sir.IO
             {
                 var angle = cursor.Vector == null ? 0 : model.CosAngle(node.Vector, cursor.Vector);
 
-                if (angle >= model.IdenticalAngle)
+                if (angle.Approximates(model.IdenticalAngle))
                 {
                     break;
                 }
@@ -165,7 +165,7 @@ namespace Sir.IO
             {
                 var angle = cursor.Vector == null ? 0 : model.CosAngle(node.Vector, cursor.Vector);
 
-                if (angle >= model.IdenticalAngle)
+                if (angle.Approximates(model.IdenticalAngle))
                 {
                     return false;
                 }
@@ -209,7 +209,7 @@ namespace Sir.IO
             {
                 var angle = cursor.Vector == null ? 0 : model.CosAngle(node.Vector, cursor.Vector);
 
-                if (angle >= model.IdenticalAngle)
+                if (angle.Approximates(model.IdenticalAngle))
                 {
                     break;
                 }
@@ -240,8 +240,11 @@ namespace Sir.IO
             }
         }
 
-        public static void AppendDocIds(this VectorNode target, VectorNode source)
+        private static void AppendDocIds(this VectorNode target, VectorNode source)
         {
+            if (target.DocIds == null || source.DocIds == null)
+                return;
+
             foreach (var d in source.DocIds)
                 target.DocIds.Add(d);
         }
@@ -297,7 +300,7 @@ namespace Sir.IO
             {
                 if (node.PostingsOffset == -1 && postingsWriter != null)
                 {
-                    postingsWriter.SerializePostings(node);
+                    node.PostingsOffset = postingsWriter.SerializePostings(node);
                 }
 
                 if (vectorStream != null)

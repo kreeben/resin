@@ -15,7 +15,7 @@ namespace Sir
     {
         private readonly IModel<T> _model;
         private readonly IIndexReadWriteStrategy _indexStrategy;
-        private readonly PostingsReadOrchestrator _postingsReadOrchestrator;
+        private readonly TermPostingsMapper _termPostingsMapper;
         private readonly Scorer _scorer;
         private readonly ILogger _logger;
         private readonly Dictionary<(string, ulong, long), ColumnReader> _readers;
@@ -25,12 +25,12 @@ namespace Sir
             IModel<T> model,
             IIndexReadWriteStrategy indexStrategy,
             ILogger logger = null,
-            PostingsReadOrchestrator postingsResolver = null,
+            TermPostingsMapper termPostingsMapper = null,
             Scorer scorer = null) : base(directory)
         {
             _model = model;
             _indexStrategy = indexStrategy;
-            _postingsReadOrchestrator = postingsResolver ?? new PostingsReadOrchestrator(logger);
+            _termPostingsMapper = termPostingsMapper ?? new TermPostingsMapper(logger);
             _scorer = scorer ?? new Scorer();
             _logger = logger;
             _readers = new Dictionary<(string, ulong, long), ColumnReader>();
@@ -48,7 +48,7 @@ namespace Sir
             base.ClearCachedReaders();
         }
 
-        public SearchResult Search(IQuery query, int skip, int take)
+        public SearchResult Search(Query query, int skip, int take)
         {
             var result = OrchestrateSearch(query, skip, take, false);
 
@@ -64,7 +64,7 @@ namespace Sir
             return new SearchResult(query, 0, 0, System.Linq.Enumerable.Empty<Document>());
         }
 
-        public Document SearchScalar(IQuery query)
+        public Document SearchScalar(Query query)
         {
             var result = OrchestrateSearch(query, 0, 1, true);
 
@@ -80,7 +80,7 @@ namespace Sir
             return null;
         }
 
-        public SearchResult SearchIdentical(IQuery query, int take)
+        public SearchResult SearchIdentical(Query query, int take)
         {
             var result = OrchestrateSearch(query, 0, take, true);
 
@@ -96,7 +96,7 @@ namespace Sir
             return new SearchResult(query, 0, 0, System.Linq.Enumerable.Empty<Document>());
         }
 
-        private ScoredResult OrchestrateSearch(IQuery query, int skip, int take, bool identicalMatchesOnly)
+        private ScoredResult OrchestrateSearch(Query query, int skip, int take, bool identicalMatchesOnly)
         {
             var timer = Stopwatch.StartNew();
 
@@ -107,7 +107,7 @@ namespace Sir
             timer.Restart();
 
             // Read postings.
-            _postingsReadOrchestrator.ReadAndMapPostings(query);
+            _termPostingsMapper.ReadAndMap(query);
 
             LogDebug($"reading postings took {timer.Elapsed}");
             timer.Restart();
@@ -130,7 +130,7 @@ namespace Sir
         /// <summary>
         /// Scans the index to find the query's closest matching nodes and records their posting list addresses.
         /// </summary>
-        private void Scan(IQuery query, bool identicalMatchesOnly)
+        private void Scan(Query query, bool identicalMatchesOnly)
         {
             if (query == null)
                 return;
@@ -229,7 +229,9 @@ namespace Sir
                 var doc = ReadDocument(d.Key, select, d.Value * scoreMultiplier);
 
                 if (doc != null)
+                {
                     result.Add(doc);
+                }
             }
 
             LogDebug($"reading documents took {timer.Elapsed}");
@@ -257,8 +259,8 @@ namespace Sir
 
         public override void Dispose()
         {
-            if (_postingsReadOrchestrator!= null)
-                _postingsReadOrchestrator.Dispose();
+            if (_termPostingsMapper!= null)
+                _termPostingsMapper.Dispose();
 
             foreach (var reader in _readers.Values)
             {

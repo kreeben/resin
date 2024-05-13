@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
@@ -36,7 +35,7 @@ namespace Sir.IO
             {
                 var hit = ClosestMatchInPage(vector, model, page.offset);
 
-                if (hit.Score > 0)
+                if (hit != null && hit.Score > 0)
                 {
                     hits.Add(hit);
                 }
@@ -71,7 +70,7 @@ namespace Sir.IO
             {
                 var hit = ClosestMatchInPage(vector, model, page.offset);
 
-                if (hit.Score > 0)
+                if (hit != null && hit.Score > 0)
                 {
                     if (best == null || hit.Score > best.Score)
                     {
@@ -82,10 +81,10 @@ namespace Sir.IO
                     {
                         best.PostingsOffsets.Add(hit.Node.PostingsOffset);
                     }
-                }
 
-                if (hit.Score.Approximates(model.IdenticalAngle))
-                    break;
+                    if (hit.Score.Approximates(model.IdenticalAngle))
+                        break;
+                }
             }
 
             return best;
@@ -110,7 +109,7 @@ namespace Sir.IO
 
                 var angle = model.CosAngle(queryVector, vecOffset, (int)componentCount, _vectorFile);
 
-                if (angle >= model.IdenticalAngle)
+                if (angle >= model.IdenticalAngle || angle.Approximates(model.IdenticalAngle))
                 {
                     bestScore = angle;
                     bestNode = new VectorNode(postingsOffset: postingsOffset);
@@ -124,7 +123,7 @@ namespace Sir.IO
                         bestScore = angle;
                         bestNode = new VectorNode(postingsOffset: postingsOffset);
                     }
-                    else if (angle == bestScore)
+                    else if (angle.Approximates(bestScore))
                     {
                         bestNode.PostingsOffset = postingsOffset;
                     }
@@ -153,7 +152,7 @@ namespace Sir.IO
                         bestScore = angle;
                         bestNode = new VectorNode(postingsOffset: postingsOffset);
                     }
-                    else if (angle > 0 && angle == bestScore)
+                    else if (angle > 0 && angle.Approximates(bestScore))
                     {
                         bestNode.PostingsOffset = postingsOffset;
                     }
@@ -188,7 +187,7 @@ namespace Sir.IO
 
             ArrayPool<byte>.Shared.Return(block);
 
-            return new Hit(bestNode, bestScore);
+            return bestNode == null ? null : new Hit(bestNode, bestScore);
         }
 
         private void SkipTree()

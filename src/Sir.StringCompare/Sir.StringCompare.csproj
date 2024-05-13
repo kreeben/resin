@@ -16,7 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Sir.InformationRetreival\Sir.InformationRetrieval.csproj" />
-    <ProjectReference Include="..\Sir.Strings\Sir.Strings.csproj" />
+    <ProjectReference Include="..\Sir.Strings\Sir.Model.Strings.csproj" />
   </ItemGroup>
 
 </Project>

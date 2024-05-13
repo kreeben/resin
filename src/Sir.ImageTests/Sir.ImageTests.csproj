@@ -15,10 +15,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Sir.Core\Sir.InformationRetreival.csproj" />
-    <ProjectReference Include="..\Sir.Images\Sir.Images.csproj" />
+    <ProjectReference Include="..\Sir.Images\Sir.Model.Images.csproj" />
     <ProjectReference Include="..\Sir.InformationRetreival\Sir.InformationRetrieval.csproj" />
-    <ProjectReference Include="..\Sir.Mnist\Sir.Mnist.csproj" />
+    <ProjectReference Include="..\Sir.Mnist\Sir.DataProvider.Mnist.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -18,6 +18,7 @@ namespace Sir
         private readonly string _directory;
         private readonly ulong _collectionId;
         private readonly ILogger _logger;
+        private readonly IndexCache _indexCache;
 
         public SortedList<int, float> EmptyEmbedding = new SortedList<int, float>();
 
@@ -26,6 +27,7 @@ namespace Sir
             ulong collectionId,
             IModel<T> model,
             IIndexReadWriteStrategy indexingStrategy,
+            IndexCache indexCache,
             ILogger logger = null)
         {
             _model = model;
@@ -34,6 +36,7 @@ namespace Sir
             _directory = directory;
             _collectionId = collectionId;
             _logger = logger;
+            _indexCache = indexCache;
         }
 
         public void Put(long docId, long keyId, T value, bool label)
@@ -57,7 +60,7 @@ namespace Sir
             {
                 _indexingStrategy.Put<T>(
                                     column,
-                                    new VectorNode(vector: token, docId: docId));
+                                    new VectorNode(vector:token, docId:docId, keyId:keyId));
             }
         }
 
@@ -93,7 +96,7 @@ namespace Sir
 
             var column = _index[keyId];
 
-            _indexingStrategy.Commit(_directory, _collectionId, keyId, column, _logger);
+            _indexingStrategy.SerializePage(_directory, _collectionId, keyId, column, _indexCache, _logger);
 
             if (_logger != null)
                 _logger.LogInformation($"committing index to disk for key {keyId} took {time.Elapsed}");

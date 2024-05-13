@@ -24,12 +24,12 @@ namespace Sir
             column.AddOrAppendSupervised(node, _model);
         }
 
-        public void Commit(string directory, ulong collectionId, long keyId, VectorNode tree, ILogger logger = null)
+        public void SerializePage(string directory, ulong collectionId, long keyId, VectorNode tree, IndexCache indexCache, ILogger logger = null)
         {
             var time = Stopwatch.StartNew();
 
             using (var vectorStream = StreamFactory.CreateAppendStream(directory, collectionId, keyId, "vec"))
-            using (var postingsWriter = new PostingsWriter(StreamFactory.CreateAppendStream(directory, collectionId, keyId, "pos")))
+            using (var postingsWriter = new PostingsWriter(StreamFactory.CreateSeekableWriteStream(directory, collectionId, keyId, "pos"), indexCache))
             using (var columnWriter = new ColumnWriter(StreamFactory.CreateAppendStream(directory, collectionId, keyId, "ix")))
             using (var pageIndexWriter = new PageIndexWriter(StreamFactory.CreateAppendStream(directory, collectionId, keyId, "ixtp")))
             {

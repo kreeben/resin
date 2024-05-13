@@ -7,7 +7,7 @@ namespace Sir
         /// <summary>
         /// Reduce query to a list of scored document IDs.
         /// </summary>
-        public void Score(IQuery query, ref IDictionary<(ulong CollectionId, long DocumentId), double> result)
+        public void Score(Query query, ref IDictionary<(ulong CollectionId, long DocumentId), double> result)
         {
             IDictionary<(ulong, long), double> queryResult = new Dictionary<(ulong, long), double>();
 

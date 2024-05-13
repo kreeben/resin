@@ -18,9 +18,9 @@ namespace Sir
         private WriteSession _writeSession;
         private IndexSession<T> _indexSession;
         private SearchSession<T> _searchSession;
+        private IndexCache _indexCache;
         private readonly IModel<T> _model;
         private readonly ILogger _logger;
-
         public IndexSession<T> IndexSession { get { return _indexSession; } }
         public SearchSession<T> SearchSession { get { return _searchSession; } }
 
@@ -30,8 +30,9 @@ namespace Sir
             _collectionId = collectionId;
             _model = model;
             _indexStrategy = indexStrategy;
+            _indexCache = new IndexCache(_model);
             _writeSession = new WriteSession(new DocumentRegistryWriter(directory, collectionId));
-            _indexSession = new IndexSession<T>(directory, collectionId, model, indexStrategy, logger);
+            _indexSession = new IndexSession<T>(directory, collectionId, model, indexStrategy, _indexCache, logger);
             _searchSession = new SearchSession<T>(directory, _model, _indexStrategy, logger);
             _logger = logger;
         }
@@ -46,7 +47,7 @@ namespace Sir
             return _searchSession.ReadDocuments<string>(_collectionId, fieldsOfInterest, skip, take);
         }
 
-        public SearchResult Read(IQuery query, int skip, int take)
+        public SearchResult Read(Query query, int skip, int take)
         {
             return _searchSession.Search(query, skip, take);
         }
@@ -104,7 +105,7 @@ namespace Sir
             LogInformation($"truncated collection {_collectionId} ({count} files affected)");
 
             _writeSession = new WriteSession(new DocumentRegistryWriter(_directory, _collectionId));
-            _indexSession = new IndexSession<T>(_directory, _collectionId, _model, _indexStrategy, _logger);
+            _indexSession = new IndexSession<T>(_directory, _collectionId, _model, _indexStrategy, _indexCache, _logger);
             _searchSession = new SearchSession<T>(_directory, _model, _indexStrategy, _logger);
         }
 
@@ -143,7 +144,7 @@ namespace Sir
             LogInformation($"truncated index {_collectionId} ({count} files affected)");
 
             _writeSession = new WriteSession(new DocumentRegistryWriter(_directory, _collectionId));
-            _indexSession = new IndexSession<T>(_directory, _collectionId, _model, _indexStrategy, _logger);
+            _indexSession = new IndexSession<T>(_directory, _collectionId, _model, _indexStrategy, _indexCache, _logger);
             _searchSession = new SearchSession<T>(_directory, _model, _indexStrategy, _logger);
         }
 
@@ -165,7 +166,7 @@ namespace Sir
 
             _collectionId = newCollectionId;
             _writeSession = new WriteSession(new DocumentRegistryWriter(_directory, _collectionId));
-            _indexSession = new IndexSession<T>(_directory, _collectionId, _model, _indexStrategy, _logger);
+            _indexSession = new IndexSession<T>(_directory, _collectionId, _model, _indexStrategy, _indexCache, _logger);
             _searchSession = new SearchSession<T>(_directory, _model, _indexStrategy, _logger);
         }
 
