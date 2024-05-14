@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Sir.IO;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,7 +9,7 @@ namespace Sir
     /// Write a paged index.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class IndexSession<T> : IIndexSession<T>, IDisposable
+    public class IndexSession<T> :  IDisposable
     {
         private readonly IModel<T> _model;
         private readonly IIndexReadWriteStrategy _indexingStrategy;
@@ -19,8 +18,6 @@ namespace Sir
         private readonly ulong _collectionId;
         private readonly ILogger _logger;
         private readonly IndexCache _indexCache;
-
-        public SortedList<int, float> EmptyEmbedding = new SortedList<int, float>();
 
         public IndexSession(
             string directory,
@@ -41,12 +38,12 @@ namespace Sir
 
         public void Put(long docId, long keyId, T value, bool label)
         {
-            var tokens = _model.CreateEmbedding(value, label, EmptyEmbedding);
+            var tokens = _model.CreateEmbedding(value, label);
 
             Put(docId, keyId, tokens);
         }
 
-        public void Put(long docId, long keyId, IEnumerable<ISerializableVector> tokens)
+        private void Put(long docId, long keyId, IEnumerable<ISerializableVector> tokens)
         {
             VectorNode column;
 
@@ -58,27 +55,10 @@ namespace Sir
 
             foreach (var token in tokens)
             {
-                _indexingStrategy.Put<T>(
-                                    column,
-                                    new VectorNode(vector:token, docId:docId, keyId:keyId));
-            }
-        }
-
-        public void Put(VectorNode token)
-        {
-            VectorNode column;
-
-            if (!_index.TryGetValue(token.KeyId.Value, out column))
-            {
-                column = new VectorNode();
-                _index.Add(token.KeyId.Value, column);
-            }
-
-            foreach (var node in PathFinder.All(token))
-            {
-                _indexingStrategy.Put<T>(
-                    column,
-                    new VectorNode(node.Vector, docIds: node.DocIds));
+                if (!token.IsEmptyVector())
+                    _indexingStrategy.Put<T>(
+                                        column,
+                                        new VectorNode(vector:token, docId:docId, keyId:keyId));
             }
         }
 

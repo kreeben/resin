@@ -103,7 +103,7 @@ namespace Sir.ImageTests
                                     throw new Exception($"unable to find {word} in tree.");
                                 }
 
-                                if (hit.Score < model.IdenticalAngle)
+                                if (hit.Score.Approximates(model.IdenticalAngle))
                                 {
                                     throw new Exception($"unable to score {word}.");
                                 }

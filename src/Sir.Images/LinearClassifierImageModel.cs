@@ -11,7 +11,7 @@ namespace Sir.Images
         public double FoldAngle => 0.75d;
         public override int NumOfDimensions => 784; 
 
-        public IEnumerable<ISerializableVector> CreateEmbedding(IImage data, bool label, SortedList<int, float> embedding = null)
+        public IEnumerable<ISerializableVector> CreateEmbedding(IImage data, bool label)
         {
             var pixels = data.Pixels.Select(x => Convert.ToSingle(x));
 

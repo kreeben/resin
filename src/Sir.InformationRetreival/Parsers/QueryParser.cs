@@ -10,14 +10,12 @@ namespace Sir
         private readonly KeyValueReader _kvReader;
         private readonly IModel<T> _model;
         private readonly ILogger _logger;
-        private readonly SortedList<int, float> _embedding;
 
-        public QueryParser(KeyValueReader kvReader, IModel<T> model, SortedList<int, float> embedding = null, ILogger logger = null)
+        public QueryParser(KeyValueReader kvReader, IModel<T> model, ILogger logger = null)
         {
             _kvReader = kvReader;
             _model = model;
             _logger = logger;
-            _embedding = embedding ?? new SortedList<int, float>();
         }
 
         public Query Parse(
@@ -243,7 +241,7 @@ namespace Sir
 
             if (_kvReader.TryGetKeyId(key.ToHash(), out keyId))
             {
-                var tokens = _model.CreateEmbedding(value, label, _embedding);
+                var tokens = _model.CreateEmbedding(value, label);
 
                 foreach (var term in tokens)
                 {

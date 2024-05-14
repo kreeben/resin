@@ -35,7 +35,7 @@ namespace Sir
             {
                 var hit = PathFinder.ClosestMatch(tree, vector, _model);
 
-                if (hit.Score >= _model.IdenticalAngle)
+                if (hit.Score.Approximates(_model.IdenticalAngle))
                 {
                     return hit.Node.PostingsOffset == -1 ? null : hit.Node.PostingsOffset;
                 }
@@ -49,7 +49,7 @@ namespace Sir
             {
                 var hit = PathFinder.ClosestMatch(tree, vector, _model);
 
-                if (hit.Score >= _model.IdenticalAngle)
+                if (hit.Score.Approximates(_model.IdenticalAngle))
                 {
                     hit.Node.PostingsOffset = postingsOffset;
                 }

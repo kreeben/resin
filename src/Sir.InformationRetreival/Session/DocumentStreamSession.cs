@@ -201,12 +201,8 @@ namespace Sir
             HashSet<string> select,
             DocumentRegistryReader documentReader,
             IModel<T> model,
-            bool label,
-            SortedList<int, float> embedding = null)
+            bool label)
         {
-            if (embedding == null)
-                embedding = new SortedList<int, float>();
-
             var docInfo = documentReader.GetDocumentAddress(doc.docId);
             var docMap = documentReader.GetDocumentMap(docInfo.offset, docInfo.length);
 
@@ -222,7 +218,7 @@ namespace Sir
                 {
                     var vInfo = documentReader.GetAddressOfValue(kvp.valId);
 
-                    foreach (var vector in documentReader.GetValueConvertedToVectors<T>(vInfo.offset, vInfo.len, vInfo.dataType, value => model.CreateEmbedding(value, label, embedding)))
+                    foreach (var vector in documentReader.GetValueConvertedToVectors<T>(vInfo.offset, vInfo.len, vInfo.dataType, value => model.CreateEmbedding(value, label)))
                     {
                         tree.AddIfUnique(new VectorNode(vector, docId:doc.docId, keyId:kvp.keyId), model);
                     }

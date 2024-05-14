@@ -22,13 +22,12 @@ namespace Sir.Cmd
             var selectFields = new HashSet<string> { "title" };
             var time = Stopwatch.StartNew();
             var count = 0;
-            var embedding = new SortedList<int, float>();
 
             using (var kvReader = new KeyValue.KeyValueReader(dir, collectionId))
             using (var validateSession = new ValidateSession<string>(
                     collectionId,
                     new SearchSession<string>(dir, model, new LogStructuredIndexingStrategy(model), logger),
-                    new QueryParser<string>(kvReader, model, embedding: embedding, logger: logger)))
+                    new QueryParser<string>(kvReader, model, logger: logger)))
             using (var documents = new DocumentStreamSession(dir))
             {
                 foreach (var doc in documents.ReadDocuments<string>(collectionId, selectFields, skip, take))

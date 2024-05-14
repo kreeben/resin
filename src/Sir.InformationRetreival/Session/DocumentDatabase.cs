@@ -39,7 +39,7 @@ namespace Sir
 
         public QueryParser<T> CreateQueryParser()
         {
-            return new QueryParser<T>(SearchSession.GetKeyValueReader(_collectionId), _model, IndexSession.EmptyEmbedding, _logger);
+            return new QueryParser<T>(SearchSession.GetKeyValueReader(_collectionId), _model, _logger);
         }
 
         public IEnumerable<Document> StreamDocuments(HashSet<string> fieldsOfInterest, int skip, int take)

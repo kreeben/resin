@@ -17,18 +17,13 @@ namespace Sir.Strings
             NumOfDimensions = wordTokenizer.NumOfDimensions * 2;
         }
 
-        public IEnumerable<ISerializableVector> CreateEmbedding(string data, bool label, SortedList<int, float> embedding = null)
+        public IEnumerable<ISerializableVector> CreateEmbedding(string data, bool label)
         {
-            if (embedding == null)
-                embedding = new SortedList<int, float>();
-            else
-                embedding.Clear();
-
             ISerializableVector vec0 = null;
 
             var i = 0;
 
-            foreach (var token in _wordTokenizer.CreateEmbedding(data, label, embedding))
+            foreach (var token in _wordTokenizer.CreateEmbedding(data, label))
             {
                 if (vec0 == null)
                 {

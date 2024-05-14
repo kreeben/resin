@@ -24,7 +24,7 @@ namespace Sir
             _logger = logger;
         }
 
-        public void Step(IIndexSession indexSession, string message = null)
+        public void Step<T>(IndexSession<T> indexSession, string message = null)
         {
             _steps++;
 

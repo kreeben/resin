@@ -18,7 +18,6 @@ namespace Sir.Cmd
             var select = new HashSet<string>(args["select"].Split(new char[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries));
             var collectionId = collection.ToHash();
             var model = new BagOfCharsModel();
-            var embedding = new SortedList<int, float>();
 
             using (var documentReader = new DocumentRegistryReader(dataDirectory, collectionId))
             {
@@ -26,7 +25,7 @@ namespace Sir.Cmd
 
                 foreach (var field in doc.Fields)
                 {
-                    var tokens = model.CreateEmbedding(field.Value.ToString(), true, embedding);
+                    var tokens = model.CreateEmbedding(field.Value.ToString(), true);
                     var tree = new VectorNode();
 
                     foreach (var token in tokens)

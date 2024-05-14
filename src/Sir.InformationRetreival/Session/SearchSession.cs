@@ -156,7 +156,7 @@ namespace Sir
 
                     if (hit != null)
                     {
-                        if (!identicalMatchesOnly || (hit.Score >= _model.IdenticalAngle))
+                        if (!identicalMatchesOnly || hit.Score.Approximates(_model.IdenticalAngle))
                         {
                             term.Score = hit.Score;
                             term.PostingsOffsets = hit.PostingsOffsets;

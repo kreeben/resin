@@ -20,5 +20,6 @@ namespace Sir
         void AverageInPlace(ISerializableVector vector);
         ISerializableVector Append(ISerializableVector vector);
         ISerializableVector Shift(int numOfPositionsToShift, int numOfDimensions);
+        bool IsEmptyVector();
     }
 }

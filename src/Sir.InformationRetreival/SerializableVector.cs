@@ -17,6 +17,10 @@ namespace Sir
         public int[] Indices { get { return ((SparseVectorStorage<float>)Value.Storage).Indices; } }
         public float[] Values { get { return ((SparseVectorStorage<float>)Value.Storage).Values; } }
 
+        public SerializableVector()
+        {
+        }
+
         public SerializableVector(int numOfDimensions, object label = null)
         {
             Value = CreateVector.Sparse<float>(numOfDimensions);
@@ -46,6 +50,11 @@ namespace Sir
             Value = CreateVector.SparseOfIndexed(numOfDimensions, new ArraySegment<Tuple<int, float>>(tuples, 0, len));
             ArrayPool<Tuple<int, float>>.Shared.Return(tuples);
             Label = label;
+        }
+
+        public bool IsEmptyVector()
+        {
+            return Value == null;
         }
 
         public SerializableVector(int[] index, float[] values, int numOfDimensions, object label = null)

@@ -9,7 +9,7 @@ namespace Sir
     /// <typeparam name="T">The type of data the model should consist of.</typeparam>
     public interface IModel<T> : IModel
     {
-        IEnumerable<ISerializableVector> CreateEmbedding(T data, bool label, SortedList<int, float> embedding = null);
+        IEnumerable<ISerializableVector> CreateEmbedding(T data, bool label);
     }
 
     /// <summary>

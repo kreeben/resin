@@ -2,7 +2,7 @@
 
 namespace Sir.Strings
 {
-    public class BagOfCharsModel : DistanceCalculator, IModel<string>
+    public class BagOfWordsModel : DistanceCalculator, IModel<string>
     {
         public double IdenticalAngle => 0.998d;
         public double FoldAngle => 0.55d;
@@ -24,7 +24,11 @@ namespace Sir.Strings
                 {
                     char c = char.ToLower(source[index]);
 
-                    if (char.IsLetterOrDigit(c) || char.GetUnicodeCategory(c) == System.Globalization.UnicodeCategory.MathSymbol)
+                    if (char.IsPunctuation(c))
+                    {
+                        yield return new SerializableVector();
+                    }
+                    else if (char.IsLetterOrDigit(c) || char.GetUnicodeCategory(c) == System.Globalization.UnicodeCategory.MathSymbol)
                     {
                         _embedding.AddOrAppendToComponent(c, 1);
                     }
@@ -58,23 +62,6 @@ namespace Sir.Strings
 
                     yield return vector;
                 }
-            }
-        }
-    }
-
-    public static class TokenizeOperations
-    {
-        public static void AddOrAppendToComponent(this SortedList<int, float> vec, int key, float value)
-        {
-            float v;
-
-            if (vec.TryGetValue(key, out v))
-            {
-                vec[key] = v + value;
-            }
-            else
-            {
-                vec.Add(key, value);
             }
         }
     }

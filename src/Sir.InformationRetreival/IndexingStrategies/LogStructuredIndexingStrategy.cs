@@ -29,7 +29,7 @@ namespace Sir
             var time = Stopwatch.StartNew();
 
             using (var vectorStream = StreamFactory.CreateAppendStream(directory, collectionId, keyId, "vec"))
-            using (var postingsWriter = new PostingsWriter(StreamFactory.CreateSeekableWriteStream(directory, collectionId, keyId, "pos"), indexCache:null))
+            using (var postingsWriter = new PostingsWriter(StreamFactory.CreateSeekableWriteStream(directory, collectionId, keyId, "pos"), indexCache: indexCache))
             using (var columnWriter = new ColumnWriter(StreamFactory.CreateAppendStream(directory, collectionId, keyId, "ix")))
             using (var pageIndexWriter = new PageIndexWriter(StreamFactory.CreateAppendStream(directory, collectionId, keyId, "ixtp")))
             {

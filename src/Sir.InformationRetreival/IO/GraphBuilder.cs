@@ -9,11 +9,10 @@ namespace Sir.IO
         public static VectorNode CreateTree<T>(this IModel<T> model, IIndexReadWriteStrategy indexingStrategy, params T[] data)
         {
             var root = new VectorNode();
-            var embedding = new SortedList<int, float>();
 
             foreach (var item in data)
             {
-                foreach (var vector in model.CreateEmbedding(item, true, embedding))
+                foreach (var vector in model.CreateEmbedding(item, true))
                 {
                     indexingStrategy.Put<T>(root, new VectorNode(vector));
                 }
