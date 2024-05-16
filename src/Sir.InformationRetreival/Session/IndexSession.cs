@@ -72,15 +72,9 @@ namespace Sir
 
         private void Commit(long keyId)
         {
-            var time = Stopwatch.StartNew();
-
             var column = _index[keyId];
 
             _indexingStrategy.SerializePage(_directory, _collectionId, keyId, column, _indexCache, _logger);
-
-            if (_logger != null)
-                _logger.LogInformation($"committing index to disk for key {keyId} took {time.Elapsed}");
-
             _index.Remove(keyId);
         }
 

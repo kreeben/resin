@@ -39,7 +39,12 @@ namespace Sir
                 var size = columnWriter.CreatePage(tree, vectorStream, postingsWriter, pageIndexWriter);
 
                 if (logger != null)
+                {
+                    var timings = postingsWriter.GetTimings();
+
                     logger.LogInformation($"serialized column {keyId}, weight {tree.Weight} {size} in {time.Elapsed}");
+                    logger.LogInformation($"postings writer run time. postings: {timings.postings}, headers: {timings.headers}, cache: {timings.cache}");
+                }
             }
         }
     }
