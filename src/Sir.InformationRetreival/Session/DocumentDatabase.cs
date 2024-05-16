@@ -23,6 +23,7 @@ namespace Sir
         private readonly ILogger _logger;
         public IndexSession<T> IndexSession { get { return _indexSession; } }
         public SearchSession<T> SearchSession { get { return _searchSession; } }
+        public ulong IndexCollectionId { get { return $"{_collectionId}.index".ToHash(); } }
 
         public DocumentDatabase(string directory, ulong collectionId, IModel<T> model = null, IIndexReadWriteStrategy indexStrategy = null, ILogger logger = null)
         {
@@ -63,7 +64,7 @@ namespace Sir
                 {
                     if (field.Value != null && field.Value is T typedValue)
                     {
-                        _indexSession.Put(document.Id, field.KeyId, typedValue, label);
+                        _indexSession.Put(document.Id.Value, field.KeyId, typedValue, label);
                     }
                 }
             }
@@ -102,6 +103,15 @@ namespace Sir
                 }
             }
 
+            if (Directory.Exists(_directory))
+            {
+                foreach (var file in Directory.GetFiles(_directory, $"{Database.GetIndexCollectionId(_collectionId)}*"))
+                {
+                    File.Delete(file);
+                    count++;
+                }
+            }
+
             LogInformation($"truncated collection {_collectionId} ({count} files affected)");
 
             _writeSession = new WriteSession(new DocumentRegistryWriter(_directory, _collectionId));
@@ -114,28 +124,29 @@ namespace Sir
             DisposeInternal();
 
             var count = 0;
+            var indexCollectionId = Database.GetIndexCollectionId(_collectionId);
 
-            foreach (var file in Directory.GetFiles(_directory, $"{_collectionId}*.ix"))
+            foreach (var file in Directory.GetFiles(_directory, $"{indexCollectionId}*.ix"))
             {
                 File.Delete(file);
                 count++;
             }
-            foreach (var file in Directory.GetFiles(_directory, $"{_collectionId}*.ixp"))
+            foreach (var file in Directory.GetFiles(_directory, $"{indexCollectionId}*.ixp"))
             {
                 File.Delete(file);
                 count++;
             }
-            foreach (var file in Directory.GetFiles(_directory, $"{_collectionId}*.ixtp"))
+            foreach (var file in Directory.GetFiles(_directory, $"{indexCollectionId}*.ixtp"))
             {
                 File.Delete(file);
                 count++;
             }
-            foreach (var file in Directory.GetFiles(_directory, $"{_collectionId}*.vec"))
+            foreach (var file in Directory.GetFiles(_directory, $"{indexCollectionId}*.vec"))
             {
                 File.Delete(file);
                 count++;
             }
-            foreach (var file in Directory.GetFiles(_directory, $"{_collectionId}*.pos"))
+            foreach (var file in Directory.GetFiles(_directory, $"{indexCollectionId}*.pos"))
             {
                 File.Delete(file);
                 count++;
@@ -204,6 +215,14 @@ namespace Sir
 
             if (_searchSession != null)
                 _searchSession.Dispose();
+        }
+    }
+
+    public static class Database
+    {
+        public static ulong GetIndexCollectionId(ulong collectionId)
+        {
+            return $"{collectionId}.index".ToHash();
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Sir.KeyValue
 {
@@ -145,6 +146,10 @@ namespace Sir.KeyValue
             else if (DataType.BYTE == typeId)
             {
                 return buf[0];
+            }
+            else if (DataType.LISTOFLONG == typeId)
+            {
+                return MemoryMarshal.Cast<byte, long>(buf).ToArray();
             }
             else // catches both STREAM and STREAMABLE
             {

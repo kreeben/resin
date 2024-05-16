@@ -17,5 +17,6 @@
         public static byte ULONG = 10;
         public static byte BYTE = 11;
         public static byte STREAMABLE = 12;
+        public static byte LISTOFLONG = 13;
     }
 }

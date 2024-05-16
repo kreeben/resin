@@ -8,9 +8,9 @@ namespace Sir.Documents
     [JsonConverter(typeof(DocumentJsonConverter))]
     public class Document
     {
-        public ulong CollectionId { get; set; }
-        public long Id { get; set; }
-        public double Score { get; set; }
+        public ulong? CollectionId { get; set; }
+        public long? Id { get; set; }
+        public double? Score { get; set; }
         public IList<Field> Fields { get; set; }
 
         /// <summary>
@@ -21,7 +21,7 @@ namespace Sir.Documents
             Fields = new List<Field>();
         }
 
-        public Document(IEnumerable<Field> fields, ulong collectionId = ulong.MinValue, long documentId = -1, double score = -1)
+        public Document(IEnumerable<Field> fields, ulong? collectionId = null, long? documentId = null, double? score = null)
         {
             Id = documentId;
             Score = score;
@@ -36,9 +36,12 @@ namespace Sir.Documents
                 Fields = new List<Field>(fields);
             }
 
-            foreach (var field in fields)
+            if (documentId.HasValue)
             {
-                field.DocumentId = Id;
+                foreach (var field in fields)
+                {
+                    field.DocumentId = Id.Value;
+                }
             }
         }
 

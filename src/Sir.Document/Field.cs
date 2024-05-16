@@ -8,12 +8,12 @@ namespace Sir.Documents
     public class Field
     {
         public long KeyId { get; set; }
-        public long DocumentId { get; set; }
+        public long? DocumentId { get; set; }
         public string Name { get; }
         public object Value { get; set; }
         public IEnumerable<ISerializableVector> Tokens { get; }
 
-        public Field(string name, object value, long keyId = -1, long documentId = -1, IEnumerable<ISerializableVector> tokens = null)
+        public Field(string name, object value, long keyId = -1, long? documentId = null, IEnumerable<ISerializableVector> tokens = null)
         {
             if (name is null) throw new ArgumentNullException(nameof(name));
             if (value == null) throw new ArgumentNullException(nameof(value));

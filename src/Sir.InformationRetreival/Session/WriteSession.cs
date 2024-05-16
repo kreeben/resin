@@ -17,7 +17,7 @@ namespace Sir
             _documentWriter = documentWriter;
         }
 
-        public void Put(Document document)
+        public long Put(Document document)
         {
             var docMap = new List<(long keyId, long valId)>();
 
@@ -35,7 +35,9 @@ namespace Sir
 
             var docMeta = _documentWriter.PutDocumentMap(docMap);
 
-            _documentWriter.PutDocumentAddress(document.Id, docMeta.offset, docMeta.length);
+            _documentWriter.PutDocumentAddress(document.Id.Value, docMeta.offset, docMeta.length);
+
+            return document.Id.Value;
         }
 
         private void WriteField(Field field, IList<(long, long)> docMap)
@@ -48,10 +50,10 @@ namespace Sir
         private void Write(long keyId, object val, IList<(long, long)> docMap)
         {
             // store value
-            var kvmap = _documentWriter.KeyValueWriter.PutValue(keyId, val, out _);
+            var kvmap = _documentWriter.KeyValueWriter.PutValue(keyId, val);
 
             // store refs to k/v pair
-            docMap.Add(kvmap);
+            docMap.Add((kvmap.keyId, kvmap.valueId));
         }
 
         public long EnsureKeyExists(string key)

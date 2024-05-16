@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Sir.Documents;
 using Sir.IO;
 using Sir.KeyValue;
 using System.Diagnostics;
@@ -27,11 +28,13 @@ namespace Sir
         public void SerializePage(string directory, ulong collectionId, long keyId, VectorNode tree, IndexCache indexCache, ILogger logger = null)
         {
             var time = Stopwatch.StartNew();
+            var indexCollectionId = Database.GetIndexCollectionId(collectionId);
 
-            using (var vectorStream = StreamFactory.CreateAppendStream(directory, collectionId, keyId, "vec"))
-            using (var postingsWriter = new PostingsWriter(StreamFactory.CreateSeekableWriteStream(directory, collectionId, keyId, "pos"), indexCache: indexCache))
-            using (var columnWriter = new ColumnWriter(StreamFactory.CreateAppendStream(directory, collectionId, keyId, "ix")))
-            using (var pageIndexWriter = new PageIndexWriter(StreamFactory.CreateAppendStream(directory, collectionId, keyId, "ixtp")))
+            using (var writeSession = new WriteSession(new DocumentRegistryWriter(directory, indexCollectionId)))
+            using (var vectorStream = StreamFactory.CreateAppendStream(directory, indexCollectionId, keyId, "vec"))
+            using (var postingsWriter = new PostingsWriter(StreamFactory.CreateSeekableWriteStream(directory, indexCollectionId, keyId, "pos"), writeSession, indexCache))
+            using (var columnWriter = new ColumnWriter(StreamFactory.CreateAppendStream(directory, indexCollectionId, keyId, "ix")))
+            using (var pageIndexWriter = new PageIndexWriter(StreamFactory.CreateAppendStream(directory, indexCollectionId, keyId, "ixtp")))
             {
                 var size = columnWriter.CreatePage(tree, vectorStream, postingsWriter, pageIndexWriter);
 

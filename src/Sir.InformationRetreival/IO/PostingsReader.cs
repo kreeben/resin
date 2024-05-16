@@ -5,7 +5,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 
 namespace Sir.IO
 {
@@ -17,12 +16,14 @@ namespace Sir.IO
         private readonly Stream _stream;
         private readonly ILogger _logger;
         private readonly ulong _collectionId;
+        private readonly DocumentStreamSession _documentSession;
 
         public PostingsReader(string directory, ulong collectionId, long keyId, ILogger logger = null)
         {
-            _stream = DocumentRegistryReader.CreateReadStream(Path.Combine(directory, $"{collectionId}.{keyId}.pos"));
-            _logger = logger;
             _collectionId = collectionId;
+            _stream = DocumentRegistryReader.CreateReadStream(Path.Combine(directory, $"{Database.GetIndexCollectionId(_collectionId)}.{keyId}.pos"));
+            _logger = logger;
+            _documentSession = new DocumentStreamSession(directory);
         }
 
         public HashSet<(ulong, long)> Read(long keyId, IList<long> offsets)
@@ -41,7 +42,7 @@ namespace Sir.IO
 
         private void GetPostingsFromStream(long keyId, long postingsOffset, HashSet<(ulong collectionId, long docId)> postings)
         {
-            // seek to page
+            // seek to header
             _stream.Seek(postingsOffset, SeekOrigin.Begin);
 
             var headerLen = sizeof(long) * 2;
@@ -49,19 +50,17 @@ namespace Sir.IO
             // read header
             var headerBuf = ArrayPool<byte>.Shared.Rent(headerLen);
             _stream.Read(headerBuf, 0, headerLen);
-            var numOfPostings = BitConverter.ToInt64(headerBuf);
+            var listId = BitConverter.ToInt64(headerBuf);
             var addressOfNextPage = BitConverter.ToInt64(headerBuf, sizeof(long));
             ArrayPool<byte>.Shared.Return(headerBuf);
 
             // read postings
-            var listLen = sizeof(long) * numOfPostings;
-            var listBuf = new byte[listLen];
-            var read = _stream.Read(listBuf);
+            var postingsList = _documentSession.ReadDocumentValue<IList<long>>(
+                listId, 
+                keyId, 
+                _documentSession.GetOrCreateDocumentReader(Database.GetIndexCollectionId(_collectionId)));
 
-            if (read != listLen)
-                throw new Exception($"list lenght was {listLen} but read length was {read}");
-
-            foreach (var docId in MemoryMarshal.Cast<byte, long>(listBuf))
+            foreach (var docId in postingsList)
             {
                 postings.Add((_collectionId, docId));
             }
@@ -75,6 +74,7 @@ namespace Sir.IO
         public void Dispose()
         {
             _stream.Dispose();
+            _documentSession.Dispose();
         }
     }
 }

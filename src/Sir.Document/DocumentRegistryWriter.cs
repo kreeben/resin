@@ -36,11 +36,6 @@ namespace Sir.Documents
             return _documentMapWriter.Put(doc);
         }
 
-        public void UpdateDocumentMap(long offsetOfMap, int indexInMap, long keyId, long valId)
-        {
-            _documentMapWriter.Overwrite(offsetOfMap, indexInMap, keyId, valId);
-        }
-
         public void PutDocumentAddress(long docId, long offset, int len)
         {
             _documentIndexWriter.Put(docId, offset, len);

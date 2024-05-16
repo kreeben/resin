@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Sir.KeyValue
 {
@@ -20,6 +22,12 @@ namespace Sir.KeyValue
             Stream.Flush();
         }
 
+        /// <summary>
+        /// Writes a value to an underlying stream. 
+        /// Assumes that <param name="value"></param> is either a primitive datatype or an IByteStream or will default to treating it as a byte[]. 
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public (long offset, int len, byte dataType) Put(object value)
         {
             var offset = Stream.Position;
@@ -87,12 +95,22 @@ namespace Sir.KeyValue
                 dataType = DataType.BYTE;
                 length = sizeof(byte);
             }
-            else if (value is IStreamable streamable)
+            else if (value is IByteStream streamable)
             {
                 var buf = streamable.GetBytes();
                 Stream.Write(buf);
                 dataType = DataType.STREAMABLE;
                 length = buf.Length;
+            }
+            else if (value is IList<long> longValues)
+            {
+                foreach (var v in longValues)
+                {
+                    Stream.Write(BitConverter.GetBytes(v));
+                }
+
+                dataType = DataType.LISTOFLONG;
+                length = sizeof(long) * longValues.Count;
             }
             else
             {

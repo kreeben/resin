@@ -67,16 +67,14 @@ namespace Sir.KeyValue
             return keyId;
         }
 
-        public (long keyId, long valueId) PutValue(long keyId, object val, out byte dataType)
+        public (long keyId, long valueId, byte dataType) PutValue(long keyId, object value)
         {
             // store value
-            var valInfo = PutValue(val);
+            var valInfo = PutValue(value);
             var valId = PutValueInfo(valInfo.offset, valInfo.len, valInfo.dataType);
 
-            dataType = valInfo.dataType;
-
             // return refs to key and value
-            return (keyId, valId);
+            return (keyId, valId, valInfo.dataType);
         }
 
         public (long offset, int len, byte dataType) PutKey(object value)

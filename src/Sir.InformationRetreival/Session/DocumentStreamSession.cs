@@ -241,7 +241,7 @@ namespace Sir
             return DocumentReader.Read(docId.docId, reader, select, score);
         }
 
-        private DocumentRegistryReader GetOrCreateDocumentReader(ulong collectionId)
+        public DocumentRegistryReader GetOrCreateDocumentReader(ulong collectionId)
         {
             if (!File.Exists(Path.Combine(Directory, string.Format("{0}.val", collectionId))))
                 return null;

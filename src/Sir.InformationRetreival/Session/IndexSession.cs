@@ -70,7 +70,7 @@ namespace Sir
             }
         }
 
-        public void Commit(long keyId)
+        private void Commit(long keyId)
         {
             var time = Stopwatch.StartNew();
 
@@ -105,7 +105,7 @@ namespace Sir
 
         public void Dispose()
         {
-            if(_index.Count > 0)
+            if (_index != null && _index.Count > 0)
             {
                 Commit();
             }
