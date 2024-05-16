@@ -14,11 +14,11 @@ namespace Sir
         private VectorNode _left;
         private long _weight;
 
-        public HashSet<long> DocIds { get; set; }
+        public HashSet<long> Documents { get; set; }
         public VectorNode Ancestor { get; private set; }
         public long ComponentCount { get; set; }
         public long VectorOffset { get; set; }
-        public long PostingsOffset { get; set; }
+        public long? PostingsOffset { get; set; }
         public ISerializableVector Vector { get; set; }
 
         public long Weight
@@ -60,18 +60,18 @@ namespace Sir
             ComponentCount = vector == null ? 0 : vector.ComponentCount;
             PostingsOffset = postingsOffset;
             VectorOffset = -1;
-            DocIds = docIds;
+            Documents = docIds;
             KeyId = keyId;
 
             if (docId > -1)
             {
-                if (DocIds == null)
+                if (Documents == null)
                 {
-                    DocIds = new HashSet<long> { docId };
+                    Documents = new HashSet<long> { docId };
                 }
                 else
                 {
-                    DocIds.Add(docId);
+                    Documents.Add(docId);
                 }
             }
         }

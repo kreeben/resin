@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Sir.IO
@@ -8,17 +9,20 @@ namespace Sir.IO
         private readonly Stream _stream;
         private readonly IndexCache _indexCache;
 
-        public PostingsWriter(Stream postingsStream, IndexCache indexCache = null)
+        public PostingsWriter(Stream stream, IndexCache indexCache = null)
         {
-            _stream = postingsStream;
-            _indexCache = indexCache;
+            if (!stream.CanSeek) throw new ArgumentException(nameof(stream));
+            if (!stream.CanWrite) throw new ArgumentException(nameof(stream));
 
+            _stream = stream;
+            _indexCache = indexCache;
             _stream.Seek(0, SeekOrigin.End);
         }
 
-        public long SerializePostings(VectorNode node)
+        public long SerializePostings(IList<long> documents, long keyId, ISerializableVector vector)
         {
-            if (node.DocIds.Count == 0) throw new ArgumentException("can't be empty", nameof(node.DocIds));
+            if (documents is null) throw new ArgumentNullException(nameof(documents));
+            if (documents.Count == 0) throw new ArgumentException("can't be empty", nameof(documents));
 
             /* --------------- */
             /* write new page */
@@ -28,13 +32,13 @@ namespace Sir.IO
             var postingsOffset = _stream.Position;
 
             // serialize postings count
-            _stream.Write(BitConverter.GetBytes((long)node.DocIds.Count));
+            _stream.Write(BitConverter.GetBytes((long)documents.Count));
 
             // serialize address of next page (unknown at this time)
             _stream.Write(BitConverter.GetBytes((long)0));
 
             // serialize document IDs
-            foreach (var docId in node.DocIds)
+            foreach (var docId in documents)
             {
                 _stream.Write(BitConverter.GetBytes(docId));
             }
@@ -43,7 +47,7 @@ namespace Sir.IO
 
             if (_indexCache != null)
             {
-                existingPostingsOffset = _indexCache.GetPostingsOffset(node.KeyId.Value, node.Vector);
+                existingPostingsOffset = _indexCache.GetPostingsOffset(keyId, vector);
             }
 
             if (existingPostingsOffset.HasValue && existingPostingsOffset.Value > 0)
@@ -62,11 +66,11 @@ namespace Sir.IO
                 _stream.Seek(0, SeekOrigin.End);
 
                 // set this as offset of existing postings page
-                _indexCache.UpdatePostingsOffset(node.KeyId.Value, node.Vector, postingsOffset);
+                _indexCache.UpdatePostingsOffset(keyId, vector, postingsOffset);
             }
             else if (_indexCache != null)
             {
-                _indexCache.Put(new VectorNode(vector: node.Vector, postingsOffset: postingsOffset, keyId: node.KeyId));
+                _indexCache.Put(new VectorNode(vector: vector, postingsOffset: postingsOffset, keyId: keyId));
             }
             return postingsOffset;
         }

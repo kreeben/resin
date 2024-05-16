@@ -45,14 +45,14 @@ namespace Sir.IO
 
             foreach (var hit in hits)
             {
-                if (best == null || hit.Score > best.Score)
+                if (best == null || hit.Score > best.Score && hit.Node.PostingsOffset.HasValue)
                 {
                     best = hit;
-                    best.PostingsOffsets = new List<long> { hit.Node.PostingsOffset };
+                    best.PostingsOffsets = new List<long> { hit.Node.PostingsOffset.Value };
                 }
                 else if (hit.Score.Approximates(best.Score))
                 {
-                    best.PostingsOffsets.Add(hit.Node.PostingsOffset);
+                    best.PostingsOffsets.Add(hit.Node.PostingsOffset.Value);
                 }
             }
 
@@ -75,11 +75,11 @@ namespace Sir.IO
                     if (best == null || hit.Score > best.Score)
                     {
                         best = hit;
-                        best.PostingsOffsets = new List<long> { hit.Node.PostingsOffset };
+                        best.PostingsOffsets = new List<long> { hit.Node.PostingsOffset.Value };
                     }
                     else if (hit.Score.Approximates(best.Score))
                     {
-                        best.PostingsOffsets.Add(hit.Node.PostingsOffset);
+                        best.PostingsOffsets.Add(hit.Node.PostingsOffset.Value);
                     }
 
                     if (hit.Score.Approximates(model.IdenticalAngle))

@@ -241,11 +241,11 @@ namespace Sir.IO
 
         private static void AppendDocIds(this VectorNode target, VectorNode source)
         {
-            if (target.DocIds == null || source.DocIds == null)
+            if (target.Documents == null || source.Documents == null)
                 return;
 
-            foreach (var d in source.DocIds)
-                target.DocIds.Add(d);
+            foreach (var d in source.Documents)
+                target.Documents.Add(d);
         }
 
         public static void SerializeNode(this VectorNode node, Stream stream)
@@ -270,7 +270,7 @@ namespace Sir.IO
             }
 
             stream.Write(BitConverter.GetBytes(node.VectorOffset), 0, sizeof(long));
-            stream.Write(BitConverter.GetBytes(node.PostingsOffset), 0, sizeof(long));
+            stream.Write(BitConverter.GetBytes(node.PostingsOffset.Value), 0, sizeof(long));
             stream.Write(BitConverter.GetBytes((long)node.Vector.ComponentCount), 0, sizeof(long));
             stream.Write(BitConverter.GetBytes(node.Weight), 0, sizeof(long));
             stream.Write(BitConverter.GetBytes(terminator), 0, sizeof(long));
@@ -297,9 +297,9 @@ namespace Sir.IO
 
             while (node != null)
             {
-                if (node.PostingsOffset == -1 && postingsWriter != null)
+                if (node.PostingsOffset == -1 && postingsWriter != null && node.Documents != null && node.Documents.Count > 0)
                 {
-                    node.PostingsOffset = postingsWriter.SerializePostings(node);
+                    node.PostingsOffset = postingsWriter.SerializePostings(new List<long>(node.Documents), node.KeyId.Value, node.Vector);
                 }
 
                 if (vectorStream != null)

@@ -12,9 +12,12 @@ namespace Sir
 
         public Hit (VectorNode node, double score)
         {
-            Node = node ?? throw new System.ArgumentNullException(nameof(node));
+            if (node == null) throw new System.ArgumentNullException(nameof(node));
+            if (node.PostingsOffset == null) throw new System.ArgumentException(nameof(node));
+
+            Node = node;
             Score = score;
-            PostingsOffsets = new List<long> { node.PostingsOffset };
+            PostingsOffsets = new List<long> { node.PostingsOffset.Value };
         }
 
         public Hit(VectorNode node, double score, long postingsOffset)
