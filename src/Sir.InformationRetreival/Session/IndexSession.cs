@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
+using Sir.IO;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace Sir
 {
@@ -14,51 +14,66 @@ namespace Sir
         private readonly IModel<T> _model;
         private readonly IIndexReadWriteStrategy _indexingStrategy;
         private readonly IDictionary<long, VectorNode> _index;
+        private readonly IDictionary<long, VectorNode> _postings;
         private readonly string _directory;
         private readonly ulong _collectionId;
         private readonly ILogger _logger;
-        private readonly IndexCache _indexCache;
+        private readonly IndexIndex _indexIndex;
 
         public IndexSession(
             string directory,
             ulong collectionId,
             IModel<T> model,
             IIndexReadWriteStrategy indexingStrategy,
-            IndexCache indexCache,
+            IndexIndex indexIndex,
             ILogger logger = null)
         {
             _model = model;
             _indexingStrategy = indexingStrategy;
             _index = new Dictionary<long, VectorNode>();
+            _postings = new Dictionary<long, VectorNode>();
             _directory = directory;
             _collectionId = collectionId;
             _logger = logger;
-            _indexCache = indexCache;
+            _indexIndex = indexIndex;
         }
 
-        public void Put(long docId, long keyId, T value, bool label)
+        public void Put(long documentId, long keyId, T value, bool label)
         {
-            var tokens = _model.CreateEmbedding(value, label);
+            VectorNode index;
 
-            Put(docId, keyId, tokens);
-        }
-
-        private void Put(long docId, long keyId, IEnumerable<ISerializableVector> tokens)
-        {
-            VectorNode column;
-
-            if (!_index.TryGetValue(keyId, out column))
+            if (!_index.TryGetValue(keyId, out index))
             {
-                column = new VectorNode();
-                _index.Add(keyId, column);
+                index = new VectorNode();
+                _index.Add(keyId, index);
             }
 
-            foreach (var token in tokens)
+            foreach (var token in _model.CreateEmbedding(value, label))
             {
-                if (!token.IsEmptyVector())
-                    _indexingStrategy.Put<T>(
-                                        column,
-                                        new VectorNode(vector:token, docId:docId, keyId:keyId));
+                Put(index, documentId, keyId, token);
+            }
+        }
+
+        private void Put(VectorNode index, long documentId, long keyId, ISerializableVector token)
+        {
+            VectorNode existingNode = _indexIndex.Get(keyId, token);
+
+            if (existingNode == null)
+            {
+                _indexingStrategy.Put<T>(index, new VectorNode(vector: token, documentId: documentId, keyId: keyId));
+                _indexIndex.Put(new VectorNode(vector: token, keyId: keyId));
+            }
+            else
+            {
+                VectorNode postings;
+
+                if (!_postings.TryGetValue(keyId, out postings))
+                {
+                    postings = new VectorNode();
+                    _postings.Add(keyId, postings);
+                }
+
+                GraphBuilder.AddOrAppend(postings, new VectorNode(vector: token, documentId: documentId, keyId: keyId), _model);
             }
         }
 
@@ -72,10 +87,9 @@ namespace Sir
 
         private void Commit(long keyId)
         {
-            var column = _index[keyId];
-
-            _indexingStrategy.SerializePage(_directory, _collectionId, keyId, column, _indexCache, _logger);
+            _indexingStrategy.SerializePage(_directory, _collectionId, keyId, _index[keyId], _postings[keyId], _indexIndex, _logger);
             _index.Remove(keyId);
+            _postings.Remove(keyId);
         }
 
         public IDictionary<long, VectorNode> GetInMemoryIndices()

@@ -10,12 +10,12 @@ namespace Sir.IO
     {
         private readonly Stream _stream;
         private readonly WriteSession _writeSession;
-        private readonly IndexCache _indexCache;
+        private readonly IndexIndex _indexCache;
         private readonly Stopwatch _postingsTimer;
         private readonly Stopwatch _headerTimer;
         private readonly Stopwatch _cacheTimer;
 
-        public PostingsWriter(Stream stream, WriteSession writeSession, IndexCache indexCache = null)
+        public PostingsWriter(Stream stream, WriteSession writeSession, IndexIndex indexCache = null)
         {
             if (!stream.CanSeek) throw new ArgumentException(nameof(stream));
             if (!stream.CanWrite) throw new ArgumentException(nameof(stream));
@@ -34,7 +34,7 @@ namespace Sir.IO
             return (_postingsTimer.Elapsed, _headerTimer.Elapsed, _cacheTimer.Elapsed); 
         }
 
-        public long SerializePostings(IList<long> documents, long keyId, ISerializableVector term)
+        public long SerializePostings(HashSet<long> documents, long keyId, ISerializableVector term)
         {
             if (documents is null) throw new ArgumentNullException(nameof(documents));
             if (documents.Count == 0) throw new ArgumentException("can't be empty", nameof(documents));

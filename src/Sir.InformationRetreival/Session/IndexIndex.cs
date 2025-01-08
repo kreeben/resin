@@ -4,12 +4,12 @@ using System.Collections.Generic;
 
 namespace Sir
 {
-    public class IndexCache
+    public class IndexIndex
     {
         private readonly IModel _model;
         private readonly IDictionary<long, VectorNode> _cache; // indices by key ID
 
-        public IndexCache(IModel model)
+        public IndexIndex(IModel model)
         {
             _model = model;
             _cache = new Dictionary<long, VectorNode>();
@@ -29,6 +29,20 @@ namespace Sir
             GraphBuilder.AddOrAppend(tree, node, _model);
         }
 
+        public VectorNode Get(long keyId, ISerializableVector vector)
+        {
+            if (_cache.TryGetValue(keyId, out var tree))
+            {
+                var hit = PathFinder.ClosestMatch(tree, vector, _model);
+
+                if (hit.Score.Approximates(_model.IdenticalAngle))
+                {
+                    return hit.Node;
+                }
+            }
+            return null;
+        }
+
         public long? GetPostingsOffset(long keyId, ISerializableVector vector)
         {
             if (_cache.TryGetValue(keyId, out var tree))
@@ -37,7 +51,7 @@ namespace Sir
 
                 if (hit.Score.Approximates(_model.IdenticalAngle))
                 {
-                    return hit.Node.PostingsOffset == -1 ? null : hit.Node.PostingsOffset;
+                    return hit.Node.PostingsOffset ?? null;
                 }
             }
             return null;

@@ -220,7 +220,7 @@ namespace Sir
 
                     foreach (var vector in documentReader.GetValueConvertedToVectors<T>(vInfo.offset, vInfo.len, vInfo.dataType, value => model.CreateEmbedding(value, label)))
                     {
-                        tree.AddIfUnique(new VectorNode(vector, docId:doc.docId, keyId:kvp.keyId), model);
+                        tree.AddIfUnique(new VectorNode(vector, documentId:doc.docId, keyId:kvp.keyId), model);
                     }
 
                     yield return tree;

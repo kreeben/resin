@@ -182,8 +182,7 @@ namespace Sir
             {
                 return new ColumnReader(
                     pageIndexReader.ReadAll(),
-                    DocumentRegistryReader.CreateReadStream(ixFileName),
-                    DocumentRegistryReader.CreateReadStream(vectorFileName));
+                    new StreamPageReader(DocumentRegistryReader.CreateReadStream(vectorFileName), DocumentRegistryReader.CreateReadStream(ixFileName)));
             }
         }
 

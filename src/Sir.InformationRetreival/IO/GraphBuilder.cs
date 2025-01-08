@@ -269,7 +269,7 @@ namespace Sir.IO
                 terminator = 0;
             }
 
-            stream.Write(BitConverter.GetBytes(node.VectorOffset), 0, sizeof(long));
+            stream.Write(BitConverter.GetBytes(node.VectorOffset.Value), 0, sizeof(long));
             stream.Write(BitConverter.GetBytes(node.PostingsOffset.Value), 0, sizeof(long));
             stream.Write(BitConverter.GetBytes((long)node.Vector.ComponentCount), 0, sizeof(long));
             stream.Write(BitConverter.GetBytes(node.Weight), 0, sizeof(long));
@@ -284,7 +284,8 @@ namespace Sir.IO
         /// <param name="vectorStream">stream to persist vectors into</param>
         /// <param name="postingsStream">stream to persist postings into</param>
         /// <returns></returns>
-        public static (long offset, long length) SerializeTree(this VectorNode node, Stream indexStream = null, Stream vectorStream = null, PostingsWriter postingsWriter = null)
+        public static (long offset, long length) SerializeTree(
+            this VectorNode node, Stream indexStream = null, Stream vectorStream = null, PostingsWriter postingsWriter = null)
         {
             var stack = new Stack<VectorNode>();
             var offset = indexStream.Position;
@@ -297,9 +298,9 @@ namespace Sir.IO
 
             while (node != null)
             {
-                if (node.PostingsOffset == -1 && postingsWriter != null && node.Documents != null && node.Documents.Count > 0)
+                if (node.PostingsOffset.HasValue && postingsWriter != null && node.Documents != null && node.Documents.Count > 0)
                 {
-                    node.PostingsOffset = postingsWriter.SerializePostings(new List<long>(node.Documents), node.KeyId.Value, node.Vector);
+                    node.PostingsOffset = postingsWriter.SerializePostings(node.Documents, node.KeyId.Value, node.Vector);
                 }
 
                 if (vectorStream != null)

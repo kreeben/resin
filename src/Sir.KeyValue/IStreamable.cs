@@ -1,6 +1,6 @@
 ﻿namespace Sir
 {
-    public interface IByteStream
+    public interface IStreamable
     {
         byte[] GetBytes();
     }

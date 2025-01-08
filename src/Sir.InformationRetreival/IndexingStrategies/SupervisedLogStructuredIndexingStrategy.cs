@@ -25,7 +25,7 @@ namespace Sir
             column.AddOrAppendSupervised(node, _model);
         }
 
-        public void SerializePage(string directory, ulong collectionId, long keyId, VectorNode tree, IndexCache indexCache, ILogger logger = null)
+        public void SerializePage(string directory, ulong collectionId, long keyId, VectorNode tree, VectorNode postings, IndexIndex indexCache, ILogger logger = null)
         {
             var time = Stopwatch.StartNew();
             var indexCollectionId = Database.GetIndexCollectionId(collectionId);
@@ -40,6 +40,11 @@ namespace Sir
 
                 if (logger != null)
                     logger.LogInformation($"serialized column {keyId}, weight {tree.Weight} {size} in {time.Elapsed}");
+
+                foreach (var node in postings.All())
+                {
+                    postingsWriter.SerializePostings(node.Documents, node.KeyId.Value, node.Vector);
+                }
             }
         }
     }

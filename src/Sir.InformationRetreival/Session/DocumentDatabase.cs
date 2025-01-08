@@ -18,7 +18,7 @@ namespace Sir
         private WriteSession _writeSession;
         private IndexSession<T> _indexSession;
         private SearchSession<T> _searchSession;
-        private IndexCache _indexCache;
+        private IndexIndex _indexCache;
         private readonly IModel<T> _model;
         private readonly ILogger _logger;
         public IndexSession<T> IndexSession { get { return _indexSession; } }
@@ -31,7 +31,7 @@ namespace Sir
             _collectionId = collectionId;
             _model = model;
             _indexStrategy = indexStrategy;
-            _indexCache = new IndexCache(_model);
+            _indexCache = new IndexIndex(_model);
             _writeSession = new WriteSession(new DocumentRegistryWriter(directory, collectionId));
             _indexSession = new IndexSession<T>(directory, collectionId, model, indexStrategy, _indexCache, logger);
             _searchSession = new SearchSession<T>(directory, _model, _indexStrategy, logger);
@@ -55,6 +55,11 @@ namespace Sir
 
         public void Write(Document document, bool store = true, bool index = true, bool label = false)
         {
+            if (document is null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
+
             if (store)
                 _writeSession.Put(document);
 
@@ -70,7 +75,7 @@ namespace Sir
             }
         }
 
-        public void OptimizeAllIndices(int skipDocuments = 0, int takeDocuments = int.MaxValue, int pageSize = 10000, int sampleSize = 1000, HashSet<string> select = null)
+        public void OptimizeAllIndices(int skipDocuments = 0, int takeDocuments = int.MaxValue, int pageSize = 1000, int sampleSize = 1000, HashSet<string> select = null)
         {
             using (var debugger = new IndexDebugger(_logger, sampleSize))
             {

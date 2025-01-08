@@ -19,6 +19,11 @@ namespace Sir
 
         public long Put(Document document)
         {
+            if (document is null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
+
             var docMap = new List<(long keyId, long valId)>();
 
             document.Id = _documentWriter.IncrementDocId();

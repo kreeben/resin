@@ -47,7 +47,7 @@ namespace Sir.IO
             return new Hit(best, highscore);
         }
 
-        public static IEnumerable<VectorNode> All(VectorNode root)
+        public static IEnumerable<VectorNode> All(this VectorNode root)
         {
             var node = root.Vector == null ? root.Right : root;
             var stack = new Stack<VectorNode>();

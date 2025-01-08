@@ -25,7 +25,7 @@ namespace Sir
             column.AddOrAppend(node, _model);
         }
 
-        public void SerializePage(string directory, ulong collectionId, long keyId, VectorNode tree, IndexCache indexCache, ILogger logger = null)
+        public void SerializePage(string directory, ulong collectionId, long keyId, VectorNode index, VectorNode postings, IndexIndex indexCache, ILogger logger = null)
         {
             var time = Stopwatch.StartNew();
             var indexCollectionId = Database.GetIndexCollectionId(collectionId);
@@ -36,15 +36,21 @@ namespace Sir
             using (var columnWriter = new ColumnWriter(StreamFactory.CreateAppendStream(directory, indexCollectionId, keyId, "ix")))
             using (var pageIndexWriter = new PageIndexWriter(StreamFactory.CreateAppendStream(directory, indexCollectionId, keyId, "ixtp")))
             {
-                var size = columnWriter.CreatePage(tree, vectorStream, postingsWriter, pageIndexWriter);
+                var size = columnWriter.CreatePage(index, vectorStream, postingsWriter, pageIndexWriter);
 
                 if (logger != null)
                 {
                     var timings = postingsWriter.GetTimings();
 
-                    logger.LogInformation($"serialized column {keyId}, weight {tree.Weight} {size} in {time.Elapsed}");
-                    logger.LogInformation($"postings writer run time. postings: {timings.postings}, headers: {timings.headers}, cache: {timings.cache}");
+                    logger.LogInformation($"serialized page, keyId {keyId}, weight {index.Weight} {size} in {time.Elapsed}");
+                    logger.LogInformation($"postings writer run time. postings: {timings.postings} headers: {timings.headers} cache: {timings.cache}");
                 }
+
+                foreach (var node in postings.All())
+                {
+                    postingsWriter.SerializePostings(node.Documents, node.KeyId.Value, node.Vector);
+                }
+                logger.LogInformation($"serialized postings in {time.Elapsed}");
             }
         }
     }
