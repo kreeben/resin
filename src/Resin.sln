@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34601.278
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resin.KeyValue", "Resin.KeyValue\Resin.KeyValue.csproj", "{67588DBD-0F8B-48E5-A8E1-5095F77A9B41}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resin.KeyValue.Test", "Resin.KeyValue.Test\Resin.KeyValue.Test.csproj", "{A31A9E00-2499-4430-96CC-721FA7973D9B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{67588DBD-0F8B-48E5-A8E1-5095F77A9B41}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67588DBD-0F8B-48E5-A8E1-5095F77A9B41}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{67588DBD-0F8B-48E5-A8E1-5095F77A9B41}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{67588DBD-0F8B-48E5-A8E1-5095F77A9B41}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A31A9E00-2499-4430-96CC-721FA7973D9B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A31A9E00-2499-4430-96CC-721FA7973D9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A31A9E00-2499-4430-96CC-721FA7973D9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A31A9E00-2499-4430-96CC-721FA7973D9B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D4D9C9D0-5A9E-4040-8EE5-35FAD1EB57D2}
+	EndGlobalSection
+EndGlobal
