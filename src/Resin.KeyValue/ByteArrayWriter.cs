@@ -6,11 +6,14 @@ namespace Resin.KeyValue
     {
         private readonly long[] _keyBuf;
         private Address[] _addressBuf;
+        private readonly int _pageSize;
         private readonly int _keyBufSize;
         private int _keyBufCursor;
         private int _keyCount;
         private Stream _valueStream;
         public const long EmptyKey = int.MaxValue;
+
+        public bool IsPageFull { get { return _keyCount == _pageSize / sizeof(long); } }
 
         public ByteArrayWriter(Stream keyStream, Stream valueStream, Stream addressStream, long offset = 0, int pageSize = 4096)
         {
@@ -43,6 +46,12 @@ namespace Resin.KeyValue
             var kbuf = new byte[pageSize];
             keyStream.ReadExactly(kbuf);
             _keyBuf = MemoryMarshal.Cast<byte, long>(kbuf).ToArray();
+            int i = 0;
+            for (; i < _keyBuf.Length; i++)
+            {
+                if (_keyBuf[i] == int.MaxValue) { break; }
+            }
+            _keyCount = i;
 
             int addressBufSize = (pageSize / sizeof(long)) * Address.Size;
             Span<byte> adrBuf = new byte[addressBufSize];
@@ -51,13 +60,14 @@ namespace Resin.KeyValue
             var numOfAddresses = adrBuf.Length / Address.Size;
             var addressList = new Address[numOfAddresses];
             var addressListIndex = 0;
-            for (int i = 0; i < numOfAddresses; i += 2)
+            for (i = 0; i < numOfAddresses; i += 2)
             {
                 long ofs = adrSpan[i];
                 long len = adrSpan[i + 1];
                 addressList[addressListIndex++] = new Address(ofs, len);
             }
             _addressBuf = addressList;
+            _pageSize = pageSize;
         }
 
         public ByteArrayWriter(Stream valueStream, int pageSize = 4096)
@@ -69,7 +79,7 @@ namespace Resin.KeyValue
             _keyBuf = new long[_keyBufSize];
             _addressBuf = new Address[_keyBufSize];
             _valueStream = valueStream;
-
+            _pageSize = pageSize;
             new Span<long>(_keyBuf).Fill(EmptyKey);
             new Span<Address>(_addressBuf).Fill(Address.Empty());
         }
@@ -112,27 +122,16 @@ namespace Resin.KeyValue
             if (_keyCount == 0)
                 return;
 
-            _valueStream.Flush();
-
             foreach (var key in _keyBuf)
             {
-                //if (key == EmptyKey)
-                //    break;
-
                 keyStream.Write(BitConverter.GetBytes(key));
             }
 
             foreach (var adr in _addressBuf)
             {
-                //if (adr.Equals(Address.Empty()))
-                //    break;
-
                 addressStream.Write(BitConverter.GetBytes(adr.Offset));
                 addressStream.Write(BitConverter.GetBytes(adr.Length));
             }
-
-            keyStream.Flush();
-            addressStream.Flush();
 
             _keyCount = 0;
             _keyBufCursor = 0;

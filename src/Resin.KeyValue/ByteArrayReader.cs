@@ -24,9 +24,6 @@ namespace Resin.KeyValue
                 throw new ArgumentNullException(nameof(valueStream));
             }
 
-            if (keyStream.Position != offset)
-                keyStream.Position = offset;
-
             int addressBufSize = (pageSize / sizeof(long)) * Address.Size;
 
             if (addressStream.Position != addressBufSize)
