@@ -17,27 +17,31 @@
 
         public ReadOnlySpan<byte> Get(long key)
         {
-            _keyStream.Position = 0;
-            _addressStream.Position = 0;
-            while (true)
+            if (_keyStream.Length > 0)
             {
-                var value = new ByteArrayReader(_keyStream, _valueStream, _addressStream, pageSize: _pageSize).Get(key);
-                if (value == ReadOnlySpan<byte>.Empty)
+                _keyStream.Position = 0;
+                _addressStream.Position = 0;
+                while (true)
                 {
-                    if (_keyStream.Position + 1 < _keyStream.Length)
+                    var value = new ByteArrayReader(_keyStream, _valueStream, _addressStream, pageSize: _pageSize).Get(key);
+                    if (value == ReadOnlySpan<byte>.Empty)
                     {
-                        continue;
+                        if (_keyStream.Position + 1 < _keyStream.Length)
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            break;
+                        }
                     }
                     else
                     {
-                        break;
+                        return value;
                     }
                 }
-                else
-                {
-                    return value;
-                }
             }
+
             return ReadOnlySpan<byte>.Empty;
         }
     }

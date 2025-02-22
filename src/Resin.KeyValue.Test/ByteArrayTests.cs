@@ -215,5 +215,39 @@
                 }
             }
         }
+
+        [TestMethod]
+        public void ReturnsFalseWhenAddingDuplicateKey()
+        {
+            using (var keyStream = new MemoryStream())
+            using (var valueStream = new MemoryStream())
+            using (var addressStream = new MemoryStream())
+            {
+                var writer = new ByteArrayWriter(valueStream);
+                Assert.IsTrue(writer.TryPut(key: 0, value: BitConverter.GetBytes(0)));
+                Assert.IsFalse(writer.TryPut(key: 0, value: BitConverter.GetBytes(0)));
+            }
+        }
+
+        [TestMethod]
+        public void ReturnsFalseWhenAddingDuplicateKeyThatExistsInAPreviousPage()
+        {
+            const int testCount = 512;
+            const int pageSize = 512 * sizeof(long);
+            using (var keyStream = new MemoryStream())
+            using (var valueStream = new MemoryStream())
+            using (var addressStream = new MemoryStream())
+            {
+                using (var writer = new PageWriter(new ByteArrayWriter(valueStream, pageSize: pageSize), keyStream, addressStream))
+                {
+                    for (int i = 0; i < testCount; i++)
+                    {
+                        writer.TryPut(key: i, value: BitConverter.GetBytes(i));
+                    }
+                    var zeroAlreadyExistsSoThisShouldBeFalse = writer.TryPut(key: 0, value: BitConverter.GetBytes(0));
+                    Assert.IsFalse(zeroAlreadyExistsSoThisShouldBeFalse);
+                }
+            }
+        }
     }
 }

@@ -117,10 +117,10 @@ namespace Resin.KeyValue
             return new Address(pos, value.Length);
         }
 
-        public void Serialize(Stream keyStream, Stream addressStream)
+        public long[] Serialize(Stream keyStream, Stream addressStream)
         {
             if (_keyCount == 0)
-                return;
+                return Array.Empty<long>();
 
             foreach (var key in _keyBuf)
             {
@@ -135,8 +135,12 @@ namespace Resin.KeyValue
 
             _keyCount = 0;
             _keyBufCursor = 0;
+
+            var keys = new long[_keyBuf.Length];
+            _keyBuf.CopyTo(keys, 0);
             new Span<long>(_keyBuf).Fill(EmptyKey);
             new Span<Address>(_addressBuf).Fill(Address.Empty());
+            return keys;
         }
     }
 }
