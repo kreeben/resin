@@ -3,33 +3,8 @@
     [TestClass]
     public sealed class ByteArrayTests
     {
-
-        [ClassInitialize]
-        public static void ClassInit(TestContext context)
-        {
-            // This method is called once for the test class, before any tests of the class are run.
-        }
-
-        [ClassCleanup]
-        public static void ClassCleanup()
-        {
-            // This method is called once for the test class, after all tests of the class are run.
-        }
-
-        [TestInitialize]
-        public void TestInit()
-        {
-            // This method is called before each test method.
-        }
-
-        [TestCleanup]
-        public void TestCleanup()
-        {
-            // This method is called after each test method.
-        }
-
         [TestMethod]
-        public void CanThrowOutOfPageStorageException()
+        public void ByteArrayWriter_CanThrowOutOfPageStorageException()
         {
             const int testCount = 11;
             int pageSize = 10 * sizeof(long);
@@ -58,7 +33,7 @@
         }
 
         [TestMethod]
-        public void CanReadAndReturnEmptySpanIfNoMatch()
+        public void ByteArrayReader_CanReadAndReturnEmptySpanIfNoMatch()
         {
             const int testCount = 10;
             const int pageSize = 4096;
@@ -95,7 +70,7 @@
         }
 
         [TestMethod]
-        public void CanReadWritePages()
+        public void ByteArrayReaderWriter_CanReadWritePages()
         {
             const int testCount = 513; // 5004 bytes
             const int pageSize = 512 * sizeof(long); // 4096 bytes
@@ -217,7 +192,7 @@
         }
 
         [TestMethod]
-        public void ReturnsFalseWhenAddingDuplicateKey()
+        public void ByteArrayWriter_ReturnsFalseWhenAddingDuplicateKey()
         {
             using (var keyStream = new MemoryStream())
             using (var valueStream = new MemoryStream())
@@ -230,7 +205,7 @@
         }
 
         [TestMethod]
-        public void ReturnsFalseWhenAddingDuplicateKeyThatExistsInAPreviousPage()
+        public void PageWriter_ReturnsFalseWhenAddingDuplicateKeyThatExistsInAPreviousPage()
         {
             const int testCount = 512;
             const int pageSize = 512 * sizeof(long);
@@ -248,6 +223,54 @@
                     Assert.IsFalse(zeroAlreadyExistsSoThisShouldBeFalse);
                 }
             }
+        }
+
+        [TestMethod]
+        public void PageWriter_ReturnsFalseWhenAddingDuplicateKeyThatExistsInAPreviousPageWhenUsingFreshWriterInstance()
+        {
+            const int testCount = 512;
+            const int pageSize = 512 * sizeof(long);
+            using (var keyStream = new MemoryStream())
+            using (var valueStream = new MemoryStream())
+            using (var addressStream = new MemoryStream())
+            {
+                using (var writer = new PageWriter(new ByteArrayWriter(valueStream, pageSize: pageSize), keyStream, addressStream))
+                {
+                    for (int i = 0; i < testCount; i++)
+                    {
+                        writer.TryPut(key: i, value: BitConverter.GetBytes(i));
+                    }
+                }
+                using (var writer = new PageWriter(new ByteArrayWriter(valueStream, pageSize: pageSize), keyStream, addressStream))
+                {
+                    var zeroAlreadyExistsSoThisShouldBeFalse = writer.TryPut(key: 0, value: BitConverter.GetBytes(0));
+                    Assert.IsFalse(zeroAlreadyExistsSoThisShouldBeFalse);
+                }
+            }
+        }
+
+        [ClassInitialize]
+        public static void ClassInit(TestContext context)
+        {
+            // This method is called once for the test class, before any tests of the class are run.
+        }
+
+        [ClassCleanup]
+        public static void ClassCleanup()
+        {
+            // This method is called once for the test class, after all tests of the class are run.
+        }
+
+        [TestInitialize]
+        public void TestInit()
+        {
+            // This method is called before each test method.
+        }
+
+        [TestCleanup]
+        public void TestCleanup()
+        {
+            // This method is called after each test method.
         }
     }
 }

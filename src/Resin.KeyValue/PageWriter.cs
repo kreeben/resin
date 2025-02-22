@@ -7,7 +7,7 @@ namespace Resin.KeyValue
         private readonly ByteArrayWriter _writer;
         private readonly Stream _keyStream;
         private readonly Stream _addressStream;
-        private long[] _keys;
+        private long[] _allKeys;
 
         public PageWriter(ByteArrayWriter writer, Stream keyStream, Stream addressStream)
         {
@@ -23,7 +23,7 @@ namespace Resin.KeyValue
             keyStream.ReadExactly(kbuf);
             var keys = MemoryMarshal.Cast<byte, long>(kbuf);
             keys.Sort();
-            _keys = keys.ToArray();
+            _allKeys = keys.ToArray();
         }
 
         public void Dispose()
@@ -50,7 +50,7 @@ namespace Resin.KeyValue
 
         private bool KeyExists(long key)
         {
-            int index = new Span<long>(_keys.ToArray()).BinarySearch<long>(key);
+            int index = new Span<long>(_allKeys.ToArray()).BinarySearch(key);
             return index > -1;
         }
 
@@ -58,11 +58,11 @@ namespace Resin.KeyValue
         {
             var newKeys = _writer.Serialize(_keyStream, _addressStream);
 
-            var enlargedArray = new long[_keys.Length + newKeys.Length];
-            _keys.CopyTo(enlargedArray, 0);
-            newKeys.CopyTo(enlargedArray, _keys.Length);
-            _keys = enlargedArray;
-            new Span<long>(_keys).Sort();
+            var enlargedArray = new long[_allKeys.Length + newKeys.Length];
+            _allKeys.CopyTo(enlargedArray, 0);
+            newKeys.CopyTo(enlargedArray, _allKeys.Length);
+            _allKeys = enlargedArray;
+            new Span<long>(_allKeys).Sort();
         }
     }
 
