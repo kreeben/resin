@@ -1,9 +1,17 @@
 ﻿using System.Runtime.InteropServices;
 namespace Resin.KeyValue
 {
-    public class ByteArrayReader
+    public class Int64Reader : ByteArrayReader<long>
     {
-        private readonly long[] _keyBuf;
+        public Int64Reader(Stream keyStream, Stream valueStream, Stream addressStream, long offset = 0, int pageSize = 4096)
+            : base(keyStream, valueStream, addressStream, offset, pageSize)
+        {
+        }
+    }
+
+    public class ByteArrayReader<T> where T : struct, IEquatable<T>, IComparable<T>
+    {
+        private readonly T[] _keyBuf;
         private readonly ReadOnlyMemory<Address> _addresses;
         private readonly Stream _valueStream;
 
@@ -33,7 +41,7 @@ namespace Resin.KeyValue
 
             keyStream.ReadExactly(keyBuf);
 
-            var keys = MemoryMarshal.Cast<byte, long>(keyBuf);
+            var keys = MemoryMarshal.Cast<byte, T>(keyBuf);
             _keyBuf = keys.ToArray();
 
             Span<byte> addressBuf = new byte[addressBufSize];
@@ -44,9 +52,9 @@ namespace Resin.KeyValue
             _valueStream = valueStream;
         }
 
-        public ReadOnlySpan<byte> Get(long key)
+        public ReadOnlySpan<byte> Get(T key)
         {
-            int index = new Span<long>(_keyBuf).BinarySearch(key);
+            int index = new Span<T>(_keyBuf).BinarySearch(key);
             if (index > -1)
             {
                 var address = _addresses.Span[index];

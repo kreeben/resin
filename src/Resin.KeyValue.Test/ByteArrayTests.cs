@@ -55,7 +55,7 @@
                 valueStream.Position = 0;
                 addressStream.Position = 0;
 
-                var reader = new ByteArrayReader(keyStream, valueStream, addressStream, pageSize: pageSize);
+                var reader = new Int64Reader(keyStream, valueStream, addressStream, pageSize: pageSize);
                 for (int i = testCases.Count - 1; i > -1; i--)
                 {
                     var buf = reader.Get(i);
@@ -99,14 +99,14 @@
                 valueStream.Position = 0;
                 addressStream.Position = 0;
 
-                var reader = new ByteArrayReader(keyStream, valueStream, addressStream, pageSize: pageSize);
+                var reader = new Int64Reader(keyStream, valueStream, addressStream, pageSize: pageSize);
 
                 Assert.IsTrue(BitConverter.ToInt32(reader.Get(0)) == 0);
                 Assert.IsTrue(BitConverter.ToInt32(reader.Get(1)) == 1);
                 Assert.IsTrue(BitConverter.ToInt32(reader.Get(511)) == 511);
                 Assert.IsTrue(reader.Get(512) == ReadOnlySpan<byte>.Empty);
 
-                reader = new ByteArrayReader(keyStream, valueStream, addressStream, offset: pageSize, pageSize: pageSize);
+                reader = new Int64Reader(keyStream, valueStream, addressStream, offset: pageSize, pageSize: pageSize);
 
                 Assert.IsTrue(BitConverter.ToInt32(reader.Get(512)) == 512);
 
@@ -138,14 +138,14 @@
                 valueStream.Position = 0;
                 addressStream.Position = 0;
 
-                var reader = new ByteArrayReader(keyStream, valueStream, addressStream, pageSize: pageSize);
+                var reader = new Int64Reader(keyStream, valueStream, addressStream, pageSize: pageSize);
 
                 Assert.IsTrue(BitConverter.ToInt32(reader.Get(0)) == 0);
                 Assert.IsTrue(BitConverter.ToInt32(reader.Get(1)) == 1);
                 Assert.IsTrue(BitConverter.ToInt32(reader.Get(511)) == 511);
                 Assert.IsTrue(reader.Get(512) == ReadOnlySpan<byte>.Empty);
 
-                reader = new ByteArrayReader(keyStream, valueStream, addressStream, offset: pageSize, pageSize: pageSize);
+                reader = new Int64Reader(keyStream, valueStream, addressStream, offset: pageSize, pageSize: pageSize);
 
                 Assert.IsTrue(BitConverter.ToInt32(reader.Get(512)) == 512);
 
@@ -177,7 +177,7 @@
                 valueStream.Position = 0;
                 addressStream.Position = 0;
 
-                var reader = new PageReader(keyStream, valueStream, addressStream, pageSize: pageSize);
+                var reader = new PageReader<long>(keyStream, valueStream, addressStream, pageSize: pageSize);
 
                 Assert.IsTrue(BitConverter.ToInt32(reader.Get(0)) == 0);
                 Assert.IsTrue(BitConverter.ToInt32(reader.Get(1)) == 1);

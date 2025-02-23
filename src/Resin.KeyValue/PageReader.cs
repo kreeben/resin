@@ -1,6 +1,6 @@
 ﻿namespace Resin.KeyValue
 {
-    public class PageReader
+    public class PageReader<T> where T : struct, IEquatable<T>, IComparable<T>
     {
         private readonly Stream _valueStream;
         private readonly Stream _addressStream;
@@ -15,7 +15,7 @@
             _pageSize = pageSize;
         }
 
-        public ReadOnlySpan<byte> Get(long key)
+        public ReadOnlySpan<byte> Get(T key)
         {
             if (_keyStream.Length > 0)
             {
@@ -23,7 +23,7 @@
                 _addressStream.Position = 0;
                 while (true)
                 {
-                    var value = new ByteArrayReader(_keyStream, _valueStream, _addressStream, pageSize: _pageSize).Get(key);
+                    var value = new ByteArrayReader<T>(_keyStream, _valueStream, _addressStream, pageSize: _pageSize).Get(key);
                     if (value == ReadOnlySpan<byte>.Empty)
                     {
                         if (_keyStream.Position + 1 < _keyStream.Length)
