@@ -65,9 +65,4 @@ namespace Resin.KeyValue
             new Span<TKey>(_allKeys).Sort();
         }
     }
-
-    public interface ITokenizer
-    {
-        IEnumerable<ReadOnlySpan<byte>> GetTokens();
-    }
 }
