@@ -13,7 +13,7 @@
             using (var valueStream = new MemoryStream())
             using (var addressStream = new MemoryStream())
             {
-                var writer = new ByteArrayWriter(valueStream, pageSize);
+                var writer = new Int64Writer(valueStream, pageSize);
 
                 for (int i = 0; i < testCount; i++)
                 {
@@ -43,7 +43,7 @@
             using (var addressStream = new MemoryStream())
             {
                 var testCases = new List<long>();
-                var writer = new ByteArrayWriter(valueStream, pageSize: pageSize);
+                var writer = new Int64Writer(valueStream, pageSize: pageSize);
                 for (int i = 0; i < testCount; i++)
                 {
                     long val = i;
@@ -80,7 +80,7 @@
             using (var addressStream = new MemoryStream())
             {
                 var testCases = new List<long>();
-                var writer = new ByteArrayWriter(valueStream, pageSize: pageSize);
+                var writer = new Int64Writer(valueStream, pageSize: pageSize);
                 for (int i = 0; i < testCount; i++)
                 {
                     try
@@ -128,7 +128,7 @@
             using (var addressStream = new MemoryStream())
             {
                 var testCases = new List<long>();
-                using (var writer = new PageWriter(new ByteArrayWriter(valueStream, pageSize: pageSize), keyStream, addressStream))
+                using (var writer = new PageWriter<long>(new Int64Writer(valueStream, pageSize: pageSize), keyStream, addressStream))
                     for (int i = 0; i < testCount; i++)
                     {
                         writer.TryPut(key: i, value: BitConverter.GetBytes(i));
@@ -167,7 +167,7 @@
             using (var addressStream = new MemoryStream())
             {
                 var testCases = new List<long>();
-                using (var writer = new PageWriter(new ByteArrayWriter(valueStream, pageSize: pageSize), keyStream, addressStream))
+                using (var writer = new PageWriter<long>(new Int64Writer(valueStream, pageSize: pageSize), keyStream, addressStream))
                     for (int i = 0; i < testCount; i++)
                     {
                         writer.TryPut(key: i, value: BitConverter.GetBytes(i));
@@ -198,7 +198,7 @@
             using (var valueStream = new MemoryStream())
             using (var addressStream = new MemoryStream())
             {
-                var writer = new ByteArrayWriter(valueStream);
+                var writer = new Int64Writer(valueStream);
                 Assert.IsTrue(writer.TryPut(key: 0, value: BitConverter.GetBytes(0)));
                 Assert.IsFalse(writer.TryPut(key: 0, value: BitConverter.GetBytes(0)));
             }
@@ -213,7 +213,7 @@
             using (var valueStream = new MemoryStream())
             using (var addressStream = new MemoryStream())
             {
-                using (var writer = new PageWriter(new ByteArrayWriter(valueStream, pageSize: pageSize), keyStream, addressStream))
+                using (var writer = new PageWriter<long>(new Int64Writer(valueStream, pageSize: pageSize), keyStream, addressStream))
                 {
                     for (int i = 0; i < testCount; i++)
                     {
@@ -234,14 +234,14 @@
             using (var valueStream = new MemoryStream())
             using (var addressStream = new MemoryStream())
             {
-                using (var writer = new PageWriter(new ByteArrayWriter(valueStream, pageSize: pageSize), keyStream, addressStream))
+                using (var writer = new PageWriter<long>(new Int64Writer(valueStream, pageSize: pageSize), keyStream, addressStream))
                 {
                     for (int i = 0; i < testCount; i++)
                     {
                         writer.TryPut(key: i, value: BitConverter.GetBytes(i));
                     }
                 }
-                using (var writer = new PageWriter(new ByteArrayWriter(valueStream, pageSize: pageSize), keyStream, addressStream))
+                using (var writer = new PageWriter<long>(new Int64Writer(valueStream, pageSize: pageSize), keyStream, addressStream))
                 {
                     var zeroAlreadyExistsSoThisShouldBeFalse = writer.TryPut(key: 0, value: BitConverter.GetBytes(0));
                     Assert.IsFalse(zeroAlreadyExistsSoThisShouldBeFalse);

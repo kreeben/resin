@@ -2,14 +2,14 @@
 
 namespace Resin.KeyValue
 {
-    public class PageWriter : IDisposable
+    public class PageWriter<T> : IDisposable where T : struct, IEquatable<T>, IComparable<T>
     {
-        private readonly ByteArrayWriter _writer;
+        private readonly ByteArrayWriter<T> _writer;
         private readonly Stream _keyStream;
         private readonly Stream _addressStream;
-        private long[] _allKeys;
+        private T[] _allKeys;
 
-        public PageWriter(ByteArrayWriter writer, Stream keyStream, Stream addressStream)
+        public PageWriter(ByteArrayWriter<T> writer, Stream keyStream, Stream addressStream)
         {
             _writer = writer;
             _keyStream = keyStream;
@@ -21,7 +21,7 @@ namespace Resin.KeyValue
             }
             var kbuf = new byte[keyStream.Length];
             keyStream.ReadExactly(kbuf);
-            var keys = MemoryMarshal.Cast<byte, long>(kbuf);
+            var keys = MemoryMarshal.Cast<byte, T>(kbuf);
             keys.Sort();
             _allKeys = keys.ToArray();
         }
@@ -34,7 +34,7 @@ namespace Resin.KeyValue
             }
         }
 
-        public bool TryPut(long key, ReadOnlySpan<byte> value)
+        public bool TryPut(T key, ReadOnlySpan<byte> value)
         {
             if (KeyExists(key))
             {
@@ -48,9 +48,9 @@ namespace Resin.KeyValue
             return put;
         }
 
-        private bool KeyExists(long key)
+        private bool KeyExists(T key)
         {
-            int index = new Span<long>(_allKeys.ToArray()).BinarySearch(key);
+            int index = new Span<T>(_allKeys.ToArray()).BinarySearch(key);
             return index > -1;
         }
 
@@ -58,11 +58,11 @@ namespace Resin.KeyValue
         {
             var newKeys = _writer.Serialize(_keyStream, _addressStream);
 
-            var enlargedArray = new long[_allKeys.Length + newKeys.Length];
+            var enlargedArray = new T[_allKeys.Length + newKeys.Length];
             _allKeys.CopyTo(enlargedArray, 0);
             newKeys.CopyTo(enlargedArray, _allKeys.Length);
             _allKeys = enlargedArray;
-            new Span<long>(_allKeys).Sort();
+            new Span<T>(_allKeys).Sort();
         }
     }
 
