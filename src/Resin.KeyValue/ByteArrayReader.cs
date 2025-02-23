@@ -1,21 +1,13 @@
 ﻿using System.Runtime.InteropServices;
 namespace Resin.KeyValue
 {
-    public class Int64Reader : ByteArrayReader<long>
+    public class ByteArrayReader<TKey> where TKey : struct, IEquatable<TKey>, IComparable<TKey>
     {
-        public Int64Reader(Stream keyStream, Stream valueStream, Stream addressStream, long offset = 0, int pageSize = 4096)
-            : base(keyStream, valueStream, addressStream, offset, pageSize)
-        {
-        }
-    }
-
-    public class ByteArrayReader<T> where T : struct, IEquatable<T>, IComparable<T>
-    {
-        private readonly T[] _keyBuf;
+        private readonly TKey[] _keyBuf;
         private readonly ReadOnlyMemory<Address> _addresses;
         private readonly Stream _valueStream;
 
-        public ByteArrayReader(Stream keyStream, Stream valueStream, Stream addressStream, long offset = 0, int pageSize = 4096)
+        public ByteArrayReader(Stream keyStream, Stream valueStream, Stream addressStream, int sizeOfTInBytes, int pageSize)
         {
             if (keyStream is null)
             {
@@ -32,18 +24,12 @@ namespace Resin.KeyValue
                 throw new ArgumentNullException(nameof(valueStream));
             }
 
-            int addressBufSize = (pageSize / sizeof(long)) * Address.Size;
-
-            if (addressStream.Position != addressBufSize)
-                addressStream.Position = offset;
-
             Span<byte> keyBuf = new byte[pageSize];
-
             keyStream.ReadExactly(keyBuf);
-
-            var keys = MemoryMarshal.Cast<byte, T>(keyBuf);
+            var keys = MemoryMarshal.Cast<byte, TKey>(keyBuf);
             _keyBuf = keys.ToArray();
 
+            int addressBufSize = (pageSize / sizeOfTInBytes) * Address.Size;
             Span<byte> addressBuf = new byte[addressBufSize];
             addressStream.ReadExactly(addressBuf);
             var addresses = MemoryMarshal.Cast<byte, Address>(addressBuf);
@@ -52,9 +38,9 @@ namespace Resin.KeyValue
             _valueStream = valueStream;
         }
 
-        public ReadOnlySpan<byte> Get(T key)
+        public ReadOnlySpan<byte> Get(TKey key)
         {
-            int index = new Span<T>(_keyBuf).BinarySearch(key);
+            int index = new Span<TKey>(_keyBuf).BinarySearch(key);
             if (index > -1)
             {
                 var address = _addresses.Span[index];

@@ -2,34 +2,22 @@
 
 namespace Resin.KeyValue
 {
-    public class Int64Writer : ByteArrayWriter<long>
+    public class ByteArrayWriter<TKey> where TKey : struct, IEquatable<TKey>, IComparable<TKey>
     {
-        public Int64Writer(Stream keyStream, Stream valueStream, Stream addressStream, long offset = 0, int pageSize = 4096)
-            : base(keyStream, valueStream, addressStream, long.MaxValue, (x) => BitConverter.GetBytes(x), offset, pageSize)
-        {
-        }
-
-        public Int64Writer(Stream valueStream, int pageSize = 4096)
-            : base(valueStream, long.MaxValue, (x) => BitConverter.GetBytes(x), pageSize)
-        {
-        }
-    }
-
-    public class ByteArrayWriter<T> where T : struct, IEquatable<T>, IComparable<T>
-    {
-        private readonly T[] _keyBuf;
+        private readonly TKey[] _keyBuf;
         private Address[] _addressBuf;
         private readonly int _pageSize;
         private readonly int _keyBufSize;
         private int _keyBufCursor;
         private int _keyCount;
         private Stream _valueStream;
-        private readonly T _emptyKey;
-        public readonly Func<T, byte[]> _getBytes;
+        private readonly TKey _emptyKey;
+        public readonly Func<TKey, byte[]> _getBytes;
+        private readonly int _sizeOfT;
 
-        public bool IsPageFull { get { return _keyCount == _pageSize / sizeof(long); } }
+        public bool IsPageFull { get { return _keyCount == _pageSize / _sizeOfT; } }
 
-        public ByteArrayWriter(Stream keyStream, Stream valueStream, Stream addressStream, T valueOfEmptyKey, Func<T, byte[]> getBytes, long offset = 0, int pageSize = 4096)
+        public ByteArrayWriter(Stream keyStream, Stream valueStream, Stream addressStream, TKey maxValueOfKey, Func<TKey, byte[]> getBytes, int sizeOfTInBytes, int pageSize)
         {
             if (keyStream is null)
             {
@@ -51,18 +39,16 @@ namespace Resin.KeyValue
                 throw new ArgumentOutOfRangeException(nameof(pageSize));
             }
 
-            if (pageSize % sizeof(long) > 0)
-                throw new ArgumentOutOfRangeException(nameof(pageSize), $"Page size modulu sizeof(long) must be equal to zero.");
+            if (pageSize % sizeOfTInBytes > 0)
+                throw new ArgumentOutOfRangeException(nameof(pageSize), $"Page size modulu size of T must equal zero.");
 
-            _emptyKey = valueOfEmptyKey;
+            _emptyKey = maxValueOfKey;
             _getBytes = getBytes;
-
-            if (keyStream.Position != offset)
-                keyStream.Position = offset;
+            _sizeOfT = sizeOfTInBytes;
 
             var kbuf = new byte[pageSize];
             keyStream.ReadExactly(kbuf);
-            _keyBuf = MemoryMarshal.Cast<byte, T>(kbuf).ToArray();
+            _keyBuf = MemoryMarshal.Cast<byte, TKey>(kbuf).ToArray();
             int i = 0;
             for (; i < _keyBuf.Length; i++)
             {
@@ -70,7 +56,7 @@ namespace Resin.KeyValue
             }
             _keyCount = i;
 
-            int addressBufSize = (pageSize / sizeof(long)) * Address.Size;
+            int addressBufSize = (pageSize / sizeOfTInBytes) * Address.Size;
             Span<byte> adrBuf = new byte[addressBufSize];
             addressStream.ReadExactly(adrBuf);
             Span<long> adrSpan = MemoryMarshal.Cast<byte, long>(adrBuf);
@@ -87,28 +73,29 @@ namespace Resin.KeyValue
             _pageSize = pageSize;
         }
 
-        public ByteArrayWriter(Stream valueStream, T valueOfEmptyKey, Func<T, byte[]> getBytes, int pageSize = 4096)
+        public ByteArrayWriter(Stream valueStream, TKey maxValueOfKey, Func<TKey, byte[]> getBytes, int sizeOfT, int pageSize)
         {
-            if (pageSize % sizeof(long) > 0)
-                throw new ArgumentOutOfRangeException(nameof(pageSize), $"Page size modulu sizeof(long) must be equal to zero.");
+            if (pageSize % sizeOfT > 0)
+                throw new ArgumentOutOfRangeException(nameof(pageSize), $"Page size modulu size of T must equal zero.");
 
-            _emptyKey = valueOfEmptyKey;
+            _emptyKey = maxValueOfKey;
             _getBytes = getBytes;
-            _keyBufSize = pageSize / sizeof(long);
-            _keyBuf = new T[_keyBufSize];
+            _sizeOfT = sizeOfT;
+            _keyBufSize = pageSize / _sizeOfT;
+            _keyBuf = new TKey[_keyBufSize];
             _addressBuf = new Address[_keyBufSize];
             _valueStream = valueStream;
             _pageSize = pageSize;
-            new Span<T>(_keyBuf).Fill(_emptyKey);
+            new Span<TKey>(_keyBuf).Fill(_emptyKey);
             new Span<Address>(_addressBuf).Fill(Address.Empty());
         }
 
-        public bool TryPut(T key, ReadOnlySpan<byte> value)
+        public bool TryPut(TKey key, ReadOnlySpan<byte> value)
         {
             if (_keyCount >= _keyBufSize)
                 throw new OutOfPageStorageException();
 
-            int index = new Span<T>(_keyBuf).BinarySearch(key);
+            int index = new Span<TKey>(_keyBuf).BinarySearch(key);
             if (index > -1)
             {
                 return false;
@@ -121,7 +108,7 @@ namespace Resin.KeyValue
             _keyCount++;
             _keyBufCursor++;
 
-            new Span<T>(_keyBuf).Sort(new Span<Address>(_addressBuf));
+            new Span<TKey>(_keyBuf).Sort(new Span<Address>(_addressBuf));
 
             return true;
         }
@@ -136,10 +123,10 @@ namespace Resin.KeyValue
             return new Address(pos, value.Length);
         }
 
-        public T[] Serialize(Stream keyStream, Stream addressStream)
+        public TKey[] Serialize(Stream keyStream, Stream addressStream)
         {
             if (_keyCount == 0)
-                return Array.Empty<T>();
+                return Array.Empty<TKey>();
 
             foreach (var key in _keyBuf)
             {
@@ -155,9 +142,9 @@ namespace Resin.KeyValue
             _keyCount = 0;
             _keyBufCursor = 0;
 
-            var keys = new T[_keyBuf.Length];
+            var keys = new TKey[_keyBuf.Length];
             _keyBuf.CopyTo(keys, 0);
-            new Span<T>(_keyBuf).Fill(_emptyKey);
+            new Span<TKey>(_keyBuf).Fill(_emptyKey);
             new Span<Address>(_addressBuf).Fill(Address.Empty());
             return keys;
         }
