@@ -6,16 +6,16 @@ namespace Resin.KeyValue
     {
         private readonly TKey[] _keyBuf;
         private Address[] _addressBuf;
-        private readonly int _pageSize;
+        private readonly int _pageSizeInBytes;
         private readonly int _keyBufSize;
         private int _keyBufCursor;
         private int _keyCount;
         private Stream _valueStream;
         private readonly TKey _emptyKey;
         public readonly Func<TKey, byte[]> _getBytes;
-        private readonly int _sizeOfT;
+        private readonly int _sizeOfTInBytes;
 
-        public bool IsPageFull { get { return _keyCount == _pageSize / _sizeOfT; } }
+        public bool IsPageFull { get { return _keyCount == _pageSizeInBytes / _sizeOfTInBytes; } }
 
         public ByteArrayWriter(Stream keyStream, Stream valueStream, Stream addressStream, TKey maxValueOfKey, Func<TKey, byte[]> getBytes, int sizeOfTInBytes, int pageSizeInBytes)
         {
@@ -44,33 +44,50 @@ namespace Resin.KeyValue
 
             _emptyKey = maxValueOfKey;
             _getBytes = getBytes ?? throw new ArgumentNullException(nameof(getBytes));
-            _sizeOfT = sizeOfTInBytes;
+            _sizeOfTInBytes = sizeOfTInBytes;
 
-            var kbuf = new byte[pageSizeInBytes];
-            keyStream.ReadExactly(kbuf);
-            _keyBuf = MemoryMarshal.Cast<byte, TKey>(kbuf).ToArray();
-            int i = 0;
-            for (; i < _keyBuf.Length; i++)
+            if (keyStream.Length > 0)
             {
-                if (_keyBuf[i].Equals(_emptyKey)) { break; }
-            }
-            _keyCount = i;
+                int i = 0;
+                var kbuf = new byte[pageSizeInBytes];
+                keyStream.ReadExactly(kbuf);
+                _keyBuf = MemoryMarshal.Cast<byte, TKey>(kbuf).ToArray();
+                for (; i < _keyBuf.Length; i++)
+                {
+                    if (_keyBuf[i].Equals(_emptyKey)) { break; }
+                }
+                _keyCount = i;
 
-            int addressBufSize = (pageSizeInBytes / sizeOfTInBytes) * Address.Size;
-            Span<byte> adrBuf = new byte[addressBufSize];
-            addressStream.ReadExactly(adrBuf);
-            Span<long> adrSpan = MemoryMarshal.Cast<byte, long>(adrBuf);
-            var numOfAddresses = adrBuf.Length / Address.Size;
-            var addressList = new Address[numOfAddresses];
-            var addressListIndex = 0;
-            for (i = 0; i < numOfAddresses; i += 2)
-            {
-                long ofs = adrSpan[i];
-                long len = adrSpan[i + 1];
-                addressList[addressListIndex++] = new Address(ofs, len);
+                if (addressStream.Length == 0)
+                {
+                    throw new InvalidOperationException("Address stream cannot be empty.");
+                }
+                int addressBufSize = (pageSizeInBytes / sizeOfTInBytes) * Address.Size;
+                Span<byte> adrBuf = new byte[addressBufSize];
+                addressStream.ReadExactly(adrBuf);
+                Span<long> adrSpan = MemoryMarshal.Cast<byte, long>(adrBuf);
+                var numOfAddresses = adrBuf.Length / Address.Size;
+                var addressList = new Address[numOfAddresses];
+                var addressListIndex = 0;
+                for (i = 0; i < numOfAddresses; i += 2)
+                {
+                    long ofs = adrSpan[i];
+                    long len = adrSpan[i + 1];
+                    addressList[addressListIndex++] = new Address(ofs, len);
+                }
+                _addressBuf = addressList;
             }
-            _addressBuf = addressList;
-            _pageSize = pageSizeInBytes;
+            else
+            {
+                _keyBuf = new TKey[pageSizeInBytes / _sizeOfTInBytes];
+                new Span<TKey>(_keyBuf).Fill(_emptyKey);
+
+                _addressBuf = new Address[pageSizeInBytes / _sizeOfTInBytes];
+                new Span<Address>(_addressBuf).Fill(Address.Empty());
+            }
+            _keyBufSize = pageSizeInBytes / _sizeOfTInBytes;
+            _pageSizeInBytes = pageSizeInBytes;
+            _valueStream = valueStream;
         }
 
         public ByteArrayWriter(Stream valueStream, TKey maxValueOfKey, Func<TKey, byte[]> getBytes, int sizeOfTInBytes, int pageSizeInBytes)
@@ -80,12 +97,12 @@ namespace Resin.KeyValue
 
             _emptyKey = maxValueOfKey;
             _getBytes = getBytes ?? throw new ArgumentNullException(nameof(getBytes));
-            _sizeOfT = sizeOfTInBytes;
-            _keyBufSize = pageSizeInBytes / _sizeOfT;
+            _sizeOfTInBytes = sizeOfTInBytes;
+            _keyBufSize = pageSizeInBytes / _sizeOfTInBytes;
             _keyBuf = new TKey[_keyBufSize];
             _addressBuf = new Address[_keyBufSize];
             _valueStream = valueStream ?? throw new ArgumentNullException(nameof(valueStream));
-            _pageSize = pageSizeInBytes;
+            _pageSizeInBytes = pageSizeInBytes;
             new Span<TKey>(_keyBuf).Fill(_emptyKey);
             new Span<Address>(_addressBuf).Fill(Address.Empty());
         }

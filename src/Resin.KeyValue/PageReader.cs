@@ -1,6 +1,6 @@
 ﻿namespace Resin.KeyValue
 {
-    public class PageReader<TKey> where TKey : struct, IEquatable<TKey>, IComparable<TKey>
+    public class PageReader<TKey> : IDisposable where TKey : struct, IEquatable<TKey>, IComparable<TKey>
     {
         private readonly Stream _valueStream;
         private readonly Stream _addressStream;
@@ -17,6 +17,22 @@
             _sizeOfTInBytes = sizeOfTInBytes;
         }
 
+        public void Dispose()
+        {
+            if (_addressStream != null)
+            {
+                _addressStream.Dispose();
+            }
+            if (_keyStream != null)
+            {
+                _keyStream.Dispose();
+            }
+            if (_valueStream != null)
+            {
+                _valueStream.Dispose();
+            }
+        }
+
         public ReadOnlySpan<byte> Get(TKey key)
         {
             if (_keyStream.Length > 0)
@@ -25,8 +41,9 @@
                 _addressStream.Position = 0;
                 while (true)
                 {
-                    var value = new ByteArrayReader<TKey>(_keyStream, _valueStream, _addressStream, sizeOfTInBytes: _sizeOfTInBytes, pageSize: _pageSize).Get(key);
-                    if (value == ReadOnlySpan<byte>.Empty)
+                    var reader = new ByteArrayReader<TKey>(_keyStream, _valueStream, _addressStream, sizeOfTInBytes: _sizeOfTInBytes, pageSize: _pageSize);
+                    var value = reader.Get(key);
+                    if (value.IsEmpty)
                     {
                         if (_keyStream.Position + 1 < _keyStream.Length)
                         {
@@ -45,6 +62,13 @@
             }
 
             return ReadOnlySpan<byte>.Empty;
+        }
+    }
+
+    public class DoublePageReader : PageReader<double>
+    {
+        public DoublePageReader(Stream keyStream, Stream valueStream, Stream addressStream, int pageSize) : base(keyStream, valueStream, addressStream, sizeof(double), pageSize)
+        {
         }
     }
 }
