@@ -26,9 +26,9 @@ namespace Resin.TextAnalysis
             using (var tokenKeyStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Key))
             using (var tokenValueStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Value))
             using (var tokenAddressStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Address))
-            using (var bucketKeyStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.BucketKey))
-            using (var bucketValueStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.BucketValue))
-            using (var bucketAddressStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.BucketAddress))
+            //using (var bucketKeyStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.BucketKey))
+            //using (var bucketValueStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.BucketValue))
+            //using (var bucketAddressStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.BucketAddress))
 
             using (var tokenReader = new DoublePageReader(tokenKeyStream, tokenValueStream, tokenAddressStream, _pageSize))
             //using (var bucketReader = new DoublePageReader(bucketKeyStream, bucketValueStream, bucketAddressStream, _pageSize))
@@ -36,18 +36,18 @@ namespace Resin.TextAnalysis
                 foreach (var token in Tokenize(source, _numOfDimensions, log))
                 {
                     var angle = VectorOperations.CosAngle(_unitVector, token.vector);
-                    var hit = tokenReader.Get(angle);
+                    var hit = tokenReader.IndexOf(angle);
 
-                    if (hit.IsEmpty)
+                    if (hit < 0)
                     {
                         var msg = $"could not find {token.label} at {angle}";
                         log.LogInformation(msg);
                         throw new InvalidOperationException(msg);
                     }
-                    else
-                    {
-                        log.LogInformation($"found {token.label} at {angle}");
-                    }
+                    //else
+                    //{
+                    //    log.LogInformation($"found {token.label} at {angle}");
+                    //}
                 }
             }
         }
@@ -69,48 +69,49 @@ namespace Resin.TextAnalysis
             using (var tokenValueStream = streamFactory.CreateAppendStream(_collectionId, FileExtensions.Value))
             using (var tokenAddressStream = streamFactory.CreateAppendStream(_collectionId, FileExtensions.Address))
             using (var tokenReadAddressStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Address))
-            using (var bucketKeyStream = streamFactory.CreateAppendStream(_collectionId, FileExtensions.BucketKey))
-            using (var bucketReadKeyStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.BucketKey))
-            using (var bucketValueStream = streamFactory.CreateAppendStream(_collectionId, FileExtensions.BucketValue))
-            using (var bucketAddressStream = streamFactory.CreateAppendStream(_collectionId, FileExtensions.BucketAddress))
-            using (var bucketReadAddressStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.BucketAddress))
+            //using (var bucketKeyStream = streamFactory.CreateAppendStream(_collectionId, FileExtensions.BucketKey))
+            //using (var bucketReadKeyStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.BucketKey))
+            //using (var bucketValueStream = streamFactory.CreateAppendStream(_collectionId, FileExtensions.BucketValue))
+            //using (var bucketAddressStream = streamFactory.CreateAppendStream(_collectionId, FileExtensions.BucketAddress))
+            //using (var bucketReadAddressStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.BucketAddress))
 
             using (var tokenWriter = new PageWriter<double>(
                 new DoubleWriter(tokenReadKeyStream, tokenValueStream, tokenReadAddressStream, _pageSize),
                 tokenKeyStream,
                 tokenAddressStream))
-            using (var bucketWriter = new PageWriter<double>(
-                new DoubleWriter(bucketReadKeyStream, bucketValueStream, bucketReadAddressStream, _pageSize),
-                bucketKeyStream,
-                bucketAddressStream))
+            //using (var bucketWriter = new PageWriter<double>(
+            //    new DoubleWriter(bucketReadKeyStream, bucketValueStream, bucketReadAddressStream, _pageSize),
+            //    bucketKeyStream,
+            //    bucketAddressStream))
             {
                 foreach (var token in Tokenize(source, _numOfDimensions, log))
                 {
                     var angle = VectorOperations.CosAngle(_unitVector, token.vector);
 
-                    if (!words.TryAdd(angle, (token.label, token.vector)))
-                    {
-                        var existingVector = words[angle].vector;
-                        var a = VectorOperations.CosAngle(existingVector, token.vector);
+                    //if (!words.TryAdd(angle, (token.label, token.vector)))
+                    //{
+                    //    var existingVector = words[angle].vector;
+                    //    var a = VectorOperations.CosAngle(existingVector, token.vector);
 
-                        if (a < 0.99)
-                        {
-                            if (bucketWriter.TryPut(angle, VectorOperations.GetBytes(token.vector)))
-                            {
-                                if (log != null)
-                                    log.LogInformation($"**** {words[angle].label} is dupe of {token.label}. both have angle {angle}. individual angle {a}");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (!tokenWriter.TryPut(angle, VectorOperations.GetBytes(token.vector)))
-                        {
-                            throw new InvalidOperationException("what in the world is going on with the tokens???");
-                        }
-                    }
+                    //    if (a < 0.99)
+                    //    {
+                    //        if (bucketWriter.TryPut(angle, VectorOperations.GetBytes(token.vector)))
+                    //        {
+                    //            if (log != null)
+                    //                log.LogInformation($"**** {words[angle].label} is dupe of {token.label}. both have angle {angle}. individual angle {a}");
+                    //        }
+                    //    }
+                    //}
+                    //else
+                    //{
+                    //    if (!tokenWriter.TryPut(angle, VectorOperations.GetBytes(token.vector)))
+                    //    {
+                    //        throw new InvalidOperationException("what in the world is going on with the tokens???");
+                    //    }
+                    //}
+                    tokenWriter.TryPut(angle, VectorOperations.GetBytes(token.vector));
                 }
-                bucketWriter.Serialize();
+                //bucketWriter.Serialize();
                 tokenWriter.Serialize();
             }
         }
@@ -166,7 +167,7 @@ namespace Resin.TextAnalysis
                     yield return (word, new string(label.ToArray()));
                 }
                 if (log != null)
-                    log.LogInformation($"{count++} {new string(str.Take(30).ToArray())}");
+                    log.LogInformation($"{count++} {new string(str.Take(100).ToArray())}");
             }
         }
 

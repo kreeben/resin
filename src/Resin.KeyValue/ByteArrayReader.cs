@@ -51,5 +51,10 @@ namespace Resin.KeyValue
             }
             return ReadOnlySpan<byte>.Empty;
         }
+
+        public int IndexOf(TKey key)
+        {
+            return new Span<TKey>(_keyBuf).BinarySearch(key);
+        }
     }
 }

@@ -33,6 +33,31 @@
             }
         }
 
+        public int IndexOf(TKey key)
+        {
+            if (_keyStream.Length > 0)
+            {
+                _keyStream.Position = 0;
+                _addressStream.Position = 0;
+                int index;
+                while (true)
+                {
+                    var reader = new ByteArrayReader<TKey>(_keyStream, _valueStream, _addressStream, sizeOfTInBytes: _sizeOfTInBytes, pageSize: _pageSize);
+                    index = reader.IndexOf(key);
+                    if (index < 0 && _keyStream.Position + 1 < _keyStream.Length)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                return index;
+            }
+            return -1;
+        }
+
         public ReadOnlySpan<byte> Get(TKey key)
         {
             if (_keyStream.Length > 0)
