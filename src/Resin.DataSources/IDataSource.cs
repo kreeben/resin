@@ -2,6 +2,6 @@
 {
     public interface IDataSource
     {
-        IEnumerable<string> GetData();
+        IEnumerable<string> GetData(string field);
     }
 }
