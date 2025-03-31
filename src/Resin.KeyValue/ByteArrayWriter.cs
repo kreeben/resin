@@ -72,14 +72,6 @@ namespace Resin.KeyValue
             }
         }
 
-        //public void Refresh()
-        //{
-        //    var keyInfo = ReadKeyPage(_keyStream);
-        //    _keyBuffer = keyInfo.keyBuffer;
-        //    _keyCount = keyInfo.keyCount;
-        //    _addressBuffer = ReadAddressPage(_addressStream);
-        //}
-
         private Address[] ReadAddressPage(Stream addressStream)
         {
             if (addressStream.Length == 0)
@@ -147,6 +139,8 @@ namespace Resin.KeyValue
             if (value == Span<byte>.Empty || value.Length == 0)
                 throw new ArgumentOutOfRangeException(nameof(value.Length), "Value cannot be null or empty.");
 
+            GoToEndOfStream(_valueStream);
+
             var pos = _valueStream.Position;
             _valueStream.Write(value);
             return new Address(pos, value.Length);
@@ -157,16 +151,14 @@ namespace Resin.KeyValue
             if (_keyCount == 0)
                 return;
 
-            if (_keyStream.Position != _keyStream.Length)
-                _keyStream.Position = _keyStream.Length;
+            GoToEndOfStream(_keyStream);
 
             foreach (var key in _keyBuffer)
             {
                 _keyStream.Write(_getBytes(key));
             }
 
-            if (_addressStream.Position != _addressStream.Length)
-                _addressStream.Position = _addressStream.Length;
+            GoToEndOfStream(_addressStream);
 
             foreach (var adr in _addressBuffer)
             {
@@ -178,6 +170,12 @@ namespace Resin.KeyValue
 
             new Span<TKey>(_keyBuffer).Fill(_emptyKey);
             new Span<Address>(_addressBuffer).Fill(Address.Empty());
+        }
+
+        private static void GoToEndOfStream(Stream stream)
+        {
+            if (stream.Position != stream.Length)
+                stream.Position = stream.Length;
         }
     }
 }

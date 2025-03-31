@@ -17,22 +17,6 @@
             _sizeOfTInBytes = sizeOfTInBytes;
         }
 
-        public void Dispose()
-        {
-            if (_addressStream != null)
-            {
-                _addressStream.Dispose();
-            }
-            if (_keyStream != null)
-            {
-                _keyStream.Dispose();
-            }
-            if (_valueStream != null)
-            {
-                _valueStream.Dispose();
-            }
-        }
-
         public int IndexOf(TKey key)
         {
             if (_keyStream.Length > 0)
@@ -87,6 +71,22 @@
             }
 
             return ReadOnlySpan<byte>.Empty;
+        }
+
+        public void Dispose()
+        {
+            if (_addressStream != null)
+            {
+                _addressStream.Dispose();
+            }
+            if (_keyStream != null)
+            {
+                _keyStream.Dispose();
+            }
+            if (_valueStream != null)
+            {
+                _valueStream.Dispose();
+            }
         }
     }
 

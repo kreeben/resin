@@ -69,10 +69,10 @@ namespace Resin.TextAnalysis
 
             streamFactory.Truncate();
 
-            using (var tokenRWKeyStream = streamFactory.CreateReadWriteStream(_collectionId, FileExtensions.Key))
-            using (var tokenValueStream = streamFactory.CreateAppendStream(_collectionId, FileExtensions.Value))
-            using (var tokenRWAddressStream = streamFactory.CreateReadWriteStream(_collectionId, FileExtensions.Address))
-            using (var tokenWriter = new ColumnWriter<double>(new DoubleWriter(tokenRWKeyStream, tokenValueStream, tokenRWAddressStream, _pageSize)))
+            using (var keyStream = streamFactory.CreateReadWriteStream(_collectionId, FileExtensions.Key))
+            using (var valueStream = streamFactory.CreateReadWriteStream(_collectionId, FileExtensions.Value))
+            using (var addressStream = streamFactory.CreateReadWriteStream(_collectionId, FileExtensions.Address))
+            using (var columnWriter = new ColumnWriter<double>(new DoubleWriter(keyStream, valueStream, addressStream, _pageSize)))
             {
                 foreach (var token in Tokenize(source, _numOfDimensions))
                 {
@@ -102,10 +102,10 @@ namespace Resin.TextAnalysis
                     //        throw new InvalidOperationException("what in the world is going on with the tokens???");
                     //    }
                     //}
-                    tokenWriter.TryPut(angle, VectorOperations.GetBytes(token.vector));
+                    columnWriter.TryPut(angle, VectorOperations.GetBytes(token.vector));
                 }
                 //bucketWriter.Serialize();
-                tokenWriter.Serialize();
+                columnWriter.Serialize();
             }
         }
 

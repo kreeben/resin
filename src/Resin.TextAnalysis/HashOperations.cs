@@ -17,10 +17,5 @@
             }
             return hashedValue;
         }
-
-        public static long MapToLong(this ulong ulongValue)
-        {
-            return unchecked((long)ulongValue + long.MinValue);
-        }
     }
 }
