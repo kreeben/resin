@@ -6,19 +6,19 @@
         [TestMethod]
         public void ByteArrayWriter_CanThrowOutOfPageStorageException()
         {
-            const int testCount = 11;
-            int pageSize = 10 * sizeof(Int16);
+            const int testCount = 17;
+            int pageSize = 16 * sizeof(Int16);
 
             using (var keyStream = new MemoryStream())
             using (var valueStream = new MemoryStream())
             using (var addressStream = new MemoryStream())
             {
-                var writer = new Int16Writer(valueStream, pageSize);
+                var writer = new Int16Writer(keyStream, valueStream, addressStream, pageSize);
 
                 for (Int16 i = 0; i < testCount; i++)
                 {
                     Int16 val = i;
-                    if (i == 10)
+                    if (i == 16)
                     {
                         Assert.ThrowsException<OutOfPageStorageException>(() =>
                         {
@@ -44,14 +44,14 @@
             using (var addressStream = new MemoryStream())
             {
                 var testCases = new List<Int16>();
-                var writer = new Int16Writer(valueStream, pageSize: pageSize);
+                var writer = new Int16Writer(keyStream, valueStream, addressStream, pageSize);
                 for (Int16 i = 0; i < testCount; i++)
                 {
                     Int16 val = i;
                     writer.TryPut(key: val, value: BitConverter.GetBytes(val));
                     testCases.Add(val);
                 }
-                writer.Serialize(keyStream, addressStream);
+                writer.Serialize();
                 keyStream.Position = 0;
                 valueStream.Position = 0;
                 addressStream.Position = 0;
@@ -81,7 +81,7 @@
             using (var addressStream = new MemoryStream())
             {
                 var testCases = new List<Int16>();
-                var writer = new Int16Writer(valueStream, pageSize: pageSize);
+                var writer = new Int16Writer(keyStream, valueStream, addressStream, pageSize);
                 for (Int16 i = 0; i < testCount; i++)
                 {
                     Int16 val = i;
@@ -91,12 +91,12 @@
                     }
                     catch (OutOfPageStorageException ex)
                     {
-                        writer.Serialize(keyStream, addressStream);
+                        writer.Serialize();
                         writer.TryPut(key: val, value: BitConverter.GetBytes(val));
                     }
                     testCases.Add((Int16)val);
                 }
-                writer.Serialize(keyStream, addressStream);
+                writer.Serialize();
                 keyStream.Position = 0;
                 valueStream.Position = 0;
                 addressStream.Position = 0;
@@ -130,7 +130,7 @@
             using (var addressStream = new MemoryStream())
             {
                 var testCases = new List<Int16>();
-                using (var writer = new PageWriter<Int16>(new Int16Writer(valueStream, pageSize: pageSize), keyStream, addressStream))
+                using (var writer = new PageWriter<Int16>(new Int16Writer(keyStream, valueStream, addressStream, pageSize), keyStream, addressStream))
                     for (Int16 i = 0; i < testCount; i++)
                     {
                         Int16 val = i;
@@ -170,7 +170,7 @@
             using (var addressStream = new MemoryStream())
             {
                 var testCases = new List<Int16>();
-                using (var writer = new PageWriter<Int16>(new Int16Writer(valueStream, pageSize: pageSize), keyStream, addressStream))
+                using (var writer = new PageWriter<Int16>(new Int16Writer(keyStream, valueStream, addressStream, pageSize), keyStream, addressStream))
                     for (int i = 0; i < testCount; i++)
                     {
                         Int16 val = (Int16)i;
@@ -203,7 +203,7 @@
             using (var valueStream = new MemoryStream())
             using (var addressStream = new MemoryStream())
             {
-                var writer = new Int16Writer(valueStream, 4096);
+                var writer = new Int16Writer(keyStream, valueStream, addressStream, 4096);
                 Assert.IsTrue(writer.TryPut(key: 0, value: BitConverter.GetBytes((Int16)0)));
                 Assert.IsFalse(writer.TryPut(key: 0, value: BitConverter.GetBytes((Int16)0)));
             }
@@ -218,7 +218,7 @@
             using (var valueStream = new MemoryStream())
             using (var addressStream = new MemoryStream())
             {
-                using (var writer = new PageWriter<Int16>(new Int16Writer(valueStream, pageSize: pageSize), keyStream, addressStream))
+                using (var writer = new PageWriter<Int16>(new Int16Writer(keyStream, valueStream, addressStream, pageSize), keyStream, addressStream))
                 {
                     for (int i = 0; i < testCount; i++)
                     {
@@ -240,7 +240,7 @@
             using (var valueStream = new MemoryStream())
             using (var addressStream = new MemoryStream())
             {
-                using (var writer = new PageWriter<Int16>(new Int16Writer(valueStream, pageSize: pageSize), keyStream, addressStream))
+                using (var writer = new PageWriter<Int16>(new Int16Writer(keyStream, valueStream, addressStream, pageSize), keyStream, addressStream))
                 {
                     for (int i = 0; i < testCount; i++)
                     {
@@ -248,7 +248,10 @@
                         writer.TryPut(key: val, value: BitConverter.GetBytes(val));
                     }
                 }
-                using (var writer = new PageWriter<Int16>(new Int16Writer(valueStream, pageSize: pageSize), keyStream, addressStream))
+                keyStream.Position = 0;
+                valueStream.Position = 0;
+                addressStream.Position = 0;
+                using (var writer = new PageWriter<Int16>(new Int16Writer(keyStream, valueStream, addressStream, pageSize), keyStream, addressStream))
                 {
                     var zeroAlreadyExistsSoThisShouldBeFalse = writer.TryPut(key: 0, value: BitConverter.GetBytes((double)0));
                     Assert.IsFalse(zeroAlreadyExistsSoThisShouldBeFalse);

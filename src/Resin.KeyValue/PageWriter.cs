@@ -30,7 +30,7 @@ namespace Resin.KeyValue
         {
             if (_writer != null)
             {
-                _writer.Serialize(_keyStream, _addressStream);
+                _writer.Serialize();
             }
         }
 
@@ -56,12 +56,20 @@ namespace Resin.KeyValue
 
         public void Serialize()
         {
-            var newKeys = _writer.Serialize(_keyStream, _addressStream);
+            var newKeys = _writer.Serialize();
 
-            var enlargedArray = new TKey[_allKeys.Length + newKeys.Length];
-            _allKeys.CopyTo(enlargedArray, 0);
-            newKeys.CopyTo(enlargedArray, _allKeys.Length);
-            _allKeys = enlargedArray;
+            if (_allKeys.Length > 0)
+            {
+                var enlargedArray = new TKey[_allKeys.Length + newKeys.Length];
+                _allKeys.CopyTo(enlargedArray, 0);
+                newKeys.CopyTo(enlargedArray, _allKeys.Length);
+                _allKeys = enlargedArray;
+            }
+            else
+            {
+                _allKeys = newKeys;
+            }
+
             new Span<TKey>(_allKeys).Sort();
         }
     }

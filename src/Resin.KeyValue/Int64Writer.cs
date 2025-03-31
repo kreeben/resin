@@ -6,22 +6,12 @@
             : base(keyStream, valueStream, addressStream, long.MaxValue, (x) => BitConverter.GetBytes(x), sizeof(long), pageSize)
         {
         }
-
-        public Int64Writer(Stream valueStream, int pageSize)
-            : base(valueStream, long.MaxValue, (x) => BitConverter.GetBytes(x), sizeof(long), pageSize)
-        {
-        }
     }
 
     public class Int32Writer : ByteArrayWriter<int>
     {
         public Int32Writer(Stream keyStream, Stream valueStream, Stream addressStream, int pageSize)
             : base(keyStream, valueStream, addressStream, int.MaxValue, (x) => BitConverter.GetBytes(x), sizeof(int), pageSize)
-        {
-        }
-
-        public Int32Writer(Stream valueStream, int pageSize)
-            : base(valueStream, int.MaxValue, (x) => BitConverter.GetBytes(x), sizeof(int), pageSize)
         {
         }
     }
@@ -32,22 +22,12 @@
             : base(keyStream, valueStream, addressStream, Int128.MaxValue, (x) => BitConverter.GetBytes(x), 16, pageSize)
         {
         }
-
-        public Int128Writer(Stream valueStream, int pageSize)
-            : base(valueStream, Int128.MaxValue, (x) => BitConverter.GetBytes(x), 16, pageSize)
-        {
-        }
     }
 
     public class SingleWriter : ByteArrayWriter<float>
     {
         public SingleWriter(Stream keyStream, Stream valueStream, Stream addressStream, int pageSize)
             : base(keyStream, valueStream, addressStream, float.MaxValue, (x) => BitConverter.GetBytes(x), sizeof(float), pageSize)
-        {
-        }
-
-        public SingleWriter(Stream valueStream, int pageSize)
-            : base(valueStream, float.MaxValue, (x) => BitConverter.GetBytes(x), sizeof(float), pageSize)
         {
         }
     }
@@ -58,11 +38,6 @@
             : base(keyStream, valueStream, addressStream, Int16.MaxValue, (x) => BitConverter.GetBytes(x), sizeof(Int16), pageSize)
         {
         }
-
-        public Int16Writer(Stream valueStream, int pageSize)
-            : base(valueStream, Int16.MaxValue, (x) => BitConverter.GetBytes(x), sizeof(Int16), pageSize)
-        {
-        }
     }
 
     public class ByteWriter : ByteArrayWriter<byte>
@@ -71,22 +46,12 @@
             : base(keyStream, valueStream, addressStream, byte.MaxValue, (x) => [x], sizeof(byte), pageSize)
         {
         }
-
-        public ByteWriter(Stream valueStream, int pageSize)
-            : base(valueStream, byte.MaxValue, (x) => [x], sizeof(byte), pageSize)
-        {
-        }
     }
 
     public class DoubleWriter : ByteArrayWriter<double>
     {
         public DoubleWriter(Stream keyStream, Stream valueStream, Stream addressStream, int pageSize)
             : base(keyStream, valueStream, addressStream, double.MaxValue, (x) => BitConverter.GetBytes(x), sizeof(double), pageSize)
-        {
-        }
-
-        public DoubleWriter(Stream valueStream, int pageSize)
-            : base(valueStream, double.MaxValue, (x) => BitConverter.GetBytes(x), sizeof(double), pageSize)
         {
         }
     }

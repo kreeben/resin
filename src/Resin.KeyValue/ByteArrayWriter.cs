@@ -10,7 +10,9 @@ namespace Resin.KeyValue
         private readonly int _keyBufSize;
         private int _keyBufCursor;
         private int _keyCount;
+        private Stream _keyStream;
         private Stream _valueStream;
+        private Stream _addressStream;
         private readonly TKey _emptyKey;
         public readonly Func<TKey, byte[]> _getBytes;
         private readonly int _sizeOfTInBytes;
@@ -88,23 +90,8 @@ namespace Resin.KeyValue
             _keyBufSize = pageSizeInBytes / _sizeOfTInBytes;
             _pageSizeInBytes = pageSizeInBytes;
             _valueStream = valueStream;
-        }
-
-        public ByteArrayWriter(Stream valueStream, TKey maxValueOfKey, Func<TKey, byte[]> getBytes, int sizeOfTInBytes, int pageSizeInBytes)
-        {
-            if (pageSizeInBytes % sizeOfTInBytes > 0)
-                throw new ArgumentOutOfRangeException(nameof(pageSizeInBytes), $"Page size modulu size of T must equal zero.");
-
-            _emptyKey = maxValueOfKey;
-            _getBytes = getBytes ?? throw new ArgumentNullException(nameof(getBytes));
-            _sizeOfTInBytes = sizeOfTInBytes;
-            _keyBufSize = pageSizeInBytes / _sizeOfTInBytes;
-            _keyBuf = new TKey[_keyBufSize];
-            _addressBuf = new Address[_keyBufSize];
-            _valueStream = valueStream ?? throw new ArgumentNullException(nameof(valueStream));
-            _pageSizeInBytes = pageSizeInBytes;
-            new Span<TKey>(_keyBuf).Fill(_emptyKey);
-            new Span<Address>(_addressBuf).Fill(Address.Empty());
+            _keyStream = keyStream;
+            _addressStream = addressStream;
         }
 
         public bool TryPut(TKey key, ReadOnlySpan<byte> value)
@@ -140,20 +127,20 @@ namespace Resin.KeyValue
             return new Address(pos, value.Length);
         }
 
-        public TKey[] Serialize(Stream keyStream, Stream addressStream)
+        public TKey[] Serialize()
         {
             if (_keyCount == 0)
                 return Array.Empty<TKey>();
 
             foreach (var key in _keyBuf)
             {
-                keyStream.Write(_getBytes(key));
+                _keyStream.Write(_getBytes(key));
             }
 
             foreach (var adr in _addressBuf)
             {
-                addressStream.Write(BitConverter.GetBytes(adr.Offset));
-                addressStream.Write(BitConverter.GetBytes(adr.Length));
+                _addressStream.Write(BitConverter.GetBytes(adr.Offset));
+                _addressStream.Write(BitConverter.GetBytes(adr.Length));
             }
 
             _keyCount = 0;
