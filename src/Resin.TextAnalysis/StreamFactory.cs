@@ -22,6 +22,17 @@
                 File.Delete(file);
         }
 
+        public Stream CreateReadWriteStream(ulong collectionId, string fileExtension)
+        {
+            var fileName = Path.Combine(_directory.FullName, $"{collectionId}.{fileExtension}");
+            if (!File.Exists(fileName))
+            {
+                return new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite, 4096, FileOptions.RandomAccess);
+            }
+
+            return new FileStream(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, 4096, FileOptions.RandomAccess);
+        }
+
         public Stream CreateReadStream(ulong collectionId, string fileExtension)
         {
             var fileName = Path.Combine(_directory.FullName, $"{collectionId}.{fileExtension}");

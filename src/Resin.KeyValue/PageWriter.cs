@@ -5,15 +5,11 @@ namespace Resin.KeyValue
     public class PageWriter<TKey> : IDisposable where TKey : struct, IEquatable<TKey>, IComparable<TKey>
     {
         private readonly ByteArrayWriter<TKey> _writer;
-        private readonly Stream _keyStream;
-        private readonly Stream _addressStream;
         private TKey[] _allKeys;
 
         public PageWriter(ByteArrayWriter<TKey> writer, Stream keyStream, Stream addressStream)
         {
             _writer = writer;
-            _keyStream = keyStream;
-            _addressStream = addressStream;
 
             if (keyStream.Position != 0)
             {

@@ -26,28 +26,20 @@ namespace Resin.TextAnalysis
             using (var tokenKeyStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Key))
             using (var tokenValueStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Value))
             using (var tokenAddressStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Address))
-            //using (var bucketKeyStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.BucketKey))
-            //using (var bucketValueStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.BucketValue))
-            //using (var bucketAddressStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.BucketAddress))
 
             using (var tokenReader = new DoublePageReader(tokenKeyStream, tokenValueStream, tokenAddressStream, _pageSize))
-            //using (var bucketReader = new DoublePageReader(bucketKeyStream, bucketValueStream, bucketAddressStream, _pageSize))
             {
                 foreach (var token in Tokenize(source, _numOfDimensions, log))
                 {
                     var angle = VectorOperations.CosAngle(_unitVector, token.vector);
-                    var hit = tokenReader.IndexOf(angle);
+                    var score = tokenReader.IndexOf(angle);
 
-                    if (hit < 0)
+                    if (score < 0)
                     {
                         var msg = $"could not find {token.label} at {angle}";
                         log.LogInformation(msg);
                         throw new InvalidOperationException(msg);
                     }
-                    //else
-                    //{
-                    //    log.LogInformation($"found {token.label} at {angle}");
-                    //}
                 }
             }
         }
@@ -64,25 +56,15 @@ namespace Resin.TextAnalysis
 
             streamFactory.Truncate();
 
-            using (var tokenKeyStream = streamFactory.CreateAppendStream(_collectionId, FileExtensions.Key))
+            using (var tokenWriteKeyStream = streamFactory.CreateAppendStream(_collectionId, FileExtensions.Key))
             using (var tokenReadKeyStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Key))
             using (var tokenValueStream = streamFactory.CreateAppendStream(_collectionId, FileExtensions.Value))
             using (var tokenAddressStream = streamFactory.CreateAppendStream(_collectionId, FileExtensions.Address))
-            using (var tokenReadAddressStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Address))
-            //using (var bucketKeyStream = streamFactory.CreateAppendStream(_collectionId, FileExtensions.BucketKey))
-            //using (var bucketReadKeyStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.BucketKey))
-            //using (var bucketValueStream = streamFactory.CreateAppendStream(_collectionId, FileExtensions.BucketValue))
-            //using (var bucketAddressStream = streamFactory.CreateAppendStream(_collectionId, FileExtensions.BucketAddress))
-            //using (var bucketReadAddressStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.BucketAddress))
-
+            using (var tokenRWAddressStream = streamFactory.CreateReadWriteStream(_collectionId, FileExtensions.Address))
             using (var tokenWriter = new PageWriter<double>(
-                new DoubleWriter(tokenReadKeyStream, tokenValueStream, tokenReadAddressStream, _pageSize),
-                tokenKeyStream,
+                new DoubleWriter(tokenWriteKeyStream, tokenValueStream, tokenRWAddressStream, _pageSize),
+                tokenReadKeyStream,
                 tokenAddressStream))
-            //using (var bucketWriter = new PageWriter<double>(
-            //    new DoubleWriter(bucketReadKeyStream, bucketValueStream, bucketReadAddressStream, _pageSize),
-            //    bucketKeyStream,
-            //    bucketAddressStream))
             {
                 foreach (var token in Tokenize(source, _numOfDimensions, log))
                 {
