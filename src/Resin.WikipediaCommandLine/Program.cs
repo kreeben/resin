@@ -58,14 +58,6 @@ namespace Resin.WikipediaCommandLine
                     logger.LogInformation($"{command} command finished in {time.Elapsed}");
                 }
             }
-
-            Console.WriteLine("press any key to quit");
-
-            Console.Read();
         }
-
-
-
-
     }
 }

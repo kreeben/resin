@@ -14,6 +14,10 @@ namespace Resin.TextAnalysis
         ulong _collectionId = "wikipedia".ToHash();
         Vector<float> _unitVector = CreateVector.Sparse<float>(_numOfDimensions, (float)1);
 
+        public StringAnalyzer()
+        {
+        }
+
         public StringAnalyzer(DirectoryInfo workingDirectory)
         {
             _workingDirectory = workingDirectory;
@@ -73,7 +77,7 @@ namespace Resin.TextAnalysis
                 foreach (var token in Tokenize(source, _numOfDimensions))
                 {
                     if (log != null)
-                        log.LogInformation($"{token.label}");
+                        log.LogInformation($"ANALYZED: {token.label}");
 
                     var angle = VectorOperations.CosAngle(_unitVector, token.vector);
 

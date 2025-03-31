@@ -16,7 +16,8 @@ namespace Resin.DataSources
 
         public IEnumerable<string> GetData(string field)
         {
-            return WikipediaHelper.Read(_fileName, 0, int.MaxValue, new HashSet<string> { field }).Select(x => x.First().value);
+            return WikipediaHelper.Read(_fileName, 0, int.MaxValue, new HashSet<string> { field })
+                .Select(x => x.First().value);
         }
     }
 }

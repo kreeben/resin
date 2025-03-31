@@ -10,7 +10,7 @@ namespace Resin.TextAnalysis.Tests
         [TestMethod]
         public void CanGetUnicodeRange()
         {
-            var dataSource = new WikipediaCirrussearchDataSource(@"d:\enwiki-20211122-cirrussearch-content.json.gz").GetData().Take(100);
+            var dataSource = new WikipediaCirrussearchDataSource(@"d:\enwiki-20211122-cirrussearch-content.json.gz").GetData("text").Take(100);
             var unicodeRange = new StringAnalyzer().FindUnicodeRange(dataSource);
 
             Assert.IsTrue(unicodeRange.FirstCodePoint >= UnicodeRanges.All.FirstCodePoint);
