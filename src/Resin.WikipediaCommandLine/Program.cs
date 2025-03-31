@@ -59,6 +59,8 @@ namespace Resin.WikipediaCommandLine
                 }
             }
 
+            Console.WriteLine("press any key to quit");
+
             Console.Read();
         }
 

@@ -9,8 +9,9 @@ namespace Resin.WikipediaCommandLine
     {
         public void Run(IDictionary<string, string> args, ILogger logger)
         {
+            var dir = new DirectoryInfo(@"c:\data");
             var dataSource = new WikipediaCirrussearchDataSource(@"d:\enwiki-20211122-cirrussearch-content.json.gz").GetData();
-            new StringAnalyzer().Validate(dataSource.Take(100), logger);
+            new StringAnalyzer(dir).Validate(dataSource.Take(100), logger);
         }
     }
 }

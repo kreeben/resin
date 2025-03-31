@@ -1,6 +1,6 @@
 ﻿namespace Resin.KeyValue
 {
-    public class PageReader<TKey> : IDisposable where TKey : struct, IEquatable<TKey>, IComparable<TKey>
+    public class ColumnReader<TKey> : IDisposable where TKey : struct, IEquatable<TKey>, IComparable<TKey>
     {
         private readonly Stream _valueStream;
         private readonly Stream _addressStream;
@@ -8,7 +8,7 @@
         private readonly int _sizeOfTInBytes;
         private readonly Stream _keyStream;
 
-        public PageReader(Stream keyStream, Stream valueStream, Stream addressStream, int sizeOfTInBytes, int pageSize)
+        public ColumnReader(Stream keyStream, Stream valueStream, Stream addressStream, int sizeOfTInBytes, int pageSize)
         {
             _keyStream = keyStream;
             _valueStream = valueStream;
@@ -90,7 +90,7 @@
         }
     }
 
-    public class DoublePageReader : PageReader<double>
+    public class DoublePageReader : ColumnReader<double>
     {
         public DoublePageReader(Stream keyStream, Stream valueStream, Stream addressStream, int pageSize) : base(keyStream, valueStream, addressStream, sizeof(double), pageSize)
         {

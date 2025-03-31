@@ -130,7 +130,7 @@
             using (var addressStream = new MemoryStream())
             {
                 var testCases = new List<long>();
-                using (var writer = new PageWriter<long>(new Int64Writer(keyStream, valueStream, addressStream, pageSize), keyStream, addressStream))
+                using (var writer = new ColumnWriter<long>(new Int64Writer(keyStream, valueStream, addressStream, pageSize)))
                     for (int i = 0; i < testCount; i++)
                     {
                         writer.TryPut(key: i, value: BitConverter.GetBytes(i));
@@ -169,7 +169,7 @@
             using (var addressStream = new MemoryStream())
             {
                 var testCases = new List<long>();
-                using (var writer = new PageWriter<long>(new Int64Writer(keyStream, valueStream, addressStream, pageSize), keyStream, addressStream))
+                using (var writer = new ColumnWriter<long>(new Int64Writer(keyStream, valueStream, addressStream, pageSize)))
                     for (int i = 0; i < testCount; i++)
                     {
                         writer.TryPut(key: i, value: BitConverter.GetBytes(i));
@@ -179,7 +179,7 @@
                 valueStream.Position = 0;
                 addressStream.Position = 0;
 
-                var reader = new PageReader<long>(keyStream, valueStream, addressStream, sizeOfTInBytes: 8, pageSize: pageSize);
+                var reader = new ColumnReader<long>(keyStream, valueStream, addressStream, sizeOfTInBytes: 8, pageSize: pageSize);
 
                 Assert.IsTrue(BitConverter.ToInt32(reader.Get(0)) == 0);
                 Assert.IsTrue(BitConverter.ToInt32(reader.Get(1)) == 1);
@@ -215,7 +215,7 @@
             using (var valueStream = new MemoryStream())
             using (var addressStream = new MemoryStream())
             {
-                using (var writer = new PageWriter<long>(new Int64Writer(keyStream, valueStream, addressStream, pageSize), keyStream, addressStream))
+                using (var writer = new ColumnWriter<long>(new Int64Writer(keyStream, valueStream, addressStream, pageSize)))
                 {
                     for (int i = 0; i < testCount; i++)
                     {
@@ -236,7 +236,7 @@
             using (var valueStream = new MemoryStream())
             using (var addressStream = new MemoryStream())
             {
-                using (var writer = new PageWriter<long>(new Int64Writer(keyStream, valueStream, addressStream, pageSize), keyStream, addressStream))
+                using (var writer = new ColumnWriter<long>(new Int64Writer(keyStream, valueStream, addressStream, pageSize)))
                 {
                     for (int i = 0; i < testCount; i++)
                     {
@@ -246,7 +246,7 @@
                 keyStream.Position = 0;
                 valueStream.Position = 0;
                 addressStream.Position = 0;
-                using (var writer = new PageWriter<long>(new Int64Writer(keyStream, valueStream, addressStream, pageSize), keyStream, addressStream))
+                using (var writer = new ColumnWriter<long>(new Int64Writer(keyStream, valueStream, addressStream, pageSize)))
                 {
                     var zeroAlreadyExistsSoThisShouldBeFalse = writer.TryPut(key: 0, value: BitConverter.GetBytes(0));
                     Assert.IsFalse(zeroAlreadyExistsSoThisShouldBeFalse);

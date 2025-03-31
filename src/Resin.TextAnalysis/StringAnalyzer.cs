@@ -8,11 +8,16 @@ namespace Resin.TextAnalysis
 {
     public class StringAnalyzer
     {
-        const string _workingDirectory = @"c:\data";
+        private DirectoryInfo _workingDirectory;
         const int _pageSize = 4096;
         const int _numOfDimensions = 512;
         ulong _collectionId = "wikipedia".ToHash();
         Vector<float> _unitVector = CreateVector.Sparse<float>(_numOfDimensions, (float)1);
+
+        public StringAnalyzer(DirectoryInfo workingDirectory)
+        {
+            _workingDirectory = workingDirectory;
+        }
 
         public void Validate(IEnumerable<string> source, ILogger? log = null)
         {
@@ -21,7 +26,7 @@ namespace Resin.TextAnalysis
                 throw new ArgumentNullException(nameof(source));
             }
 
-            var streamFactory = new StreamFactory(new DirectoryInfo(_workingDirectory));
+            var streamFactory = new StreamFactory(_workingDirectory);
 
             using (var tokenKeyStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Key))
             using (var tokenValueStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Value))
@@ -29,7 +34,7 @@ namespace Resin.TextAnalysis
 
             using (var tokenReader = new DoublePageReader(tokenKeyStream, tokenValueStream, tokenAddressStream, _pageSize))
             {
-                foreach (var token in Tokenize(source, _numOfDimensions, log))
+                foreach (var token in Tokenize(source, _numOfDimensions))
                 {
                     var angle = VectorOperations.CosAngle(_unitVector, token.vector);
                     var score = tokenReader.IndexOf(angle);
@@ -40,6 +45,10 @@ namespace Resin.TextAnalysis
                         log.LogInformation(msg);
                         throw new InvalidOperationException(msg);
                     }
+
+                    if (log != null)
+                        log.LogInformation($"VALID: {token.label}");
+
                 }
             }
         }
@@ -52,22 +61,20 @@ namespace Resin.TextAnalysis
             }
 
             var words = new SortedList<double, (string label, Vector<float> vector)>();
-            var streamFactory = new StreamFactory(new DirectoryInfo(_workingDirectory));
+            var streamFactory = new StreamFactory(_workingDirectory);
 
             streamFactory.Truncate();
 
-            using (var tokenWriteKeyStream = streamFactory.CreateAppendStream(_collectionId, FileExtensions.Key))
-            using (var tokenReadKeyStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Key))
+            using (var tokenRWKeyStream = streamFactory.CreateReadWriteStream(_collectionId, FileExtensions.Key))
             using (var tokenValueStream = streamFactory.CreateAppendStream(_collectionId, FileExtensions.Value))
-            using (var tokenAddressStream = streamFactory.CreateAppendStream(_collectionId, FileExtensions.Address))
             using (var tokenRWAddressStream = streamFactory.CreateReadWriteStream(_collectionId, FileExtensions.Address))
-            using (var tokenWriter = new PageWriter<double>(
-                new DoubleWriter(tokenWriteKeyStream, tokenValueStream, tokenRWAddressStream, _pageSize),
-                tokenReadKeyStream,
-                tokenAddressStream))
+            using (var tokenWriter = new ColumnWriter<double>(new DoubleWriter(tokenRWKeyStream, tokenValueStream, tokenRWAddressStream, _pageSize)))
             {
-                foreach (var token in Tokenize(source, _numOfDimensions, log))
+                foreach (var token in Tokenize(source, _numOfDimensions))
                 {
+                    if (log != null)
+                        log.LogInformation($"{token.label}");
+
                     var angle = VectorOperations.CosAngle(_unitVector, token.vector);
 
                     //if (!words.TryAdd(angle, (token.label, token.vector)))
@@ -107,7 +114,7 @@ namespace Resin.TextAnalysis
 
             const int numOfDimensions = 512;
             int maxWordLen = 0;
-            foreach (var token in Tokenize(source, numOfDimensions, log))
+            foreach (var token in Tokenize(source, numOfDimensions))
             {
                 var lengtOfWord = ((SparseVectorStorage<float>)token.vector.Storage).Values.Length;
                 if (lengtOfWord > maxWordLen)
@@ -120,7 +127,7 @@ namespace Resin.TextAnalysis
             return maxWordLen;
         }
 
-        private IEnumerable<(Vector<float> vector, string label)> Tokenize(IEnumerable<string> source, int numOfDimensions, ILogger? log = null)
+        private IEnumerable<(Vector<float> vector, string label)> Tokenize(IEnumerable<string> source, int numOfDimensions)
         {
             int count = 0;
             const char delimiter = ' ';
@@ -148,8 +155,6 @@ namespace Resin.TextAnalysis
                 {
                     yield return (word, new string(label.ToArray()));
                 }
-                if (log != null)
-                    log.LogInformation($"{count++} {new string(str.Take(100).ToArray())}");
             }
         }
 
