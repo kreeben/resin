@@ -1,4 +1,4 @@
-﻿namespace Resin.TextAnalysis
+﻿namespace Resin.KeyValue
 {
     public static class FileExtensions
     {

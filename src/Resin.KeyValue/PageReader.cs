@@ -7,35 +7,25 @@ namespace Resin.KeyValue
         private readonly ReadOnlyMemory<Address> _addresses;
         private readonly Stream _valueStream;
 
-        public PageReader(Stream keyStream, Stream valueStream, Stream addressStream, int sizeOfT, int pageSize)
+        public PageReader(ReadSession readSession, int sizeOfT, int pageSize)
         {
-            if (keyStream is null)
+            if (readSession is null)
             {
-                throw new ArgumentNullException(nameof(keyStream));
-            }
-
-            if (addressStream is null)
-            {
-                throw new ArgumentNullException(nameof(addressStream));
-            }
-
-            if (valueStream is null)
-            {
-                throw new ArgumentNullException(nameof(valueStream));
+                throw new ArgumentNullException(nameof(readSession));
             }
 
             Span<byte> keyBuf = new byte[pageSize];
-            keyStream.ReadExactly(keyBuf);
+            readSession.KeyStream.ReadExactly(keyBuf);
             var keys = MemoryMarshal.Cast<byte, TKey>(keyBuf);
             _keyBuf = keys.ToArray();
 
             int addressBufSize = (pageSize / sizeOfT) * Address.Size;
             Span<byte> addressBuf = new byte[addressBufSize];
-            addressStream.ReadExactly(addressBuf);
+            readSession.AddressStream.ReadExactly(addressBuf);
             var addresses = MemoryMarshal.Cast<byte, Address>(addressBuf);
             _addresses = addresses.ToArray().AsMemory();
 
-            _valueStream = valueStream;
+            _valueStream = readSession.ValueStream;
         }
 
         public ReadOnlySpan<byte> Get(TKey key)

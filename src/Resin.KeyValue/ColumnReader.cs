@@ -1,20 +1,20 @@
 ﻿namespace Resin.KeyValue
 {
-    public class ColumnReader<TKey> : IDisposable where TKey : struct, IEquatable<TKey>, IComparable<TKey>
+    public class ColumnReader<TKey> where TKey : struct, IEquatable<TKey>, IComparable<TKey>
     {
-        private readonly Stream _valueStream;
-        private readonly Stream _addressStream;
         private readonly int _pageSize;
         private readonly int _sizeOfT;
+        private readonly ReadSession _readSession;
         private readonly Stream _keyStream;
+        private readonly Stream _addressStream;
 
-        public ColumnReader(Stream keyStream, Stream valueStream, Stream addressStream, int sizeOfT, int pageSize)
+        public ColumnReader(ReadSession readSession, int sizeOfT, int pageSize)
         {
-            _keyStream = keyStream;
-            _valueStream = valueStream;
-            _addressStream = addressStream;
+            _keyStream = readSession.KeyStream;
+            _addressStream = readSession.AddressStream;
             _pageSize = pageSize;
             _sizeOfT = sizeOfT;
+            _readSession = readSession;
         }
 
         /// <summary>
@@ -32,7 +32,7 @@
 
                 while (true)
                 {
-                    var reader = new PageReader<TKey>(_keyStream, _valueStream, _addressStream, sizeOfT: _sizeOfT, pageSize: _pageSize);
+                    var reader = new PageReader<TKey>(_readSession, sizeOfT: _sizeOfT, pageSize: _pageSize);
                     numOfPages++;
                     index = reader.IndexOf(key);
                     if (index < 0 && _keyStream.Position + 1 < _keyStream.Length)
@@ -58,7 +58,7 @@
                 _addressStream.Position = 0;
                 while (true)
                 {
-                    var reader = new PageReader<TKey>(_keyStream, _valueStream, _addressStream, sizeOfT: _sizeOfT, pageSize: _pageSize);
+                    var reader = new PageReader<TKey>(_readSession, sizeOfT: _sizeOfT, pageSize: _pageSize);
                     var value = reader.Get(key);
                     if (value.IsEmpty)
                     {
@@ -79,22 +79,6 @@
             }
 
             return ReadOnlySpan<byte>.Empty;
-        }
-
-        public void Dispose()
-        {
-            if (_addressStream != null)
-            {
-                _addressStream.Dispose();
-            }
-            if (_keyStream != null)
-            {
-                _keyStream.Dispose();
-            }
-            if (_valueStream != null)
-            {
-                _valueStream.Dispose();
-            }
         }
     }
 }

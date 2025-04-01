@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Resin.CommandLine;
 using Resin.DataSources;
+using Resin.KeyValue;
 using Resin.TextAnalysis;
 
 namespace Resin.WikipediaCommandLine

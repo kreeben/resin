@@ -26,14 +26,9 @@ namespace Resin.TextAnalysis
                 throw new ArgumentNullException(nameof(source));
             }
 
-            var streamFactory = new StreamFactory(_workingDirectory);
-
-            using (var keyStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Key))
-            using (var valueStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Value))
-            using (var addressStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Address))
-
-            using (var tokenReader = new ColumnReader<double>(keyStream, valueStream, addressStream, sizeof(double), _pageSize))
+            using (var session = new ReadSession(_workingDirectory, _collectionId))
             {
+                var tokenReader = new ColumnReader<double>(session, sizeof(double), _pageSize);
                 foreach (var token in Tokenize(source, _numOfDimensions))
                 {
                     var angle = VectorOperations.CosAngle(_unitVector, token.vector);
@@ -67,14 +62,8 @@ namespace Resin.TextAnalysis
                 throw new ArgumentNullException(nameof(source));
             }
 
-            var streamFactory = new StreamFactory(_workingDirectory);
-
-            streamFactory.Truncate();
-
-            using (var keyStream = streamFactory.CreateReadWriteStream(_collectionId, FileExtensions.Key))
-            using (var valueStream = streamFactory.CreateReadWriteStream(_collectionId, FileExtensions.Value))
-            using (var addressStream = streamFactory.CreateReadWriteStream(_collectionId, FileExtensions.Address))
-            using (var pageWriter = new ColumnWriter<double>(new DoubleWriter(keyStream, valueStream, addressStream, _pageSize)))
+            using (var tx = new WriteTransaction(_workingDirectory, _collectionId))
+            using (var pageWriter = new ColumnWriter<double>(new DoubleWriter(tx, _pageSize)))
             {
                 foreach (var token in Tokenize(source, _numOfDimensions))
                 {
@@ -174,4 +163,7 @@ namespace Resin.TextAnalysis
             return new UnicodeRange(first, last - first);
         }
     }
+
+
+
 }

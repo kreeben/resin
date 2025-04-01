@@ -20,21 +20,11 @@ namespace Resin.KeyValue
         public Stream KeyStream => _keyStream;
         public Stream AddressStream => _addressStream;
 
-        public PageWriter(Stream keyStream, Stream valueStream, Stream addressStream, TKey maxValueOfKey, Func<TKey, byte[]> getBytes, int sizeOfT, int pageSize)
+        public PageWriter(WriteTransaction writeTransaction, TKey maxValueOfKey, Func<TKey, byte[]> getBytes, int sizeOfT, int pageSize)
         {
-            if (keyStream is null)
+            if (writeTransaction is null)
             {
-                throw new ArgumentNullException(nameof(keyStream));
-            }
-
-            if (valueStream is null)
-            {
-                throw new ArgumentNullException(nameof(valueStream));
-            }
-
-            if (addressStream is null)
-            {
-                throw new ArgumentNullException(nameof(addressStream));
+                throw new ArgumentNullException(nameof(writeTransaction));
             }
 
             if (pageSize % Address.Size > 0)
@@ -50,17 +40,17 @@ namespace Resin.KeyValue
             _sizeOfT = sizeOfT;
             _keyBufSize = pageSize / _sizeOfT;
             _pageSizeInBytes = pageSize;
-            _valueStream = valueStream;
-            _keyStream = keyStream;
-            _addressStream = addressStream;
+            _valueStream = writeTransaction.ValueStream;
+            _keyStream = writeTransaction.KeyStream;
+            _addressStream = writeTransaction.AddressStream;
 
-            if (keyStream.Length > 0)
+            if (_keyStream.Length > 0)
             {
-                var keyInfo = ReadKeyPage(keyStream);
+                var keyInfo = ReadKeyPage(_keyStream);
                 _keyBuffer = keyInfo.keyBuffer;
                 _keyCount = keyInfo.keyCount;
 
-                _addressBuffer = ReadAddressPage(addressStream);
+                _addressBuffer = ReadAddressPage(_addressStream);
             }
             else
             {
