@@ -2,12 +2,12 @@
 
 namespace Resin.KeyValue
 {
-    public class ColumnWriter<TKey> : IDisposable where TKey : struct, IEquatable<TKey>, IComparable<TKey>
+    public class PageWriter<TKey> : IDisposable where TKey : struct, IEquatable<TKey>, IComparable<TKey>
     {
-        private readonly ByteArrayWriter<TKey> _writer;
+        private readonly ArrayWriter<TKey> _writer;
         private TKey[] _allKeys;
 
-        public ColumnWriter(ByteArrayWriter<TKey> writer)
+        public PageWriter(ArrayWriter<TKey> writer)
         {
             _writer = writer;
             _allKeys = ReadAllKeysInColumn();
@@ -58,7 +58,7 @@ namespace Resin.KeyValue
         {
             if (_writer != null)
             {
-                _writer.Serialize();
+                Serialize();
             }
         }
     }

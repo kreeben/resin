@@ -1,13 +1,13 @@
 ﻿using System.Runtime.InteropServices;
 namespace Resin.KeyValue
 {
-    public class ByteArrayReader<TKey> where TKey : struct, IEquatable<TKey>, IComparable<TKey>
+    public class ArrayReader<TKey> where TKey : struct, IEquatable<TKey>, IComparable<TKey>
     {
         private readonly TKey[] _keyBuf;
         private readonly ReadOnlyMemory<Address> _addresses;
         private readonly Stream _valueStream;
 
-        public ByteArrayReader(Stream keyStream, Stream valueStream, Stream addressStream, int sizeOfTInBytes, int pageSize)
+        public ArrayReader(Stream keyStream, Stream valueStream, Stream addressStream, int sizeOfTInBytes, int pageSize)
         {
             if (keyStream is null)
             {

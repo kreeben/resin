@@ -2,7 +2,7 @@
 
 namespace Resin.KeyValue
 {
-    public class ByteArrayWriter<TKey> where TKey : struct, IEquatable<TKey>, IComparable<TKey>
+    public class ArrayWriter<TKey> where TKey : struct, IEquatable<TKey>, IComparable<TKey>
     {
         private TKey[] _keyBuffer;
         private Address[] _addressBuffer;
@@ -20,7 +20,7 @@ namespace Resin.KeyValue
         public Stream KeyStream => _keyStream;
         public Stream AddressStream => _addressStream;
 
-        public ByteArrayWriter(Stream keyStream, Stream valueStream, Stream addressStream, TKey maxValueOfKey, Func<TKey, byte[]> getBytes, int sizeOfTInBytes, int pageSizeInBytes)
+        public ArrayWriter(Stream keyStream, Stream valueStream, Stream addressStream, TKey maxValueOfKey, Func<TKey, byte[]> getBytes, int sizeOfTInBytes, int pageSizeInBytes)
         {
             if (keyStream is null)
             {

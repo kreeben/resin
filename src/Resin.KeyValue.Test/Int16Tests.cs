@@ -130,7 +130,7 @@
             using (var addressStream = new MemoryStream())
             {
                 var testCases = new List<Int16>();
-                using (var writer = new ColumnWriter<Int16>(new Int16Writer(keyStream, valueStream, addressStream, pageSize)))
+                using (var writer = new PageWriter<Int16>(new Int16Writer(keyStream, valueStream, addressStream, pageSize)))
                     for (Int16 i = 0; i < testCount; i++)
                     {
                         Int16 val = i;
@@ -170,7 +170,7 @@
             using (var addressStream = new MemoryStream())
             {
                 var testCases = new List<Int16>();
-                using (var writer = new ColumnWriter<Int16>(new Int16Writer(keyStream, valueStream, addressStream, pageSize)))
+                using (var writer = new PageWriter<Int16>(new Int16Writer(keyStream, valueStream, addressStream, pageSize)))
                     for (int i = 0; i < testCount; i++)
                     {
                         Int16 val = (Int16)i;
@@ -181,7 +181,7 @@
                 valueStream.Position = 0;
                 addressStream.Position = 0;
 
-                var reader = new ColumnReader<Int16>(keyStream, valueStream, addressStream, sizeOfTInBytes: 2, pageSize: pageSize);
+                var reader = new PageReader<Int16>(keyStream, valueStream, addressStream, sizeOfTInBytes: 2, pageSize: pageSize);
 
                 Assert.IsTrue(BitConverter.ToInt16(reader.Get(0)) == 0);
                 Assert.IsTrue(BitConverter.ToInt16(reader.Get(1)) == 1);
@@ -218,7 +218,7 @@
             using (var valueStream = new MemoryStream())
             using (var addressStream = new MemoryStream())
             {
-                using (var writer = new ColumnWriter<Int16>(new Int16Writer(keyStream, valueStream, addressStream, pageSize)))
+                using (var writer = new PageWriter<Int16>(new Int16Writer(keyStream, valueStream, addressStream, pageSize)))
                 {
                     for (int i = 0; i < testCount; i++)
                     {
@@ -240,7 +240,7 @@
             using (var valueStream = new MemoryStream())
             using (var addressStream = new MemoryStream())
             {
-                using (var writer = new ColumnWriter<Int16>(new Int16Writer(keyStream, valueStream, addressStream, pageSize)))
+                using (var writer = new PageWriter<Int16>(new Int16Writer(keyStream, valueStream, addressStream, pageSize)))
                 {
                     for (int i = 0; i < testCount; i++)
                     {
@@ -251,7 +251,7 @@
                 keyStream.Position = 0;
                 valueStream.Position = 0;
                 addressStream.Position = 0;
-                using (var writer = new ColumnWriter<Int16>(new Int16Writer(keyStream, valueStream, addressStream, pageSize)))
+                using (var writer = new PageWriter<Int16>(new Int16Writer(keyStream, valueStream, addressStream, pageSize)))
                 {
                     var zeroAlreadyExistsSoThisShouldBeFalse = writer.TryPut(key: 0, value: BitConverter.GetBytes((double)0));
                     Assert.IsFalse(zeroAlreadyExistsSoThisShouldBeFalse);

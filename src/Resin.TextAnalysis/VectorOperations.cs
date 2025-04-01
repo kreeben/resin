@@ -1,4 +1,5 @@
-﻿using MathNet.Numerics.LinearAlgebra;
+﻿using System.Runtime.InteropServices;
+using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Storage;
 
 namespace Resin.TextAnalysis
@@ -27,6 +28,19 @@ namespace Resin.TextAnalysis
             }
 
             return stream.ToArray();
+        }
+
+        public static Vector<float> ToVector(this byte[] buffer, int componentCount, int numOfDimensions)
+        {
+            if (buffer.Length - (componentCount * 4) != buffer.Length / (2 * 4))
+            {
+                throw new ArgumentOutOfRangeException(nameof(componentCount));
+            }
+            var len = componentCount * sizeof(float);
+            var indices = MemoryMarshal.Cast<byte, int>(buffer.AsSpan(0, len)).ToArray();
+            var values = MemoryMarshal.Cast<byte, float>(buffer.AsSpan(len, len)).ToArray();
+            int ii = 0;
+            return CreateVector.SparseOfIndexed(numOfDimensions, indices.Select(index => (index, values[ii++])));
         }
 
         public static double CosAngle(Vector<float> first, Vector<float> second)

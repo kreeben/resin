@@ -14,11 +14,7 @@ namespace Resin.TextAnalysis
         ulong _collectionId = "wikipedia".ToHash();
         Vector<float> _unitVector = CreateVector.Sparse<float>(_numOfDimensions, (float)1);
 
-        public StringAnalyzer()
-        {
-        }
-
-        public StringAnalyzer(DirectoryInfo workingDirectory)
+        public StringAnalyzer(DirectoryInfo? workingDirectory = null)
         {
             _workingDirectory = workingDirectory;
         }
@@ -32,20 +28,27 @@ namespace Resin.TextAnalysis
 
             var streamFactory = new StreamFactory(_workingDirectory);
 
-            using (var tokenKeyStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Key))
-            using (var tokenValueStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Value))
-            using (var tokenAddressStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Address))
+            using (var keyStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Key))
+            using (var valueStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Value))
+            using (var addressStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Address))
 
-            using (var tokenReader = new DoublePageReader(tokenKeyStream, tokenValueStream, tokenAddressStream, _pageSize))
+            using (var tokenReader = new DoublePageReader(keyStream, valueStream, addressStream, _pageSize))
             {
                 foreach (var token in Tokenize(source, _numOfDimensions))
                 {
                     var angle = VectorOperations.CosAngle(_unitVector, token.vector);
-                    var score = tokenReader.IndexOf(angle);
+                    var index = tokenReader.IndexOf(angle);
 
-                    if (score < 0)
+                    if (index < 0)
                     {
                         var msg = $"could not find {token.label} at {angle}";
+                        log.LogInformation(msg);
+                        throw new InvalidOperationException(msg);
+                    }
+
+                    if (angle < 0.99)
+                    {
+                        var msg = $"score {angle} is too low. label: {token.label}, angle:{angle}";
                         log.LogInformation(msg);
                         throw new InvalidOperationException(msg);
                     }
@@ -64,7 +67,6 @@ namespace Resin.TextAnalysis
                 throw new ArgumentNullException(nameof(source));
             }
 
-            var words = new SortedList<double, (string label, Vector<float> vector)>();
             var streamFactory = new StreamFactory(_workingDirectory);
 
             streamFactory.Truncate();
@@ -72,7 +74,7 @@ namespace Resin.TextAnalysis
             using (var keyStream = streamFactory.CreateReadWriteStream(_collectionId, FileExtensions.Key))
             using (var valueStream = streamFactory.CreateReadWriteStream(_collectionId, FileExtensions.Value))
             using (var addressStream = streamFactory.CreateReadWriteStream(_collectionId, FileExtensions.Address))
-            using (var columnWriter = new ColumnWriter<double>(new DoubleWriter(keyStream, valueStream, addressStream, _pageSize)))
+            using (var columnWriter = new PageWriter<double>(new DoubleWriter(keyStream, valueStream, addressStream, _pageSize)))
             {
                 foreach (var token in Tokenize(source, _numOfDimensions))
                 {
@@ -80,31 +82,8 @@ namespace Resin.TextAnalysis
                         log.LogInformation($"ANALYZED: {token.label}");
 
                     var angle = VectorOperations.CosAngle(_unitVector, token.vector);
-
-                    //if (!words.TryAdd(angle, (token.label, token.vector)))
-                    //{
-                    //    var existingVector = words[angle].vector;
-                    //    var a = VectorOperations.CosAngle(existingVector, token.vector);
-
-                    //    if (a < 0.99)
-                    //    {
-                    //        if (bucketWriter.TryPut(angle, VectorOperations.GetBytes(token.vector)))
-                    //        {
-                    //            if (log != null)
-                    //                log.LogInformation($"**** {words[angle].label} is dupe of {token.label}. both have angle {angle}. individual angle {a}");
-                    //        }
-                    //    }
-                    //}
-                    //else
-                    //{
-                    //    if (!tokenWriter.TryPut(angle, VectorOperations.GetBytes(token.vector)))
-                    //    {
-                    //        throw new InvalidOperationException("what in the world is going on with the tokens???");
-                    //    }
-                    //}
                     columnWriter.TryPut(angle, VectorOperations.GetBytes(token.vector));
                 }
-                //bucketWriter.Serialize();
                 columnWriter.Serialize();
             }
         }
