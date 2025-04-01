@@ -10,6 +10,9 @@ namespace Resin.TextAnalysis
         {
             var stream = new MemoryStream();
             var storage = (SparseVectorStorage<float>)vector.Storage;
+            var componentCount = storage.Indices.Length;
+
+            stream.Write(BitConverter.GetBytes(componentCount));
 
             foreach (var index in storage.Indices)
             {
@@ -30,17 +33,14 @@ namespace Resin.TextAnalysis
             return stream.ToArray();
         }
 
-        public static Vector<float> ToVector(this byte[] buffer, int componentCount, int numOfDimensions)
+        public static Vector<float> ToVector(this byte[] bufferWithHeader, int numOfDimensions)
         {
-            if (buffer.Length - (componentCount * 4) != buffer.Length / (2 * 4))
-            {
-                throw new ArgumentOutOfRangeException(nameof(componentCount));
-            }
+            var componentCount = BitConverter.ToInt32(bufferWithHeader);
             var len = componentCount * sizeof(float);
-            var indices = MemoryMarshal.Cast<byte, int>(buffer.AsSpan(0, len)).ToArray();
-            var values = MemoryMarshal.Cast<byte, float>(buffer.AsSpan(len, len)).ToArray();
-            int ii = 0;
-            return CreateVector.SparseOfIndexed(numOfDimensions, indices.Select(index => (index, values[ii++])));
+            var indices = MemoryMarshal.Cast<byte, int>(bufferWithHeader.AsSpan(sizeof(int), len)).ToArray();
+            var values = MemoryMarshal.Cast<byte, float>(bufferWithHeader.AsSpan(sizeof(int) + len, len)).ToArray();
+            int i = 0;
+            return CreateVector.SparseOfIndexed(numOfDimensions, indices.Select(index => (index, values[i++])));
         }
 
         public static double CosAngle(Vector<float> first, Vector<float> second)
