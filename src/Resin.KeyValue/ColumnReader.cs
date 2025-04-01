@@ -1,0 +1,100 @@
+﻿namespace Resin.KeyValue
+{
+    public class ColumnReader<TKey> : IDisposable where TKey : struct, IEquatable<TKey>, IComparable<TKey>
+    {
+        private readonly Stream _valueStream;
+        private readonly Stream _addressStream;
+        private readonly int _pageSize;
+        private readonly int _sizeOfT;
+        private readonly Stream _keyStream;
+
+        public ColumnReader(Stream keyStream, Stream valueStream, Stream addressStream, int sizeOfT, int pageSize)
+        {
+            _keyStream = keyStream;
+            _valueStream = valueStream;
+            _addressStream = addressStream;
+            _pageSize = pageSize;
+            _sizeOfT = sizeOfT;
+        }
+
+        /// <summary>
+        /// Returns a key's order in the column.
+        /// </summary>
+        public int IndexOf(TKey key)
+        {
+            if (_keyStream.Length > 0)
+            {
+                _keyStream.Position = 0;
+                _addressStream.Position = 0;
+                int index;
+                var numOfPages = 0;
+                var numOfItemsPerPage = _pageSize / _sizeOfT;
+
+                while (true)
+                {
+                    var reader = new PageReader<TKey>(_keyStream, _valueStream, _addressStream, sizeOfT: _sizeOfT, pageSize: _pageSize);
+                    numOfPages++;
+                    index = reader.IndexOf(key);
+                    if (index < 0 && _keyStream.Position + 1 < _keyStream.Length)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        index = index + (numOfItemsPerPage * numOfPages);
+                        break;
+                    }
+                }
+                return index;
+            }
+            return -1;
+        }
+
+        public ReadOnlySpan<byte> Get(TKey key)
+        {
+            if (_keyStream.Length > 0)
+            {
+                _keyStream.Position = 0;
+                _addressStream.Position = 0;
+                while (true)
+                {
+                    var reader = new PageReader<TKey>(_keyStream, _valueStream, _addressStream, sizeOfT: _sizeOfT, pageSize: _pageSize);
+                    var value = reader.Get(key);
+                    if (value.IsEmpty)
+                    {
+                        if (_keyStream.Position + 1 < _keyStream.Length)
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        return value;
+                    }
+                }
+            }
+
+            return ReadOnlySpan<byte>.Empty;
+        }
+
+        public void Dispose()
+        {
+            if (_addressStream != null)
+            {
+                _addressStream.Dispose();
+            }
+            if (_keyStream != null)
+            {
+                _keyStream.Dispose();
+            }
+            if (_valueStream != null)
+            {
+                _valueStream.Dispose();
+            }
+        }
+    }
+}

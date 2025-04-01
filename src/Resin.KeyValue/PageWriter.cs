@@ -2,73 +2,229 @@
 
 namespace Resin.KeyValue
 {
-    public class PageWriter<TKey> : IDisposable where TKey : struct, IEquatable<TKey>, IComparable<TKey>
+    public class PageWriter<TKey> where TKey : struct, IEquatable<TKey>, IComparable<TKey>
     {
-        private readonly ArrayWriter<TKey> _writer;
-        private TKey[] _allKeys;
+        private TKey[] _keyBuffer;
+        private Address[] _addressBuffer;
+        private int _keyCount;
+        private Stream _keyStream;
+        private Stream _valueStream;
+        private Stream _addressStream;
+        private readonly TKey _emptyKey;
+        private readonly int _pageSizeInBytes;
+        private readonly int _keyBufSize;
+        public readonly Func<TKey, byte[]> _getBytes;
+        private readonly int _sizeOfT;
 
-        public PageWriter(ArrayWriter<TKey> writer)
+        public bool IsPageFull { get { return _keyCount == _pageSizeInBytes / _sizeOfT; } }
+        public Stream KeyStream => _keyStream;
+        public Stream AddressStream => _addressStream;
+
+        public PageWriter(Stream keyStream, Stream valueStream, Stream addressStream, TKey maxValueOfKey, Func<TKey, byte[]> getBytes, int sizeOfT, int pageSize)
         {
-            _writer = writer;
-            _allKeys = ReadAllKeysInColumn();
+            if (keyStream is null)
+            {
+                throw new ArgumentNullException(nameof(keyStream));
+            }
+
+            if (valueStream is null)
+            {
+                throw new ArgumentNullException(nameof(valueStream));
+            }
+
+            if (addressStream is null)
+            {
+                throw new ArgumentNullException(nameof(addressStream));
+            }
+
+            if (pageSize % Address.Size > 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(pageSize), $"Page size modulu {Address.Size} (Address.Size) must equal zero.");
+            }
+
+            if (pageSize % sizeOfT > 0)
+                throw new ArgumentOutOfRangeException(nameof(pageSize), $"Page size modulu size of T must equal zero.");
+
+            _emptyKey = maxValueOfKey;
+            _getBytes = getBytes ?? throw new ArgumentNullException(nameof(getBytes));
+            _sizeOfT = sizeOfT;
+            _keyBufSize = pageSize / _sizeOfT;
+            _pageSizeInBytes = pageSize;
+            _valueStream = valueStream;
+            _keyStream = keyStream;
+            _addressStream = addressStream;
+
+            if (keyStream.Length > 0)
+            {
+                var keyInfo = ReadKeyPage(keyStream);
+                _keyBuffer = keyInfo.keyBuffer;
+                _keyCount = keyInfo.keyCount;
+
+                _addressBuffer = ReadAddressPage(addressStream);
+            }
+            else
+            {
+                _keyBuffer = new TKey[_pageSizeInBytes / _sizeOfT];
+                new Span<TKey>(_keyBuffer).Fill(_emptyKey);
+
+                _addressBuffer = new Address[_pageSizeInBytes / _sizeOfT];
+                new Span<Address>(_addressBuffer).Fill(Address.Empty());
+            }
         }
 
         public bool TryPut(TKey key, ReadOnlySpan<byte> value)
         {
-            if (KeyExists(key))
+            if (_keyCount >= _keyBufSize)
+                throw new OutOfPageStorageException();
+
+            int index = new Span<TKey>(_keyBuffer).BinarySearch(key);
+            if (index >= 0)
             {
+                // there is already such a key
                 return false;
             }
 
-            var put = _writer.TryPut(key, value);
-            if (put && _writer.IsPageFull)
-            {
-                Serialize();
-            }
-            return put;
+            // put value
+            var address = Serialize(value);
+
+            // save key and address in memory and increment key count
+            _keyBuffer[_keyCount] = key;
+            _addressBuffer[_keyCount] = address;
+            _keyCount++;
+
+            // sort in memory keys and addresses
+            new Span<TKey>(_keyBuffer).Sort(new Span<Address>(_addressBuffer));
+
+            return true;
         }
 
         public void PutOrAppend(TKey key, ReadOnlySpan<byte> value)
         {
-            _writer.PutOrAppend(key, value);
-            if (_writer.IsPageFull)
+            if (_keyCount >= _keyBufSize)
+                throw new OutOfPageStorageException();
+
+            Address address;
+            int index = new Span<TKey>(_keyBuffer).BinarySearch(key);
+
+            if (index >= 0)
             {
-                Serialize();
+                // there is already such a key
+
+                // get address of existing key
+                address = _addressBuffer[index];
+
+                // copy existing value into buffer
+                var buf = new byte[address.Length + value.Length];
+                _valueStream.Position = address.Offset;
+                var read = _valueStream.Read(buf, 0, (int)address.Length);
+                if (read != address.Length)
+                    throw new InvalidDataException();
+
+                // copy new value into buffer
+                Buffer.BlockCopy(value.ToArray(), 0, buf, (int)address.Length, value.Length);
+
+                // put buffer
+                address = Serialize(buf);
+            }
+            else
+            {
+                // this is a new key
+
+                // put value
+                address = Serialize(value);
+
+                // save key and address in memory and increment key count
+                _keyBuffer[_keyCount] = key;
+                _addressBuffer[_keyCount] = address;
+                _keyCount++;
+
+                // sort in memory keys and addresses
+                new Span<TKey>(_keyBuffer).Sort(new Span<Address>(_addressBuffer));
             }
         }
 
-        private bool KeyExists(TKey key)
+        private Address[] ReadAddressPage(Stream addressStream)
         {
-            var ix = new Span<TKey>(_allKeys);
-            ix.Sort();
-            int index = ix.BinarySearch(key);
-            return index > -1;
+            if (addressStream.Length == 0)
+            {
+                throw new InvalidOperationException("Address stream is empty.");
+            }
+            int addressBufSize = (_pageSizeInBytes / _sizeOfT) * Address.Size;
+            Span<byte> adrBuf = new byte[addressBufSize];
+            addressStream.ReadExactly(adrBuf);
+            Span<long> adrSpan = MemoryMarshal.Cast<byte, long>(adrBuf);
+            var numOfAddresses = adrBuf.Length / Address.Size;
+            var addressList = new Address[numOfAddresses];
+            var addressListIndex = 0;
+            for (int i = _keyCount; i < numOfAddresses; i += 2)
+            {
+                long ofs = adrSpan[i];
+                long len = adrSpan[i + 1];
+                addressList[addressListIndex++] = new Address(ofs, len);
+            }
+            return addressList;
         }
 
-        private TKey[] ReadAllKeysInColumn()
+        private (TKey[] keyBuffer, int keyCount) ReadKeyPage(Stream keyStream)
         {
-            var originalPos = _writer.KeyStream.Position;
-            _writer.KeyStream.Position = 0;
-            var kbuf = new byte[_writer.KeyStream.Length];
-            _writer.KeyStream.ReadExactly(kbuf);
-            _writer.KeyStream.Position = originalPos;
-            var keys = MemoryMarshal.Cast<byte, TKey>(kbuf);
-            keys.Sort();
-            return keys.ToArray();
+            if (keyStream.Length == 0)
+            {
+                throw new InvalidOperationException("Key stream stream is empty.");
+            }
+            int i = 0;
+            var kbuf = new byte[_pageSizeInBytes];
+            keyStream.ReadExactly(kbuf);
+            var keyBuffer = MemoryMarshal.Cast<byte, TKey>(kbuf).ToArray();
+            for (; i < keyBuffer.Length; i++)
+            {
+                if (keyBuffer[i].Equals(_emptyKey)) { break; }
+            }
+            var keyCount = i;
+            return (keyBuffer, keyCount);
+        }
+
+        private Address Serialize(ReadOnlySpan<byte> value)
+        {
+            if (value == Span<byte>.Empty || value.Length == 0)
+                throw new ArgumentOutOfRangeException(nameof(value.Length), "Value cannot be null or empty.");
+
+            GoToEndOfStream(_valueStream);
+
+            var pos = _valueStream.Position;
+            _valueStream.Write(value);
+            return new Address(pos, value.Length);
         }
 
         public void Serialize()
         {
-            _writer.Serialize();
-            _allKeys = ReadAllKeysInColumn();
+            if (_keyCount == 0)
+                return;
+
+            GoToEndOfStream(_keyStream);
+
+            foreach (var key in _keyBuffer)
+            {
+                _keyStream.Write(_getBytes(key));
+            }
+
+            GoToEndOfStream(_addressStream);
+
+            foreach (var adr in _addressBuffer)
+            {
+                _addressStream.Write(BitConverter.GetBytes(adr.Offset));
+                _addressStream.Write(BitConverter.GetBytes(adr.Length));
+            }
+
+            _keyCount = 0;
+
+            new Span<TKey>(_keyBuffer).Fill(_emptyKey);
+            new Span<Address>(_addressBuffer).Fill(Address.Empty());
         }
 
-        public void Dispose()
+        private static void GoToEndOfStream(Stream stream)
         {
-            if (_writer != null)
-            {
-                Serialize();
-            }
+            if (stream.Position != stream.Length)
+                stream.Position = stream.Length;
         }
     }
 }

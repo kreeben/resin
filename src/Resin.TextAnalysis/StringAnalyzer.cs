@@ -32,14 +32,14 @@ namespace Resin.TextAnalysis
             using (var valueStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Value))
             using (var addressStream = streamFactory.CreateReadStream(_collectionId, FileExtensions.Address))
 
-            using (var tokenReader = new DoublePageReader(keyStream, valueStream, addressStream, _pageSize))
+            using (var tokenReader = new ColumnReader<double>(keyStream, valueStream, addressStream, sizeof(double), _pageSize))
             {
                 foreach (var token in Tokenize(source, _numOfDimensions))
                 {
                     var angle = VectorOperations.CosAngle(_unitVector, token.vector);
-                    var index = tokenReader.IndexOf(angle);
+                    var buf = tokenReader.Get(angle);
 
-                    if (index < 0)
+                    if (buf.IsEmpty)
                     {
                         var msg = $"could not find {token.label} at {angle}";
                         log.LogInformation(msg);
@@ -74,7 +74,7 @@ namespace Resin.TextAnalysis
             using (var keyStream = streamFactory.CreateReadWriteStream(_collectionId, FileExtensions.Key))
             using (var valueStream = streamFactory.CreateReadWriteStream(_collectionId, FileExtensions.Value))
             using (var addressStream = streamFactory.CreateReadWriteStream(_collectionId, FileExtensions.Address))
-            using (var pageWriter = new PageWriter<double>(new DoubleWriter(keyStream, valueStream, addressStream, _pageSize)))
+            using (var pageWriter = new ColumnWriter<double>(new DoubleWriter(keyStream, valueStream, addressStream, _pageSize)))
             {
                 foreach (var token in Tokenize(source, _numOfDimensions))
                 {

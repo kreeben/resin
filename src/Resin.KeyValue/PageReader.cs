@@ -1,99 +1,60 @@
-﻿namespace Resin.KeyValue
+﻿using System.Runtime.InteropServices;
+namespace Resin.KeyValue
 {
-    public class PageReader<TKey> : IDisposable where TKey : struct, IEquatable<TKey>, IComparable<TKey>
+    public class PageReader<TKey> where TKey : struct, IEquatable<TKey>, IComparable<TKey>
     {
+        private readonly TKey[] _keyBuf;
+        private readonly ReadOnlyMemory<Address> _addresses;
         private readonly Stream _valueStream;
-        private readonly Stream _addressStream;
-        private readonly int _pageSize;
-        private readonly int _sizeOfTInBytes;
-        private readonly Stream _keyStream;
 
-        public PageReader(Stream keyStream, Stream valueStream, Stream addressStream, int sizeOfTInBytes, int pageSize)
+        public PageReader(Stream keyStream, Stream valueStream, Stream addressStream, int sizeOfT, int pageSize)
         {
-            _keyStream = keyStream;
-            _valueStream = valueStream;
-            _addressStream = addressStream;
-            _pageSize = pageSize;
-            _sizeOfTInBytes = sizeOfTInBytes;
-        }
-
-        public int IndexOf(TKey key)
-        {
-            if (_keyStream.Length > 0)
+            if (keyStream is null)
             {
-                _keyStream.Position = 0;
-                _addressStream.Position = 0;
-                int index;
-                while (true)
-                {
-                    var reader = new ArrayReader<TKey>(_keyStream, _valueStream, _addressStream, sizeOfTInBytes: _sizeOfTInBytes, pageSize: _pageSize);
-                    index = reader.IndexOf(key);
-                    if (index < 0 && _keyStream.Position + 1 < _keyStream.Length)
-                    {
-                        continue;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                return index;
+                throw new ArgumentNullException(nameof(keyStream));
             }
-            return -1;
+
+            if (addressStream is null)
+            {
+                throw new ArgumentNullException(nameof(addressStream));
+            }
+
+            if (valueStream is null)
+            {
+                throw new ArgumentNullException(nameof(valueStream));
+            }
+
+            Span<byte> keyBuf = new byte[pageSize];
+            keyStream.ReadExactly(keyBuf);
+            var keys = MemoryMarshal.Cast<byte, TKey>(keyBuf);
+            _keyBuf = keys.ToArray();
+
+            int addressBufSize = (pageSize / sizeOfT) * Address.Size;
+            Span<byte> addressBuf = new byte[addressBufSize];
+            addressStream.ReadExactly(addressBuf);
+            var addresses = MemoryMarshal.Cast<byte, Address>(addressBuf);
+            _addresses = addresses.ToArray().AsMemory();
+
+            _valueStream = valueStream;
         }
 
         public ReadOnlySpan<byte> Get(TKey key)
         {
-            if (_keyStream.Length > 0)
+            int index = new Span<TKey>(_keyBuf).BinarySearch(key);
+            if (index > -1)
             {
-                _keyStream.Position = 0;
-                _addressStream.Position = 0;
-                while (true)
-                {
-                    var reader = new ArrayReader<TKey>(_keyStream, _valueStream, _addressStream, sizeOfTInBytes: _sizeOfTInBytes, pageSize: _pageSize);
-                    var value = reader.Get(key);
-                    if (value.IsEmpty)
-                    {
-                        if (_keyStream.Position + 1 < _keyStream.Length)
-                        {
-                            continue;
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        return value;
-                    }
-                }
+                var address = _addresses.Span[index];
+                _valueStream.Position = address.Offset;
+                var valueBuf = new byte[address.Length].AsSpan();
+                _valueStream.ReadExactly(valueBuf);
+                return valueBuf;
             }
-
             return ReadOnlySpan<byte>.Empty;
         }
 
-        public void Dispose()
+        public int IndexOf(TKey key)
         {
-            if (_addressStream != null)
-            {
-                _addressStream.Dispose();
-            }
-            if (_keyStream != null)
-            {
-                _keyStream.Dispose();
-            }
-            if (_valueStream != null)
-            {
-                _valueStream.Dispose();
-            }
-        }
-    }
-
-    public class DoublePageReader : PageReader<double>
-    {
-        public DoublePageReader(Stream keyStream, Stream valueStream, Stream addressStream, int pageSize) : base(keyStream, valueStream, addressStream, sizeof(double), pageSize)
-        {
+            return new Span<TKey>(_keyBuf).BinarySearch(key);
         }
     }
 }
