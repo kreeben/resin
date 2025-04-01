@@ -46,12 +46,12 @@ namespace Resin.TextAnalysis
                         throw new InvalidOperationException(msg);
                     }
 
-                    if (angle < 0.99)
-                    {
-                        var msg = $"score {angle} is too low. label: {token.label}, angle:{angle}";
-                        log.LogInformation(msg);
-                        throw new InvalidOperationException(msg);
-                    }
+                    //if (angle < 0.99)
+                    //{
+                    //    var msg = $"score {angle} is too low. label: {token.label}, angle:{angle}";
+                    //    log.LogInformation(msg);
+                    //    throw new InvalidOperationException(msg);
+                    //}
 
                     if (log != null)
                         log.LogInformation($"VALID: {token.label}");
@@ -74,7 +74,7 @@ namespace Resin.TextAnalysis
             using (var keyStream = streamFactory.CreateReadWriteStream(_collectionId, FileExtensions.Key))
             using (var valueStream = streamFactory.CreateReadWriteStream(_collectionId, FileExtensions.Value))
             using (var addressStream = streamFactory.CreateReadWriteStream(_collectionId, FileExtensions.Address))
-            using (var columnWriter = new PageWriter<double>(new DoubleWriter(keyStream, valueStream, addressStream, _pageSize)))
+            using (var pageWriter = new PageWriter<double>(new DoubleWriter(keyStream, valueStream, addressStream, _pageSize)))
             {
                 foreach (var token in Tokenize(source, _numOfDimensions))
                 {
@@ -82,9 +82,11 @@ namespace Resin.TextAnalysis
                         log.LogInformation($"ANALYZED: {token.label}");
 
                     var angle = VectorOperations.CosAngle(_unitVector, token.vector);
-                    columnWriter.TryPut(angle, VectorOperations.GetBytes(token.vector));
+                    var vectorBuf = VectorOperations.GetBytes(token.vector);
+
+                    pageWriter.PutOrAppend(angle, vectorBuf);
                 }
-                columnWriter.Serialize();
+                pageWriter.Serialize();
             }
         }
 

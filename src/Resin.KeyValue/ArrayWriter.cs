@@ -72,6 +72,57 @@ namespace Resin.KeyValue
             }
         }
 
+        public bool TryPut(TKey key, ReadOnlySpan<byte> value)
+        {
+            if (_keyCount >= _keyBufSize)
+                throw new OutOfPageStorageException();
+
+            int index = new Span<TKey>(_keyBuffer).BinarySearch(key);
+            if (index >= 0)
+            {
+                return false;
+            }
+
+            var address = Serialize(value);
+            _keyBuffer[_keyCount] = key;
+            _addressBuffer[_keyCount] = address;
+            _keyCount++;
+
+            new Span<TKey>(_keyBuffer).Sort(new Span<Address>(_addressBuffer));
+
+            return true;
+        }
+
+        public void PutOrAppend(TKey key, ReadOnlySpan<byte> value)
+        {
+            if (_keyCount >= _keyBufSize)
+                throw new OutOfPageStorageException();
+
+            Address address;
+            int index = new Span<TKey>(_keyBuffer).BinarySearch(key);
+
+            if (index >= 0)
+            {
+                address = _addressBuffer[index];
+                var buf = new byte[address.Length + value.Length];
+                _valueStream.Position = address.Offset;
+                var read = _valueStream.Read(buf, 0, (int)address.Length);
+                if (read != address.Length)
+                    throw new InvalidDataException();
+                Buffer.BlockCopy(value.ToArray(), 0, buf, (int)address.Length, value.Length);
+                address = Serialize(buf);
+                _addressBuffer[_keyCount] = address;
+            }
+            else
+            {
+                address = Serialize(value);
+                _keyBuffer[_keyCount] = key;
+                _addressBuffer[_keyCount] = address;
+                _keyCount++;
+                new Span<TKey>(_keyBuffer).Sort(new Span<Address>(_addressBuffer));
+            }
+        }
+
         private Address[] ReadAddressPage(Stream addressStream)
         {
             if (addressStream.Length == 0)
@@ -112,28 +163,6 @@ namespace Resin.KeyValue
             return (keyBuffer, keyCount);
         }
 
-        public bool TryPut(TKey key, ReadOnlySpan<byte> value)
-        {
-            if (_keyCount >= _keyBufSize)
-                throw new OutOfPageStorageException();
-
-            int index = new Span<TKey>(_keyBuffer).BinarySearch(key);
-            if (index >= 0)
-            {
-                return false;
-            }
-
-            var address = Serialize(value);
-            _keyBuffer[_keyCount] = key;
-            _addressBuffer[_keyCount] = address;
-
-            _keyCount++;
-
-            new Span<TKey>(_keyBuffer).Sort(new Span<Address>(_addressBuffer));
-
-            return true;
-        }
-
         private Address Serialize(ReadOnlySpan<byte> value)
         {
             if (value == Span<byte>.Empty || value.Length == 0)
@@ -165,6 +194,7 @@ namespace Resin.KeyValue
                 _addressStream.Write(BitConverter.GetBytes(adr.Offset));
                 _addressStream.Write(BitConverter.GetBytes(adr.Length));
             }
+
 
             _keyCount = 0;
 

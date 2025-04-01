@@ -28,6 +28,15 @@ namespace Resin.KeyValue
             return put;
         }
 
+        public void PutOrAppend(TKey key, ReadOnlySpan<byte> value)
+        {
+            _writer.PutOrAppend(key, value);
+            if (_writer.IsPageFull)
+            {
+                Serialize();
+            }
+        }
+
         private bool KeyExists(TKey key)
         {
             var ix = new Span<TKey>(_allKeys);
