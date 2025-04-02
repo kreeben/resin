@@ -8,15 +8,32 @@ namespace Resin.TextAnalysis
 {
     public class StringAnalyzer
     {
-        private DirectoryInfo _workingDirectory;
-        const int _pageSize = 4096;
-        const int _numOfDimensions = 512;
-        ulong _collectionId = "wikipedia".ToHash();
-        Vector<float> _unitVector = CreateVector.Sparse<float>(_numOfDimensions, (float)1);
+        private readonly DirectoryInfo _workingDirectory;
+        private readonly int _pageSize = 4096;
+        private readonly int _numOfDimensions;
+        private readonly ulong _collectionId;
+        private readonly Vector<float> _unitVector;
 
         public StringAnalyzer(DirectoryInfo? workingDirectory = null)
         {
             _workingDirectory = workingDirectory;
+            _numOfDimensions = UnicodeRanges.All.Length;
+            _unitVector = CreateVector.Sparse<float>(_numOfDimensions, (float)1);
+            _collectionId = "wikipedia".ToHash();
+        }
+
+        public double Compare(string str1, string str2)
+        {
+            var tokens = Tokenize(new[] { str1, str2 }, _numOfDimensions);
+            var angle = VectorOperations.CosAngle(tokens.First().vector, tokens.Last().vector);
+            return angle;
+        }
+
+        public double CompareToUnitVector(string str1)
+        {
+            var tokens = Tokenize(new[] { str1 }, _numOfDimensions);
+            var angle = VectorOperations.CosAngle(tokens.First().vector, _unitVector);
+            return angle;
         }
 
         public void Validate(IEnumerable<string> source, ILogger? log = null)
