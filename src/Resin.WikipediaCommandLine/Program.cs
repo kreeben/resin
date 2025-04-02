@@ -6,7 +6,7 @@ namespace Resin.WikipediaCommandLine
 {
     internal class Program
     {
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
             var command = args.Length == 0 ? "validate" : args[0].ToLower();
             var flags = ArgumentParser.ParseArgs(args);
@@ -58,6 +58,8 @@ namespace Resin.WikipediaCommandLine
                     logger.LogInformation($"{command} command finished in {time.Elapsed}");
                 }
             }
+
+            return 0;
         }
     }
 }

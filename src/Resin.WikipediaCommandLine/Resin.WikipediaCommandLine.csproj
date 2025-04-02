@@ -5,7 +5,8 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyName>wikipedia</AssemblyName>
+    <AssemblyName>Resin.WikipediaCommandLine</AssemblyName>
+    <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,5 +20,9 @@
     <ProjectReference Include="..\Resin.DataSources\Resin.DataSources.csproj" />
     <ProjectReference Include="..\Resin.TextAnalysis\Resin.TextAnalysis.csproj" />
   </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="call resin-test.bat" WorkingDirectory="c:\projects\resin" />
+  </Target>
 
 </Project>

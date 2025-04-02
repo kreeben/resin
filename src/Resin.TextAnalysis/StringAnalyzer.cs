@@ -36,7 +36,7 @@ namespace Resin.TextAnalysis
 
                     if (buf.IsEmpty)
                     {
-                        var msg = $"could not find {token.label} at {angle}";
+                        var msg = $"could not find '{token.label}' at {angle}";
                         log.LogInformation(msg);
                         throw new InvalidOperationException(msg);
                     }
@@ -49,7 +49,7 @@ namespace Resin.TextAnalysis
                     //}
 
                     if (log != null)
-                        log.LogInformation($"VALID: {token.label}");
+                        log.LogInformation($"VALID: '{token.label}' angle: {angle}");
 
                 }
             }
