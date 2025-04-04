@@ -2,6 +2,6 @@
 {
     public interface IDataSource
     {
-        IEnumerable<string> GetData(string field);
+        IEnumerable<(string key, IEnumerable<string> values)> GetData(HashSet<string> fields);
     }
 }

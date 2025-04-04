@@ -10,6 +10,13 @@
         public Stream ValueStream => _valueStream;
         public Stream AddressStream => _addressStream;
 
+        public ReadSession(WriteTransaction tx)
+        {
+            _keyStream = tx.KeyStream;
+            _valueStream = tx.ValueStream;
+            _addressStream = tx.AddressStream;
+        }
+
         public ReadSession(Stream keyStream, Stream valueStream, Stream addressStream)
         {
             _keyStream = keyStream;

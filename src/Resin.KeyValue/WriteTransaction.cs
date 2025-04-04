@@ -17,7 +17,6 @@
             _addressStream = new MemoryStream();
         }
 
-
         public WriteTransaction(DirectoryInfo workingDir, ulong collectionId)
         {
             var streamFactory = new StreamFactory(workingDir);

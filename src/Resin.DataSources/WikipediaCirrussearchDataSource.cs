@@ -14,10 +14,9 @@ namespace Resin.DataSources
             _fileName = fileName ?? throw new ArgumentNullException(nameof(fileName));
         }
 
-        public IEnumerable<string> GetData(string field)
+        public IEnumerable<(string key, IEnumerable<string> values)> GetData(HashSet<string> fields)
         {
-            return WikipediaHelper.Read(_fileName, 0, int.MaxValue, new HashSet<string> { field })
-                .Select(x => x.First().value);
+            return WikipediaHelper.Read(_fileName, 0, int.MaxValue, fields);
         }
     }
 }

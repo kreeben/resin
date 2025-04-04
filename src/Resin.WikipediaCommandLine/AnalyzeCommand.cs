@@ -13,7 +13,7 @@ namespace Resin.WikipediaCommandLine
         public void Run(IDictionary<string, string> args, ILogger logger)
         {
             var dir = new DirectoryInfo(args["dir"]);
-            var dataSource = new WikipediaCirrussearchDataSource(args["source"]).GetData(args["field"]);
+            var dataSource = new WikipediaCirrussearchDataSource(args["source"]).GetData(new HashSet<string> { "title", "text", "url" });
             new StringAnalyzer(dir).Analyze(dataSource.Take(int.Parse(args["take"])), logger);
         }
     }

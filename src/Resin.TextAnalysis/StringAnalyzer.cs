@@ -9,7 +9,7 @@ namespace Resin.TextAnalysis
     public class StringAnalyzer
     {
         private readonly DirectoryInfo _workingDirectory;
-        private readonly int _pageSize = 4096;
+        private readonly int _pageSize;
         private readonly int _numOfDimensions;
         private readonly ulong _collectionId;
         private readonly Vector<float> _unitVector;
@@ -17,83 +17,108 @@ namespace Resin.TextAnalysis
         public StringAnalyzer(DirectoryInfo? workingDirectory = null)
         {
             _workingDirectory = workingDirectory;
-            _numOfDimensions = UnicodeRanges.All.Length;
+            _numOfDimensions = 512;
+            _pageSize = 4096;
             _unitVector = CreateVector.Sparse<float>(_numOfDimensions, (float)1);
             _collectionId = "wikipedia".ToHash();
         }
 
         public double Compare(string str1, string str2)
         {
-            var tokens = Tokenize(new[] { str1, str2 }, _numOfDimensions);
+            var tokens = Tokenize(new[] { str1, str2 });
             var angle = VectorOperations.CosAngle(tokens.First().vector, tokens.Last().vector);
             return angle;
         }
 
         public double CompareToUnitVector(string str1)
         {
-            var tokens = Tokenize(new[] { str1 }, _numOfDimensions);
+            var tokens = Tokenize(new[] { str1 });
             var angle = VectorOperations.CosAngle(tokens.First().vector, _unitVector);
             return angle;
         }
 
-        public void Validate(IEnumerable<string> source, ILogger? log = null)
+        public void ValidateLexicon(IEnumerable<string> source, ReadSession readSession, ILogger? log = null)
         {
             if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
 
-            using (var session = new ReadSession(_workingDirectory, _collectionId))
+            var tokenReader = new ColumnReader<double>(readSession, sizeof(double), _pageSize);
+            foreach (var token in Tokenize(source))
             {
-                var tokenReader = new ColumnReader<double>(session, sizeof(double), _pageSize);
-                foreach (var token in Tokenize(source, _numOfDimensions))
+                var angle = VectorOperations.CosAngle(_unitVector, token.vector);
+                var buf = tokenReader.Get(angle);
+
+                if (buf.IsEmpty)
                 {
-                    var angle = VectorOperations.CosAngle(_unitVector, token.vector);
-                    var buf = tokenReader.Get(angle);
-
-                    if (buf.IsEmpty)
-                    {
-                        var msg = $"could not find '{token.label}' at {angle}";
-                        log.LogInformation(msg);
-                        throw new InvalidOperationException(msg);
-                    }
-
-                    //if (angle < 0.99)
-                    //{
-                    //    var msg = $"score {angle} is too low. label: {token.label}, angle:{angle}";
-                    //    log.LogInformation(msg);
-                    //    throw new InvalidOperationException(msg);
-                    //}
-
-                    if (log != null)
-                        log.LogInformation($"VALID: '{token.label}' angle: {angle}");
-
+                    var msg = $"could not find '{token.label}' at {angle}";
+                    log.LogInformation(msg);
+                    throw new InvalidOperationException(msg);
                 }
+
+                //if (angle < 0.99)
+                //{
+                //    var msg = $"score {angle} is too low. label: {token.label}, angle:{angle}";
+                //    log.LogInformation(msg);
+                //    throw new InvalidOperationException(msg);
+                //}
+
+                if (log != null)
+                    log.LogInformation($"VALID: '{token.label}' angle: {angle}");
+
             }
         }
 
-        public void Analyze(IEnumerable<string> source, ILogger? log = null)
+        public void BuildLexicon(IEnumerable<string> source, WriteTransaction tx, ILogger? log = null)
         {
             if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
 
-            using (var tx = new WriteTransaction(_workingDirectory, _collectionId))
             using (var pageWriter = new ColumnWriter<double>(new DoubleWriter(tx, _pageSize)))
             {
-                foreach (var token in Tokenize(source, _numOfDimensions))
+                var tokens = Tokenize(source);
+                foreach (var token in tokens)
                 {
                     if (log != null)
-                        log.LogInformation($"ANALYZED: {token.label}");
+                        log.LogInformation($"LEXICON: {token.label}");
 
                     var angle = VectorOperations.CosAngle(_unitVector, token.vector);
                     var vectorBuf = VectorOperations.GetBytes(token.vector);
 
-                    pageWriter.PutOrAppend(angle, vectorBuf);
+                    pageWriter.TryPut(angle, vectorBuf);
                 }
                 pageWriter.Serialize();
             }
+        }
+
+        public void Analyze(IEnumerable<(string key, IEnumerable<string> values)> source, ILogger? log = null)
+        {
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            //Parallel.ForEach(source, column =>
+            //{
+            //using (var tx = new WriteTransaction(_workingDirectory, _collectionId))
+            //using (var pageWriter = new ColumnWriter<double>(new DoubleWriter(tx, _pageSize)))
+            //{
+            //    foreach (var token in Tokenize(column.values, _numOfDimensions))
+            //    {
+            //        if (log != null)
+            //            log.LogInformation($"ANALYZED: {token.label}");
+
+            //        var angle = VectorOperations.CosAngle(_unitVector, token.vector);
+            //        var vectorBuf = VectorOperations.GetBytes(token.vector);
+
+            //        pageWriter.PutOrAppend(angle, vectorBuf);
+            //    }
+            //    pageWriter.Serialize();
+            //}
+            //});
         }
 
         public int FindMaxWordLength(IEnumerable<string> source, ILogger? log = null)
@@ -103,9 +128,8 @@ namespace Resin.TextAnalysis
                 throw new ArgumentNullException(nameof(source));
             }
 
-            const int numOfDimensions = 512;
             int maxWordLen = 0;
-            foreach (var token in Tokenize(source, numOfDimensions))
+            foreach (var token in Tokenize(source))
             {
                 var lengtOfWord = ((SparseVectorStorage<float>)token.vector.Storage).Values.Length;
                 if (lengtOfWord > maxWordLen)
@@ -118,22 +142,22 @@ namespace Resin.TextAnalysis
             return maxWordLen;
         }
 
-        private IEnumerable<(Vector<float> vector, string label)> Tokenize(IEnumerable<string> source, int numOfDimensions)
+        public IEnumerable<(string label, Vector<float> vector)> Tokenize(IEnumerable<string> source)
         {
             int count = 0;
             const char delimiter = ' ';
             foreach (var str in source)
             {
                 int index = 0;
-                var word = CreateVector.Sparse<float>(numOfDimensions);
+                var word = CreateVector.Sparse<float>(_numOfDimensions);
                 var label = new List<char>();
                 foreach (var c in str.ToCharArray())
                 {
                     if (c == delimiter)
                     {
-                        yield return (word, new string(label.ToArray()));
+                        yield return (new string(label.ToArray()), word);
                         index = 0;
-                        word = CreateVector.Sparse<float>(numOfDimensions);
+                        word = CreateVector.Sparse<float>(_numOfDimensions);
                         label.Clear();
                     }
                     else
@@ -144,7 +168,7 @@ namespace Resin.TextAnalysis
                 }
                 if (((SparseVectorStorage<float>)word.Storage).Values.Length > 0)
                 {
-                    yield return (word, new string(label.ToArray()));
+                    yield return (new string(label.ToArray()), word);
                 }
             }
         }
