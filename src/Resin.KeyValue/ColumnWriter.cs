@@ -40,7 +40,6 @@ namespace Resin.KeyValue
         private bool KeyExists(TKey key)
         {
             var ix = new Span<TKey>(_allKeys);
-            ix.Sort();
             int index = ix.BinarySearch(key);
             return index > -1;
         }

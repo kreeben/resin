@@ -78,7 +78,7 @@ namespace Resin.TextAnalysis
                 throw new ArgumentNullException(nameof(source));
             }
 
-            using (var pageWriter = new ColumnWriter<double>(new DoubleWriter(tx, _pageSize)))
+            using (var pageWriter = new ColumnWriter<double>(new DoubleWriter(tx, _pageSize, batchMode: true)))
             {
                 var tokens = Tokenize(source);
                 foreach (var token in tokens)

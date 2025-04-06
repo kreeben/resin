@@ -14,11 +14,13 @@ namespace Resin.WikipediaCommandLine
         public void Run(IDictionary<string, string> args, ILogger logger)
         {
             var dir = new DirectoryInfo(args["dir"]);
+            var take = int.Parse(args["take"]);
             var dataSource = new WikipediaCirrussearchDataSource(args["source"]).GetData(new HashSet<string> { "text" });
+            new StreamFactory(dir).Truncate();
             using (var tx = new WriteTransaction(dir, "wikipedia.lexicon".ToHash()))
             {
                 new StringAnalyzer(dir).BuildLexicon(
-                    dataSource.First().values.Take(int.Parse(args["take"])),
+                    dataSource.First().values.Take(take),
                     tx,
                     logger);
             }
