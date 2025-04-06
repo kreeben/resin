@@ -57,12 +57,13 @@ namespace Resin.TextAnalysis
                     throw new InvalidOperationException(msg);
                 }
 
-                //if (angle < 0.99)
-                //{
-                //    var msg = $"score {angle} is too low. label: {token.label}, angle:{angle}";
-                //    log.LogInformation(msg);
-                //    throw new InvalidOperationException(msg);
-                //}
+                var storedToken = VectorOperations.ToVector(buf.ToArray(), _numOfDimensions);
+                if (VectorOperations.CosAngle(storedToken, token.vector) < 0.99)
+                {
+                    var msg = $"score {angle} is too low. label: {token.label}, angle:{angle}";
+                    log.LogInformation(msg);
+                    throw new InvalidOperationException(msg);
+                }
 
                 if (log != null)
                     log.LogInformation($"VALID: '{token.label}' angle: {angle}");

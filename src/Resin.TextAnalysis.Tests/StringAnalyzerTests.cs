@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using MathNet.Numerics.LinearAlgebra;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Resin.KeyValue;
 
 namespace Resin.TextAnalysis.Tests
@@ -32,6 +33,35 @@ namespace Resin.TextAnalysis.Tests
         {
             var analyzer = new StringAnalyzer();
             var tokens = analyzer.Tokenize(Data);
+        }
+
+        [TestMethod]
+        public void CanSerializeAndDeserializeVectorValues()
+        {
+            const int pageSize = 4096;
+            const int numOfDimensions = 512;
+            using (var tx = new WriteTransaction())
+            using (var pageWriter = new ColumnWriter<double>(new DoubleWriter(tx, pageSize)))
+            {
+                var analyzer = new StringAnalyzer();
+                var tokens = analyzer.Tokenize(new[] { "Resin" });
+                var vector = tokens.First().vector;
+                var unitVector = CreateVector.Sparse<float>(numOfDimensions, (float)1);
+                var angle = VectorOperations.CosAngle(unitVector, vector);
+                var vectorBuf = VectorOperations.GetBytes(vector);
+                pageWriter.TryPut(angle, vectorBuf);
+                pageWriter.Serialize();
+
+                using (var readSession = new ReadSession(tx))
+                {
+                    var tokenReader = new ColumnReader<double>(readSession, sizeof(double), pageSize);
+                    var buf = tokenReader.Get(angle);
+                    var storedVector = VectorOperations.ToVector(buf.ToArray(), numOfDimensions);
+                    var a = VectorOperations.CosAngle(vector, storedVector);
+
+                    Assert.IsTrue(a > 0.99);
+                }
+            }
         }
     }
 }

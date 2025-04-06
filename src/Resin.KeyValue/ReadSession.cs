@@ -10,11 +10,14 @@
         public Stream ValueStream => _valueStream;
         public Stream AddressStream => _addressStream;
 
+        private readonly bool _keepOpen;
+
         public ReadSession(WriteTransaction tx)
         {
             _keyStream = tx.KeyStream;
             _valueStream = tx.ValueStream;
             _addressStream = tx.AddressStream;
+            _keepOpen = true;
         }
 
         public ReadSession(Stream keyStream, Stream valueStream, Stream addressStream)
@@ -35,14 +38,17 @@
 
         public void Dispose()
         {
-            if (_keyStream != null)
-                _keyStream.Dispose();
+            if (!_keepOpen)
+            {
+                if (_keyStream != null)
+                    _keyStream.Dispose();
 
-            if (_valueStream != null)
-                _valueStream.Dispose();
+                if (_valueStream != null)
+                    _valueStream.Dispose();
 
-            if (_addressStream != null)
-                _addressStream.Dispose();
+                if (_addressStream != null)
+                    _addressStream.Dispose();
+            }
         }
     }
 }

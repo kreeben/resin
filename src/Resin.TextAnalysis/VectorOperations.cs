@@ -10,24 +10,29 @@ namespace Resin.TextAnalysis
         {
             var stream = new MemoryStream();
             var storage = (SparseVectorStorage<float>)vector.Storage;
-            var componentCount = storage.Indices.Length;
+            int componentCount = storage.ValueCount;
 
             stream.Write(BitConverter.GetBytes(componentCount));
 
+            var passedZero = false;
             foreach (var index in storage.Indices)
             {
-                if (index > 0)
+                if (index == 0 && !passedZero)
+                {
                     stream.Write(BitConverter.GetBytes(index));
-                else
+                    passedZero = true;
+                    continue;
+                }
+                else if (index == 0)
                     break;
+
+                stream.Write(BitConverter.GetBytes(index));
             }
 
             foreach (var value in storage.Values)
             {
                 if (value > 0)
                     stream.Write(BitConverter.GetBytes(value));
-                else
-                    break;
             }
 
             return stream.ToArray();
