@@ -47,22 +47,23 @@ namespace Resin.TextAnalysis
             var tokenReader = new ColumnReader<double>(readSession, sizeof(double), _pageSize);
             foreach (var token in Tokenize(source))
             {
-                var angle = VectorOperations.CosAngle(_unitVector, token.vector);
+                var angle = _unitVector.CosAngle(token.vector);
                 var buf = tokenReader.Get(angle);
 
                 if (buf.IsEmpty)
                 {
                     var msg = $"could not find '{token.label}' at {angle}";
-                    log.LogInformation(msg);
+                    log.LogError(new EventId(-1), msg);
                     throw new InvalidOperationException(msg);
                 }
 
-                var storedToken = VectorOperations.ToVector(buf.ToArray(), _numOfDimensions);
-                if (VectorOperations.CosAngle(storedToken, token.vector) < 0.99)
+                var storedToken = buf.ToArray().ToVector(_numOfDimensions);
+                var mutualAngle = storedToken.CosAngle(token.vector);
+                if (mutualAngle < 0.99)
                 {
-                    var msg = $"score {angle} is too low. label: {token.label}, angle:{angle}";
-                    log.LogInformation(msg);
-                    throw new InvalidOperationException(msg);
+                    var storedLabel = storedToken.AsString();
+                    var msg = $"LEADER FOUND at angle:{angle}! query/label: {token.label}/{storedLabel} mutual angle: {mutualAngle}";
+                    log.LogWarning(new EventId(-2), msg);
                 }
 
                 if (log != null)

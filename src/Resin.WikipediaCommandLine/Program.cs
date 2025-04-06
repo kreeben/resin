@@ -13,14 +13,14 @@ namespace Resin.WikipediaCommandLine
             ICommand plugin = PluginReader.ResolvePlugin(command);
             ILoggerFactory loggerFactory;
 
-            if (flags.ContainsKey("debug"))
+            if (!flags.ContainsKey("debug") || flags["debug"] == "false")
             {
                 loggerFactory = LoggerFactory.Create(builder =>
                 {
                     builder
                         .AddFilter("Microsoft", LogLevel.Warning)
                         .AddFilter("System", LogLevel.Warning)
-                        .AddFilter("Resin", LogLevel.Debug)
+                        .AddFilter("Resin", LogLevel.Warning)
                         .AddConsole();
                 });
             }
@@ -43,7 +43,7 @@ namespace Resin.WikipediaCommandLine
                 if (plugin != null)
                 {
                     var time = Stopwatch.StartNew();
-
+                    Console.WriteLine($"running command: {string.Join(" ", args)}");
                     try
                     {
                         plugin.Run(flags, logger);
@@ -55,7 +55,7 @@ namespace Resin.WikipediaCommandLine
                     }
 
                     time.Stop();
-                    logger.LogInformation($"{command} command finished in {time.Elapsed}");
+                    Console.WriteLine($"command finished in {time.Elapsed}: {string.Join(" ", args)} ");
                 }
             }
 

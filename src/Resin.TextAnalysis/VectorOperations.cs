@@ -48,7 +48,7 @@ namespace Resin.TextAnalysis
             return CreateVector.SparseOfIndexed(numOfDimensions, indices.Select(index => (index, values[i++])));
         }
 
-        public static double CosAngle(Vector<float> first, Vector<float> second)
+        public static double CosAngle(this Vector<float> first, Vector<float> second)
         {
             var dotProduct = first.DotProduct(second);
             var dotSelf1 = first.Norm(2);
@@ -57,6 +57,19 @@ namespace Resin.TextAnalysis
             var cosineDistance = dotProduct / (dotSelf1 * dotSelf2);
 
             return cosineDistance;
+        }
+
+        public static string AsString(this Vector<float> vector)
+        {
+            var storage = (SparseVectorStorage<float>)vector.Storage;
+            var chars = new List<char>();
+            for (int i = 0; i < storage.Indices.Length; i++)
+            {
+                var v = Convert.ToInt32(storage.Values[i]);
+                chars.Add((char)v);
+                continue;
+            }
+            return new string(chars.ToArray());
         }
     }
 }
