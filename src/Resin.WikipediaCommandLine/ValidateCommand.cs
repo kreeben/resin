@@ -15,10 +15,10 @@ namespace Resin.WikipediaCommandLine
         {
             var dir = new DirectoryInfo(args["dir"]);
             var dataSource = new WikipediaCirrussearchDataSource(args["source"]).GetData(new HashSet<string> { args["field"] });
-            using (var tx = new WriteTransaction(dir, "wikipedia.lexicon".ToHash()))
+            using (var tx = new WriteTransaction(dir, "wikipedia".ToHash()))
             using (var readSession = new ReadSession(tx))
             {
-                new StringAnalyzer(dir).ValidateLexicon(dataSource.First().values.Take(int.Parse(args["take"])), readSession, logger);
+                new StringAnalyzer(dir).Validate(dataSource.First().values.Take(int.Parse(args["take"])), readSession, logger);
             }
 
         }

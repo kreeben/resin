@@ -57,7 +57,8 @@
 
         public ReadOnlySpan<byte> Get(TKey key)
         {
-            if (_keyStream.Length > 0)
+            var keyLen = _keyStream.Length;
+            if (keyLen > 0)
             {
                 var addressPageSize = (_pageSize / _sizeOfT) * Address.Size;
                 int index = 0;
@@ -71,7 +72,7 @@
                     var value = reader.Get(key);
                     if (value.IsEmpty)
                     {
-                        if (_keyStream.Position + 1 < _keyStream.Length)
+                        if (_keyStream.Position + 1 < keyLen)
                         {
                             keyOffset += addressPageSize;
                             index++;

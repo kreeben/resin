@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Resin.CommandLine;
 using Resin.DataSources;
+using Resin.KeyValue;
 using Resin.TextAnalysis;
 
 namespace Resin.WikipediaCommandLine
@@ -13,8 +14,11 @@ namespace Resin.WikipediaCommandLine
         public void Run(IDictionary<string, string> args, ILogger logger)
         {
             var dir = new DirectoryInfo(args["dir"]);
-            var dataSource = new WikipediaCirrussearchDataSource(args["source"]).GetData(new HashSet<string> { "title", "text", "url" });
-            new StringAnalyzer(dir).Analyze(dataSource.Take(int.Parse(args["take"])), logger);
+            var dataSource = new WikipediaCirrussearchDataSource(args["source"]).GetData(new HashSet<string> { args["field"] });
+            using (var readSession = new ReadSession(dir, "wikipedia".ToHash()))
+            {
+                new StringAnalyzer(dir).Analyze(dataSource.First().values.Take(int.Parse(args["take"])), readSession, logger);
+            }
         }
     }
 }

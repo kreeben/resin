@@ -3,7 +3,7 @@ namespace Resin.KeyValue
 {
     public class PageReader<TKey> where TKey : struct, IEquatable<TKey>, IComparable<TKey>
     {
-        private readonly TKey[] _keyBuf;
+        private readonly Memory<TKey> _keyBuf;
         private readonly Stream _valueStream;
         private readonly Stream _addressStream;
         private readonly long _addressOffset;
@@ -27,7 +27,7 @@ namespace Resin.KeyValue
 
         public ReadOnlySpan<byte> Get(TKey key)
         {
-            int index = new Span<TKey>(_keyBuf).BinarySearch(key);
+            int index = _keyBuf.Span.BinarySearch(key);
             if (index > -1)
             {
                 var address = GetAddress(index);
@@ -41,7 +41,7 @@ namespace Resin.KeyValue
 
         public int IndexOf(TKey key)
         {
-            return new Span<TKey>(_keyBuf).BinarySearch(key);
+            return _keyBuf.Span.BinarySearch(key);
         }
 
         public Address GetAddress(int index)

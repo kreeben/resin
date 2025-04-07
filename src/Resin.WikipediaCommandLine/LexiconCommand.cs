@@ -17,12 +17,9 @@ namespace Resin.WikipediaCommandLine
             var take = int.Parse(args["take"]);
             var dataSource = new WikipediaCirrussearchDataSource(args["source"]).GetData(new HashSet<string> { "text" });
             new StreamFactory(dir).Truncate();
-            using (var tx = new WriteTransaction(dir, "wikipedia.lexicon".ToHash()))
+            using (var tx = new WriteTransaction(dir, "wikipedia".ToHash()))
             {
-                new StringAnalyzer(dir).BuildLexicon(
-                    dataSource.First().values.Take(take),
-                    tx,
-                    logger);
+                new StringAnalyzer(dir).BuildLexicon(dataSource.First().values.Take(take), tx, logger);
             }
         }
     }
