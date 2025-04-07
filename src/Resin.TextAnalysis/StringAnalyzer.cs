@@ -130,6 +130,43 @@ namespace Resin.TextAnalysis
             }
         }
 
+        public void FindClusters(IEnumerable<string> source, ReadSession readSession, ILogger? log = null)
+        {
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            var tokenReader = new ColumnReader<double>(readSession, sizeof(double), _pageSize);
+            var docCount = 0;
+            foreach (var str in source)
+            {
+                foreach (var token in Tokenize(str))
+                {
+                    var angle = _unitVector.CosAngle(token.vector);
+                    var buf = tokenReader.Get(angle);
+
+                    if (buf.IsEmpty)
+                    {
+                        throw new InvalidOperationException($"could not find '{token.label}' at {angle}");
+                    }
+
+                    var storedToken = buf.ToArray().ToVector(_numOfDimensions);
+                    var mutualAngle = storedToken.CosAngle(token.vector);
+                    if (mutualAngle < 0.99)
+                    {
+                        var storedLabel = storedToken.AsString();
+                        var msg = $"CLUSTER FOUND at angle:{angle}! query/label: {token.label}/{storedLabel} mutual angle: {mutualAngle}";
+                        if (log != null)
+                            log.LogInformation(msg);
+                    }
+                }
+                docCount++;
+                if (log != null)
+                    log.LogInformation($"ANALYZE: doc {docCount}");
+            }
+        }
+
         public int FindMaxWordLength(IEnumerable<string> source, ILogger? log = null)
         {
             if (source is null)
@@ -168,8 +205,12 @@ namespace Resin.TextAnalysis
                 }
                 else
                 {
-                    word[index++] = c;
-                    label.Add(c);
+                    if (index < _numOfDimensions)
+                    {
+                        word[index] = c;
+                        label.Add(c);
+                    }
+                    index++;
                 }
             }
             if (((SparseVectorStorage<float>)word.Storage).Values.Length > 0)
