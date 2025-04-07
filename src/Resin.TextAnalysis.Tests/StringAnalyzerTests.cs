@@ -9,11 +9,11 @@ namespace Resin.TextAnalysis.Tests
     {
         string[] Data = new[]
         {
-            "A world of dew,\r\n\r\nAnd within every dewdrop\r\n\r\nA world of struggle.",
-            "I write, erase, rewrite\r\n\r\nErase again, and then\r\n\r\nA poppy blooms.",
+            "\0\0 A world of dew,\r\n\r\nAnd within [every} §dewdrop\r\n\r\nA world of struggle.",
+            "I write, erase, rewrite\r\n\r\nErase \0\0again, and then\r\n\r\nA poppy blooms.",
             "a camera’s flash\r\n\r\nlong after the eyes close\r\n\r\nin old photographs",
-            "Against his coat\r\n\r\nI brush my lips—\r\n\r\nthe silence of snowflakes",
-            "all the skaters gone:\r\n\r\nthinner now the midnight ice\r\n\r\nacross the wide lake"
+            "Against his coat\r\n\r\nI brush my lips—\r\n\r\nthe \0\0silence of snowflakes",
+            "all the skaters gone:\r\n\r\nthinner now the midnight ice\r\n\r\nacross \0\0the wide lake"
         };
 
         [TestMethod]

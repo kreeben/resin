@@ -190,13 +190,12 @@ namespace Resin.TextAnalysis
 
         public IEnumerable<(string label, Vector<float> vector)> Tokenize(string source)
         {
-            const char delimiter = ' ';
             int index = 0;
             var word = CreateVector.Sparse<float>(_numOfDimensions);
             var label = new List<char>();
             foreach (var c in source.ToCharArray())
             {
-                if (c == delimiter || char.IsPunctuation(c))
+                if (char.IsWhiteSpace(c) || char.IsPunctuation(c) || char.IsSeparator(c))
                 {
                     yield return (new string(label.ToArray()), word);
                     index = 0;
