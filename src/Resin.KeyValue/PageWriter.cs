@@ -210,11 +210,7 @@ namespace Resin.KeyValue
 
             GoToEndOfStream(_addressStream);
 
-            foreach (var adr in _addressBuffer)
-            {
-                _addressStream.Write(BitConverter.GetBytes(adr.Offset));
-                _addressStream.Write(BitConverter.GetBytes(adr.Length));
-            }
+            Address.SerializeMany(_addressStream, _addressBuffer);
 
             _keyCount = 0;
 

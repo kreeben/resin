@@ -5,6 +5,7 @@
         private readonly int _pageSize;
         private readonly int _sizeOfT;
         private readonly ReadSession _readSession;
+        private readonly int _addressPageSize;
         private readonly Stream _keyStream;
         private readonly Stream _addressStream;
 
@@ -15,6 +16,7 @@
             _pageSize = pageSize;
             _sizeOfT = sizeOfT;
             _readSession = readSession;
+            _addressPageSize = (_pageSize / _sizeOfT) * Address.Size;
         }
 
         /// <summary>
@@ -24,14 +26,17 @@
         {
             if (_keyStream.Length > 0)
             {
-                _keyStream.Position = 0;
-                _addressStream.Position = 0;
-                int index;
+                int index = 0;
                 var numOfPages = 0;
                 var numOfItemsPerPage = _pageSize / _sizeOfT;
 
                 while (true)
                 {
+                    var keyOffset = index * _pageSize;
+                    var addressOffset = index * _addressPageSize;
+                    _keyStream.Position = keyOffset;
+                    _addressStream.Position = addressOffset;
+
                     var reader = new PageReader<TKey>(_readSession, sizeOfT: _sizeOfT, pageSize: _pageSize);
                     numOfPages++;
                     index = reader.IndexOf(key);
@@ -54,16 +59,22 @@
         {
             if (_keyStream.Length > 0)
             {
-                _keyStream.Position = 0;
-                _addressStream.Position = 0;
+                var addressPageSize = (_pageSize / _sizeOfT) * Address.Size;
+                int index = 0;
                 while (true)
                 {
+                    var keyOffset = index * _pageSize;
+                    var addressOffset = index * addressPageSize;
+                    _keyStream.Position = keyOffset;
+                    _addressStream.Position = addressOffset;
                     var reader = new PageReader<TKey>(_readSession, sizeOfT: _sizeOfT, pageSize: _pageSize);
                     var value = reader.Get(key);
                     if (value.IsEmpty)
                     {
                         if (_keyStream.Position + 1 < _keyStream.Length)
                         {
+                            keyOffset += addressPageSize;
+                            index++;
                             continue;
                         }
                         else

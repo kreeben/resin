@@ -4,8 +4,9 @@ namespace Resin.KeyValue
     public class PageReader<TKey> where TKey : struct, IEquatable<TKey>, IComparable<TKey>
     {
         private readonly TKey[] _keyBuf;
-        private readonly ReadOnlyMemory<Address> _addresses;
         private readonly Stream _valueStream;
+        private readonly Stream _addressStream;
+        private readonly long _addressOffset;
 
         public PageReader(ReadSession readSession, int sizeOfT, int pageSize)
         {
@@ -19,13 +20,9 @@ namespace Resin.KeyValue
             var keys = MemoryMarshal.Cast<byte, TKey>(keyBuf);
             _keyBuf = keys.ToArray();
 
-            int addressBufSize = (pageSize / sizeOfT) * Address.Size;
-            Span<byte> addressBuf = new byte[addressBufSize];
-            readSession.AddressStream.ReadExactly(addressBuf);
-            var addresses = MemoryMarshal.Cast<byte, Address>(addressBuf);
-            _addresses = addresses.ToArray().AsMemory();
-
             _valueStream = readSession.ValueStream;
+            _addressStream = readSession.AddressStream;
+            _addressOffset = readSession.AddressStream.Position;
         }
 
         public ReadOnlySpan<byte> Get(TKey key)
@@ -33,7 +30,7 @@ namespace Resin.KeyValue
             int index = new Span<TKey>(_keyBuf).BinarySearch(key);
             if (index > -1)
             {
-                var address = _addresses.Span[index];
+                var address = GetAddress(index);
                 _valueStream.Position = address.Offset;
                 var valueBuf = new byte[address.Length].AsSpan();
                 _valueStream.ReadExactly(valueBuf);
@@ -45,6 +42,16 @@ namespace Resin.KeyValue
         public int IndexOf(TKey key)
         {
             return new Span<TKey>(_keyBuf).BinarySearch(key);
+        }
+
+        public Address GetAddress(int index)
+        {
+            var relPos = index * Address.Size;
+            var absPos = relPos + _addressOffset;
+            _addressStream.Position = absPos;
+            var buf = new byte[Address.Size];
+            _addressStream.ReadExactly(buf);
+            return Address.Deserialize(buf);
         }
     }
 }

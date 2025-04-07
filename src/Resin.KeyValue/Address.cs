@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Resin.KeyValue
 {
@@ -32,6 +33,23 @@ namespace Resin.KeyValue
         public static Address Empty()
         {
             return EMPTY;
+        }
+
+        public static Address Deserialize(Span<byte> buf)
+        {
+            Span<long> adrSpan = MemoryMarshal.Cast<byte, long>(buf);
+            long ofs = adrSpan[0];
+            long len = adrSpan[1];
+            return new Address(ofs, len);
+        }
+
+        public static void SerializeMany(Stream stream, Address[] addresses)
+        {
+            foreach (var adr in addresses)
+            {
+                stream.Write(BitConverter.GetBytes(adr.Offset));
+                stream.Write(BitConverter.GetBytes(adr.Length));
+            }
         }
     }
 }
