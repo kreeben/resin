@@ -18,7 +18,7 @@ namespace Resin.WikipediaCommandLine
             using (var tx = new WriteTransaction(dir, "wikipedia".ToHash()))
             using (var readSession = new ReadSession(tx))
             {
-                new StringAnalyzer(dir).Validate(dataSource.First().values.Take(int.Parse(args["take"])), readSession, logger);
+                new StringAnalyzer().Validate(dataSource.First().values.Take(int.Parse(args["take"])), readSession, logger);
             }
 
         }

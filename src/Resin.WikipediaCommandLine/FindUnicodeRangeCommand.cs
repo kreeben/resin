@@ -11,7 +11,7 @@ namespace Resin.WikipediaCommandLine
         {
             var dir = new DirectoryInfo(@"c:\data");
             var dataSource = new WikipediaCirrussearchDataSource(@"d:\enwiki-20211122-cirrussearch-content.json.gz").GetData(new HashSet<string> { "text" });
-            var unicodeRange = new StringAnalyzer(dir).FindUnicodeRange(dataSource.First().values, logger);
+            var unicodeRange = new StringAnalyzer().FindUnicodeRange(dataSource.First().values, logger);
             Console.WriteLine($"first code point: {unicodeRange.FirstCodePoint} length: {unicodeRange.Length}");
         }
     }

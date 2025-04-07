@@ -8,16 +8,14 @@ namespace Resin.TextAnalysis
 {
     public class StringAnalyzer
     {
-        private readonly DirectoryInfo _workingDirectory;
         private readonly int _pageSize;
         private readonly int _numOfDimensions;
         private readonly Vector<float> _unitVector;
 
-        public StringAnalyzer(DirectoryInfo? workingDirectory = null)
+        public StringAnalyzer(int numOfDimensions = 512, int pageSize = 4096)
         {
-            _workingDirectory = workingDirectory;
-            _numOfDimensions = 512;
-            _pageSize = 4096;
+            _numOfDimensions = numOfDimensions;
+            _pageSize = pageSize;
             _unitVector = CreateVector.Sparse<float>(_numOfDimensions, (float)1);
         }
 

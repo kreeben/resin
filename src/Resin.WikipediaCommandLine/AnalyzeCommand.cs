@@ -17,7 +17,7 @@ namespace Resin.WikipediaCommandLine
             var dataSource = new WikipediaCirrussearchDataSource(args["source"]).GetData(new HashSet<string> { args["field"] });
             using (var readSession = new ReadSession(dir, "wikipedia".ToHash()))
             {
-                new StringAnalyzer(dir).Analyze(dataSource.First().values.Take(int.Parse(args["take"])), readSession, logger);
+                new StringAnalyzer().Analyze(dataSource.First().values.Take(int.Parse(args["take"])), readSession, logger);
             }
         }
     }
