@@ -49,26 +49,4 @@
             }
         }
     }
-
-    public class MultiColumnWriter<TKey> : IDisposable where TKey : struct, IEquatable<TKey>, IComparable<TKey>
-    {
-        private readonly IDictionary<ulong, WriteTransaction> _transactions;
-        private readonly ulong _collectionId;
-        private readonly DirectoryInfo _directoryInfo;
-
-        private WriteTransaction CreateWriteTransaction(ulong keyHash)
-        {
-            if (!_transactions.TryGetValue(keyHash, out var tx))
-            {
-                tx = new WriteTransaction(_directoryInfo, _collectionId);
-                _transactions.Add(keyHash, tx);
-            }
-            return tx;
-        }
-
-        public void Dispose()
-        {
-            throw new NotImplementedException();
-        }
-    }
 }

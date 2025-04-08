@@ -11,7 +11,7 @@ namespace Resin.TextAnalysis
     {
         private readonly int _pageSize;
         private readonly int _numOfDimensions;
-        private readonly Vector<float> _unitVector;
+        private readonly Vector<double> _unitVector;
         private readonly List<char> _label;
         private readonly HashSet<UnicodeCategory> _validData = new HashSet<UnicodeCategory>
         {
@@ -27,7 +27,7 @@ namespace Resin.TextAnalysis
         {
             _numOfDimensions = numOfDimensions;
             _pageSize = pageSize;
-            _unitVector = CreateVector.Sparse<float>(_numOfDimensions, (float)1);
+            _unitVector = CreateVector.Sparse<double>(_numOfDimensions, (double)1);
             _label = new List<char>(_numOfDimensions);
         }
 
@@ -45,7 +45,7 @@ namespace Resin.TextAnalysis
                 long tokenCount = 0;
                 foreach (var str in source)
                 {
-                    foreach (var token in Tokenize(str, labelVectors))
+                    foreach (var token in TokenizeIntoDouble(str, labelVectors))
                     {
                         double angle = _unitVector.CosAngle(token.vector);
                         var buf = tokenReader.Get(angle);
@@ -53,10 +53,10 @@ namespace Resin.TextAnalysis
                         {
                             throw new InvalidOperationException($"could not find '{token.label}' at {angle}");
                         }
-                        var storedVec = buf.ToArray().ToVector(_numOfDimensions);
-                        float mutualAngle = (float)storedVec.CosAngle(token.vector);
-                        var composedVec = CreateVector.Sparse<float>(_numOfDimensions);
-                        composedVec[0] = (float)angle;
+                        var storedVec = buf.ToArray().ToVectorDouble(_numOfDimensions);
+                        double mutualAngle = storedVec.CosAngle(token.vector);
+                        var composedVec = CreateVector.Sparse<double>(_numOfDimensions);
+                        composedVec[0] = angle;
                         composedVec[1] = mutualAngle;
                         if (tokenWriter.TryPut(angle, composedVec.GetBytes(x => BitConverter.GetBytes(x))))
                             tokenCount++;
@@ -84,7 +84,7 @@ namespace Resin.TextAnalysis
                 long tokenCount = 0;
                 foreach (var str in source)
                 {
-                    foreach (var token in Tokenize(str))
+                    foreach (var token in TokenizeIntoDouble(str))
                     {
                         var angle = _unitVector.CosAngle(token.vector);
                         var vectorBuf = token.vector.GetBytes(x => BitConverter.GetBytes(x));
@@ -113,7 +113,7 @@ namespace Resin.TextAnalysis
             var docCount = 0;
             foreach (var str in source)
             {
-                foreach (var token in Tokenize(str))
+                foreach (var token in TokenizeIntoDouble(str))
                 {
                     var angle = _unitVector.CosAngle(token.vector);
                     var buf = tokenReader.Get(angle);
@@ -143,7 +143,7 @@ namespace Resin.TextAnalysis
             var docCount = 0;
             foreach (var str in source)
             {
-                foreach (var token in Tokenize(str))
+                foreach (var token in TokenizeIntoDouble(str))
                 {
                     double angle = _unitVector.CosAngle(token.vector);
                     var buf = tokenReader.Get(angle);
@@ -153,13 +153,13 @@ namespace Resin.TextAnalysis
                         throw new InvalidOperationException($"could not find '{token.label}' at {angle}");
                     }
 
-                    var storedVec = buf.ToArray().ToVector(_numOfDimensions);
-                    var mutualAngle = (float)storedVec.CosAngle(token.vector);
-                    var composedVec = CreateVector.Sparse<float>(_numOfDimensions);
-                    composedVec[0] = (float)angle;
+                    var storedVec = buf.ToArray().ToVectorDouble(_numOfDimensions);
+                    double mutualAngle = storedVec.CosAngle(token.vector);
+                    var composedVec = CreateVector.Sparse<double>(_numOfDimensions);
+                    composedVec[0] = angle;
                     composedVec[1] = mutualAngle;
                     var bufComposed = tokenReaderComposed.Get(angle);
-                    var storedComposedVec = bufComposed.ToArray().ToVector(_numOfDimensions);
+                    var storedComposedVec = bufComposed.ToArray().ToVectorDouble(_numOfDimensions);
                     double mutualAngleComposed = storedComposedVec.CosAngle(composedVec);
                     if (mutualAngleComposed < 0.99)
                     {
@@ -185,7 +185,7 @@ namespace Resin.TextAnalysis
             var docCount = 0;
             foreach (var str in source)
             {
-                foreach (var token in Tokenize(str))
+                foreach (var token in TokenizeIntoDouble(str))
                 {
                     var angle = _unitVector.CosAngle(token.vector);
                     var buf = tokenReader.Get(angle);
@@ -195,7 +195,7 @@ namespace Resin.TextAnalysis
                         throw new InvalidOperationException($"could not find '{token.label}' at {angle}");
                     }
 
-                    var storedToken = buf.ToArray().ToVector(_numOfDimensions);
+                    var storedToken = buf.ToArray().ToVectorDouble(_numOfDimensions);
                     var mutualAngle = storedToken.CosAngle(token.vector);
                     if (mutualAngle < 0.99)
                     {
@@ -219,7 +219,7 @@ namespace Resin.TextAnalysis
             }
 
             int maxWordLen = 0;
-            foreach (var token in Tokenize(source))
+            foreach (var token in TokenizeIntoFloat(source))
             {
                 var lengtOfWord = ((SparseVectorStorage<float>)token.vector.Storage).Values.Length;
                 if (lengtOfWord > maxWordLen)
@@ -240,7 +240,7 @@ namespace Resin.TextAnalysis
             return false;
         }
 
-        public IEnumerable<(string label, Vector<float> vector)> Tokenize(string source, bool labelVectors = true)
+        public IEnumerable<(string label, Vector<float> vector)> TokenizeIntoFloat(string source, bool labelVectors = true)
         {
             int index = 0;
             var word = CreateVector.Sparse<float>(_numOfDimensions);
@@ -283,11 +283,65 @@ namespace Resin.TextAnalysis
             _label.Clear();
         }
 
-        public IEnumerable<(string label, Vector<float> vector)> Tokenize(IEnumerable<string> source)
+        public IEnumerable<(string label, Vector<double> vector)> TokenizeIntoDouble(string source, bool labelVectors = true)
+        {
+            int index = 0;
+            var word = CreateVector.Sparse<double>(_numOfDimensions);
+            foreach (var c in source.ToCharArray())
+            {
+                if (IsData(c))
+                {
+                    if (index < _numOfDimensions)
+                    {
+                        word[index] = c;
+                        _label.Add(c);
+                        index++;
+                    }
+                }
+                else if (c == '’')
+                {
+                    var cat = char.GetUnicodeCategory(c);
+                }
+                else
+                {
+                    if (index > 0)
+                    {
+                        if (labelVectors)
+                            yield return (new string(_label.ToArray()), word);
+                        else
+                            yield return (string.Empty, word);
+                        word = CreateVector.Sparse<double>(_numOfDimensions);
+                        _label.Clear();
+                        index = 0;
+                    }
+                }
+            }
+            if (((SparseVectorStorage<double>)word.Storage).Values.Length > 0)
+            {
+                if (labelVectors)
+                    yield return (new string(_label.ToArray()), word);
+                else
+                    yield return (string.Empty, word);
+            }
+            _label.Clear();
+        }
+
+        public IEnumerable<(string label, Vector<float> vector)> TokenizeIntoFloat(IEnumerable<string> source)
         {
             foreach (var str in source)
             {
-                foreach (var token in Tokenize(str))
+                foreach (var token in TokenizeIntoFloat(str))
+                {
+                    yield return token;
+                }
+            }
+        }
+
+        public IEnumerable<(string label, Vector<double> vector)> TokenizeIntoDouble(IEnumerable<string> source)
+        {
+            foreach (var str in source)
+            {
+                foreach (var token in TokenizeIntoDouble(str))
                 {
                     yield return token;
                 }
@@ -327,14 +381,14 @@ namespace Resin.TextAnalysis
 
         public double Compare(string str1, string str2)
         {
-            var tokens = Tokenize(new[] { str1, str2 });
+            var tokens = TokenizeIntoDouble(new[] { str1, str2 });
             var angle = tokens.First().vector.CosAngle(tokens.Last().vector);
             return angle;
         }
 
         public double CompareToUnitVector(string str1)
         {
-            var tokens = Tokenize(new[] { str1 });
+            var tokens = TokenizeIntoDouble(new[] { str1 });
             var angle = tokens.First().vector.CosAngle(_unitVector);
             return angle;
         }

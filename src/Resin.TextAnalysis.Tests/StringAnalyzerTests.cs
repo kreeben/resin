@@ -54,11 +54,11 @@ namespace Resin.TextAnalysis.Tests
         public void CanTokenize()
         {
             var analyzer = new StringAnalyzer();
-            Assert.IsTrue(analyzer.Tokenize(Data).Any());
+            Assert.IsTrue(analyzer.TokenizeIntoDouble(Data).Any());
         }
 
         [TestMethod]
-        public void CanSerializeAndDeserializeVectorValues()
+        public void CanSerializeAndDeserializeVectorFloatValues()
         {
             const int pageSize = 4096;
             const int numOfDimensions = 512;
@@ -66,7 +66,7 @@ namespace Resin.TextAnalysis.Tests
             using (var pageWriter = new ColumnWriter<double>(new DoubleWriter(tx, pageSize)))
             {
                 var analyzer = new StringAnalyzer();
-                var tokens = analyzer.Tokenize(new[] { "Resin" });
+                var tokens = analyzer.TokenizeIntoFloat(new[] { "Resin" });
                 var vector = tokens.First().vector;
                 var unitVector = CreateVector.Sparse<float>(numOfDimensions, (float)1);
                 var angle = unitVector.CosAngle(vector);
@@ -78,7 +78,36 @@ namespace Resin.TextAnalysis.Tests
                 {
                     var tokenReader = new ColumnReader<double>(readSession, sizeof(double), pageSize);
                     var buf = tokenReader.Get(angle);
-                    var storedVector = buf.ToArray().ToVector(numOfDimensions);
+                    var storedVector = buf.ToArray().ToVectorFloat(numOfDimensions);
+                    var a = vector.CosAngle(storedVector);
+
+                    Assert.IsTrue(a > 0.99);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void CanSerializeAndDeserializeVectorDoubleValues()
+        {
+            const int pageSize = 4096;
+            const int numOfDimensions = 512;
+            using (var tx = new WriteTransaction())
+            using (var pageWriter = new ColumnWriter<double>(new DoubleWriter(tx, pageSize)))
+            {
+                var analyzer = new StringAnalyzer();
+                var tokens = analyzer.TokenizeIntoDouble(new[] { "Resin" });
+                var vector = tokens.First().vector;
+                var unitVector = CreateVector.Sparse<double>(numOfDimensions, (double)1);
+                var angle = unitVector.CosAngle(vector);
+                var vectorBuf = vector.GetBytes(x => BitConverter.GetBytes(x));
+                pageWriter.TryPut(angle, vectorBuf);
+                pageWriter.Serialize();
+
+                using (var readSession = new ReadSession(tx))
+                {
+                    var tokenReader = new ColumnReader<double>(readSession, sizeof(double), pageSize);
+                    var buf = tokenReader.Get(angle);
+                    var storedVector = buf.ToArray().ToVectorDouble(numOfDimensions);
                     var a = vector.CosAngle(storedVector);
 
                     Assert.IsTrue(a > 0.99);
