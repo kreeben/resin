@@ -30,11 +30,8 @@ namespace Resin.KeyValue
             int index = _keyBuf.Span.BinarySearch(key);
             if (index > -1)
             {
-                var address = GetAddress(index);
-                _valueStream.Position = address.Offset;
-                var valueBuf = new byte[address.Length].AsSpan();
-                _valueStream.ReadExactly(valueBuf);
-                return valueBuf;
+                var address = ReadUtil.GetAddress(_addressStream, index, _addressOffset);
+                return ReadUtil.ReadValue(_valueStream, address);
             }
             return ReadOnlySpan<byte>.Empty;
         }
@@ -42,16 +39,6 @@ namespace Resin.KeyValue
         public int IndexOf(TKey key)
         {
             return _keyBuf.Span.BinarySearch(key);
-        }
-
-        public Address GetAddress(int index)
-        {
-            var relPos = index * Address.Size;
-            var absPos = relPos + _addressOffset;
-            _addressStream.Position = absPos;
-            var buf = new byte[Address.Size];
-            _addressStream.ReadExactly(buf);
-            return Address.Deserialize(buf);
         }
     }
 }

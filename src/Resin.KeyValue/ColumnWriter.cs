@@ -1,6 +1,4 @@
-﻿using System.Runtime.InteropServices;
-
-namespace Resin.KeyValue
+﻿namespace Resin.KeyValue
 {
     public class ColumnWriter<TKey> : IDisposable where TKey : struct, IEquatable<TKey>, IComparable<TKey>
     {
@@ -10,12 +8,12 @@ namespace Resin.KeyValue
         public ColumnWriter(PageWriter<TKey> writer)
         {
             _writer = writer;
-            _allKeys = ReadAllKeysInColumn();
+            _allKeys = ReadUtil.ReadSortedSetOfAllKeysInColumn<TKey>(writer.KeyStream);
         }
 
         public bool TryPut(TKey key, ReadOnlySpan<byte> value)
         {
-            if (KeyExists(key))
+            if (key.KeyExists(_allKeys))
             {
                 return false;
             }
@@ -37,27 +35,10 @@ namespace Resin.KeyValue
             }
         }
 
-        private bool KeyExists(TKey key)
-        {
-            var ix = new Span<TKey>(_allKeys);
-            int index = ix.BinarySearch(key);
-            return index > -1;
-        }
-
-        private TKey[] ReadAllKeysInColumn()
-        {
-            _writer.KeyStream.Position = 0;
-            var kbuf = new byte[_writer.KeyStream.Length];
-            _writer.KeyStream.ReadExactly(kbuf);
-            var keys = MemoryMarshal.Cast<byte, TKey>(kbuf);
-            keys.Sort();
-            return keys.ToArray();
-        }
-
         public void Serialize()
         {
             _writer.Serialize();
-            _allKeys = ReadAllKeysInColumn();
+            _allKeys = ReadUtil.ReadSortedSetOfAllKeysInColumn<TKey>(_writer.KeyStream);
         }
 
         public void Dispose()

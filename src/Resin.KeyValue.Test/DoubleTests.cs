@@ -154,7 +154,7 @@
         }
 
         [TestMethod]
-        public void ColumnReader_TryPut_CanReadPages()
+        public void ColumnReader_Get_CanReadPages()
         {
             const int testCount = 513;
             const int pageSize = 512 * sizeof(double);

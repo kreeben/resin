@@ -7,13 +7,15 @@ using Resin.TextAnalysis;
 namespace Resin.WikipediaCommandLine
 {
     /// <summary>
-    /// compose --dir "c:\data" --source "d:\enwiki-20211122-cirrussearch-content.json.gz" --field "text" --take 100
+    /// compose --dir "c:\data" --source "d:\enwiki-20211122-cirrussearch-content.json.gz" --field "text" --take 100 --truncate true --debug true
     /// </summary>
     public class ComposeCommand : ICommand
     {
         public void Run(IDictionary<string, string> args, ILogger logger)
         {
             var dir = new DirectoryInfo(args["dir"]);
+            if (args.ContainsKey("truncate") && args["truncate"] == "true")
+                new StreamFactory(dir).Truncate("wikipedia.composed".ToHash());
             var dataSource = new WikipediaCirrussearchDataSource(args["source"]).GetData(new HashSet<string> { args["field"] });
             using (var readSession = new ReadSession(dir, "wikipedia".ToHash()))
             using (var tx = new WriteTransaction(dir, "wikipedia.composed".ToHash()))
