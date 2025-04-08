@@ -31,7 +31,7 @@ namespace Resin.TextAnalysis
             _label = new List<char>(_numOfDimensions);
         }
 
-        public void Compose(IEnumerable<string> source, ReadSession readSession, WriteTransaction tx, ILogger? log = null)
+        public void Compose(IEnumerable<string> source, ReadSession readSession, WriteTransaction tx, bool labelVectors = true, ILogger? logger = null)
         {
             if (source is null)
             {
@@ -45,7 +45,7 @@ namespace Resin.TextAnalysis
                 long tokenCount = 0;
                 foreach (var str in source)
                 {
-                    foreach (var token in Tokenize(str))
+                    foreach (var token in Tokenize(str, labelVectors))
                     {
                         double angle = _unitVector.CosAngle(token.vector);
                         var buf = tokenReader.Get(angle);
@@ -62,10 +62,10 @@ namespace Resin.TextAnalysis
                             tokenCount++;
                     }
                     docCount++;
-                    if (log != null)
+                    if (logger != null)
                     {
-                        log.LogInformation($"COMPOSE: doc {docCount}");
-                        log.LogInformation($"token count: {tokenCount}");
+                        logger.LogInformation($"COMPOSE: doc {docCount}");
+                        logger.LogInformation($"token count: {tokenCount}");
                     }
                 }
             }
@@ -240,7 +240,7 @@ namespace Resin.TextAnalysis
             return false;
         }
 
-        public IEnumerable<(string label, Vector<float> vector)> Tokenize(string source)
+        public IEnumerable<(string label, Vector<float> vector)> Tokenize(string source, bool labelVectors = true)
         {
             int index = 0;
             var word = CreateVector.Sparse<float>(_numOfDimensions);
@@ -261,10 +261,12 @@ namespace Resin.TextAnalysis
                 }
                 else
                 {
-
                     if (index > 0)
                     {
-                        yield return (new string(_label.ToArray()), word);
+                        if (labelVectors)
+                            yield return (new string(_label.ToArray()), word);
+                        else
+                            yield return (string.Empty, word);
                         word = CreateVector.Sparse<float>(_numOfDimensions);
                         _label.Clear();
                         index = 0;
@@ -273,7 +275,10 @@ namespace Resin.TextAnalysis
             }
             if (((SparseVectorStorage<float>)word.Storage).Values.Length > 0)
             {
-                yield return (new string(_label.ToArray()), word);
+                if (labelVectors)
+                    yield return (new string(_label.ToArray()), word);
+                else
+                    yield return (string.Empty, word);
             }
             _label.Clear();
         }
