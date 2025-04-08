@@ -24,7 +24,7 @@ namespace Resin.TextAnalysis.Tests
             {
                 var analyzer = new StringAnalyzer();
                 analyzer.BuildFirstOrderLexicon(Data, tx);
-                Assert.IsTrue(analyzer.Validate(Data, readSession));
+                Assert.IsTrue(analyzer.ValidateLexicon(Data, readSession));
             }
         }
 

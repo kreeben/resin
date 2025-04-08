@@ -54,7 +54,7 @@ namespace Resin.TextAnalysis
                             throw new InvalidOperationException($"could not find '{token.label}' at {angle}");
                         }
                         var storedVec = buf.ToArray().ToVector(_numOfDimensions);
-                        var mutualAngle = (float)storedVec.CosAngle(token.vector);
+                        float mutualAngle = (float)storedVec.CosAngle(token.vector);
                         var composedVec = CreateVector.Sparse<float>(_numOfDimensions);
                         composedVec[0] = (float)angle;
                         composedVec[1] = mutualAngle;
@@ -102,7 +102,7 @@ namespace Resin.TextAnalysis
             }
         }
 
-        public bool Validate(IEnumerable<string> source, ReadSession readSession, ILogger? log = null)
+        public bool ValidateLexicon(IEnumerable<string> source, ReadSession readSession, ILogger? log = null)
         {
             if (source is null)
             {

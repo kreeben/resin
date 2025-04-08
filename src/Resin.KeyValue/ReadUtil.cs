@@ -26,15 +26,8 @@ namespace Resin.KeyValue
 
         public static bool KeyExists<TKey>(this TKey key, TKey[] keys) where TKey : struct, IEquatable<TKey>, IComparable<TKey>
         {
-            var ix = new Span<TKey>(keys);
-            int index = ix.BinarySearch(key);
+            int index = new Span<TKey>(keys).BinarySearch(key);
             return index > -1;
-        }
-
-        public static int IndexOf<TKey>(this TKey key, TKey[] keys) where TKey : struct, IEquatable<TKey>, IComparable<TKey>
-        {
-            var ix = new Span<TKey>(keys);
-            return ix.BinarySearch(key);
         }
 
         public static ReadOnlySpan<byte> ReadValue(Stream stream, Address address)

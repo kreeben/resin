@@ -17,13 +17,13 @@
 
         public ReadOnlySpan<byte> Get(TKey key)
         {
-            var kix = key.IndexOf(_allKeys);
-            if (kix >= 0)
+            var index = new Span<TKey>(_allKeys).BinarySearch(key);
+            if (index >= 0)
             {
                 Address adr;
                 if (!_addressCache.TryGetValue(key, out adr))
                 {
-                    adr = ReadUtil.GetAddress(_addressStream, kix, 0);
+                    adr = ReadUtil.GetAddress(_addressStream, index, 0);
                     _addressCache.Add(key, adr);
                 }
                 return ReadUtil.ReadValue(_valueStream, adr);
@@ -37,7 +37,7 @@
         /// </summary>
         public int IndexOf(TKey key)
         {
-            return key.IndexOf(_allKeys);
+            return new Span<TKey>(_allKeys).BinarySearch(key);
         }
     }
 }
