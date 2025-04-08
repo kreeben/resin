@@ -24,7 +24,29 @@ namespace Resin.TextAnalysis.Tests
             {
                 var analyzer = new StringAnalyzer();
                 analyzer.BuildLexicon(Data, tx);
-                Assert.IsTrue(analyzer.Validate(Data, readSession));
+                Assert.IsTrue(analyzer.ValidateLexicon(Data, readSession));
+            }
+        }
+
+        [TestMethod]
+        public void CanBuildAndValidateComposedLexicon()
+        {
+            using (var tx = new WriteTransaction())
+            {
+                var analyzer = new StringAnalyzer();
+                analyzer.BuildLexicon(Data, tx);
+                using (var tx1 = new WriteTransaction())
+                {
+                    using (var readSession = new ReadSession(tx))
+                    {
+                        analyzer.Compose(Data, readSession, tx1);
+
+                        using (var readSession1 = new ReadSession(tx1))
+                        {
+                            Assert.IsTrue(analyzer.ValidateComposed(Data, readSession, readSession1));
+                        }
+                    }
+                }
             }
         }
 
@@ -32,7 +54,7 @@ namespace Resin.TextAnalysis.Tests
         public void CanTokenize()
         {
             var analyzer = new StringAnalyzer();
-            var tokens = analyzer.Tokenize(Data);
+            Assert.IsTrue(analyzer.Tokenize(Data).Any());
         }
 
         [TestMethod]
@@ -47,8 +69,8 @@ namespace Resin.TextAnalysis.Tests
                 var tokens = analyzer.Tokenize(new[] { "Resin" });
                 var vector = tokens.First().vector;
                 var unitVector = CreateVector.Sparse<float>(numOfDimensions, (float)1);
-                var angle = VectorOperations.CosAngle(unitVector, vector);
-                var vectorBuf = VectorOperations.GetBytes(vector);
+                var angle = unitVector.CosAngle(vector);
+                var vectorBuf = vector.GetBytes(x => BitConverter.GetBytes(x));
                 pageWriter.TryPut(angle, vectorBuf);
                 pageWriter.Serialize();
 
@@ -56,8 +78,8 @@ namespace Resin.TextAnalysis.Tests
                 {
                     var tokenReader = new ColumnReader<double>(readSession, sizeof(double), pageSize);
                     var buf = tokenReader.Get(angle);
-                    var storedVector = VectorOperations.ToVector(buf.ToArray(), numOfDimensions);
-                    var a = VectorOperations.CosAngle(vector, storedVector);
+                    var storedVector = buf.ToArray().ToVector(numOfDimensions);
+                    var a = vector.CosAngle(storedVector);
 
                     Assert.IsTrue(a > 0.99);
                 }

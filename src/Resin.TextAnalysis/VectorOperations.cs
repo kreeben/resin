@@ -6,10 +6,10 @@ namespace Resin.TextAnalysis
 {
     public static class VectorOperations
     {
-        public static byte[] GetBytes(this Vector<float> vector)
+        public static byte[] GetBytes<T>(this Vector<T> vector, Func<T, byte[]> serialize) where T : struct, IEquatable<T>, IFormattable
         {
             var stream = new MemoryStream();
-            var storage = (SparseVectorStorage<float>)vector.Storage;
+            var storage = (SparseVectorStorage<T>)vector.Storage;
             int componentCount = storage.ValueCount;
 
             stream.Write(BitConverter.GetBytes(componentCount));
@@ -31,8 +31,8 @@ namespace Resin.TextAnalysis
 
             foreach (var value in storage.Values)
             {
-                if (value > 0)
-                    stream.Write(BitConverter.GetBytes(value));
+                if (!value.Equals(default(T)))
+                    stream.Write(serialize(value));
             }
 
             return stream.ToArray();
