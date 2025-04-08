@@ -71,7 +71,7 @@ namespace Resin.TextAnalysis
             }
         }
 
-        public void BuildLexicon(IEnumerable<string> source, WriteTransaction tx, ILogger? log = null)
+        public void BuildFirstOrderLexicon(IEnumerable<string> source, WriteTransaction tx, ILogger? log = null)
         {
             if (source is null)
             {
@@ -102,7 +102,7 @@ namespace Resin.TextAnalysis
             }
         }
 
-        public bool ValidateLexicon(IEnumerable<string> source, ReadSession readSession, ILogger? log = null)
+        public bool Validate(IEnumerable<string> source, ReadSession readSession, ILogger? log = null)
         {
             if (source is null)
             {

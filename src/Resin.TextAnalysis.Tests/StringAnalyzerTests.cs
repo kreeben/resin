@@ -23,8 +23,8 @@ namespace Resin.TextAnalysis.Tests
             using (var readSession = new ReadSession(tx))
             {
                 var analyzer = new StringAnalyzer();
-                analyzer.BuildLexicon(Data, tx);
-                Assert.IsTrue(analyzer.ValidateLexicon(Data, readSession));
+                analyzer.BuildFirstOrderLexicon(Data, tx);
+                Assert.IsTrue(analyzer.Validate(Data, readSession));
             }
         }
 
@@ -34,7 +34,7 @@ namespace Resin.TextAnalysis.Tests
             using (var tx = new WriteTransaction())
             {
                 var analyzer = new StringAnalyzer();
-                analyzer.BuildLexicon(Data, tx);
+                analyzer.BuildFirstOrderLexicon(Data, tx);
                 using (var tx1 = new WriteTransaction())
                 {
                     using (var readSession = new ReadSession(tx))

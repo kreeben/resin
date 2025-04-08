@@ -16,10 +16,11 @@ namespace Resin.WikipediaCommandLine
             var dir = new DirectoryInfo(args["dir"]);
             var take = int.Parse(args["take"]);
             var dataSource = new WikipediaCirrussearchDataSource(args["source"]).GetData(new HashSet<string> { "text" });
-            new StreamFactory(dir).Truncate();
+            if (args.ContainsKey("truncate") && args["truncate"] == "true")
+                new StreamFactory(dir).Truncate("wikipedia".ToHash());
             using (var tx = new WriteTransaction(dir, "wikipedia".ToHash()))
             {
-                new StringAnalyzer().BuildLexicon(dataSource.First().values.Take(take), tx, logger);
+                new StringAnalyzer().BuildFirstOrderLexicon(dataSource.First().values.Take(take), tx, logger);
             }
         }
     }

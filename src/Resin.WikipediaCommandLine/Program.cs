@@ -55,7 +55,7 @@ namespace Resin.WikipediaCommandLine
                     }
 
                     time.Stop();
-                    Console.WriteLine($"command finished in {time.Elapsed}: {string.Join(" ", args)} ");
+                    Console.WriteLine($"{string.Join(" ", args)}\r\nfinished in {time.Elapsed}:  ");
                 }
             }
 

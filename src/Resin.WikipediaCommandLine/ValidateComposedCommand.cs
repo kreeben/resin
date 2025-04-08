@@ -7,20 +7,19 @@ using Resin.TextAnalysis;
 namespace Resin.WikipediaCommandLine
 {
     /// <summary>
-    /// validate --dir "c:\data" --source "d:\enwiki-20211122-cirrussearch-content.json.gz" --field "text" --take 100
+    /// validatecomposed --dir "c:\data" --source "d:\enwiki-20211122-cirrussearch-content.json.gz" --field "text" --take 100
     /// </summary>
-    public class ValidateCommand : ICommand
+    public class ValidateComposedCommand : ICommand
     {
         public void Run(IDictionary<string, string> args, ILogger logger)
         {
             var dir = new DirectoryInfo(args["dir"]);
             var dataSource = new WikipediaCirrussearchDataSource(args["source"]).GetData(new HashSet<string> { args["field"] });
-            using (var tx = new WriteTransaction(dir, "wikipedia".ToHash()))
-            using (var readSession = new ReadSession(tx))
+            using (var readSession = new ReadSession(dir, "wikipedia".ToHash()))
+            using (var readSessionComposed = new ReadSession(dir, "wikipedia.composed".ToHash()))
             {
-                new StringAnalyzer().Validate(dataSource.First().values.Take(int.Parse(args["take"])), readSession, logger);
+                new StringAnalyzer().ValidateComposed(dataSource.First().values.Take(int.Parse(args["take"])), readSession, readSessionComposed, logger);
             }
-
         }
     }
 }

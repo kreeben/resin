@@ -16,10 +16,14 @@
             }
         }
 
-        public void Truncate()
+        public void Truncate(ulong collectionId)
         {
+            var label = collectionId.ToString();
             foreach (var file in Directory.GetFiles(_directory.FullName))
-                File.Delete(file);
+            {
+                if (file.Contains(label))
+                    File.Delete(file);
+            }
         }
 
         public Stream CreateReadWriteStream(ulong collectionId, string fileExtension)
