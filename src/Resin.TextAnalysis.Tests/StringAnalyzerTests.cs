@@ -1,5 +1,6 @@
 ﻿using MathNet.Numerics.LinearAlgebra;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Resin.DataSources;
 using Resin.KeyValue;
 
 namespace Resin.TextAnalysis.Tests
@@ -17,7 +18,7 @@ namespace Resin.TextAnalysis.Tests
         };
 
         [TestMethod]
-        public void CanBuildAndValidateLexicon()
+        public void CanBuildAndValidateLexiconWithSyntheticData()
         {
             using (var tx = new WriteTransaction())
             using (var readSession = new ReadSession(tx))
@@ -25,6 +26,20 @@ namespace Resin.TextAnalysis.Tests
                 var analyzer = new StringAnalyzer();
                 analyzer.BuildFirstOrderLexicon(Data, tx);
                 Assert.IsTrue(analyzer.ValidateLexicon(Data, readSession));
+            }
+        }
+
+        [TestMethod]
+        public void CanBuildAndValidateLexiconWithWikipediaData()
+        {
+            var dataSource = new WikipediaCirrussearchDataSource(@"d:\enwiki-20211122-cirrussearch-content.json.gz").GetData(new HashSet<string> { "text" });
+            var data = dataSource.First().values.Take(35);
+            using (var tx = new WriteTransaction())
+            using (var readSession = new ReadSession(tx))
+            {
+                var analyzer = new StringAnalyzer();
+                analyzer.BuildFirstOrderLexicon(data, tx);
+                Assert.IsTrue(analyzer.ValidateLexicon(data, readSession));
             }
         }
 
