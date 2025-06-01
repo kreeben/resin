@@ -10,7 +10,6 @@ namespace Resin.KeyValue
         private Stream _keyStream;
         private Stream _valueStream;
         private Stream _addressStream;
-        private readonly bool _batchMode;
         private readonly TKey _emptyKey;
         private readonly int _pageSizeInBytes;
         private readonly int _keyBufSize;
@@ -21,7 +20,7 @@ namespace Resin.KeyValue
         public Stream KeyStream => _keyStream;
         public Stream AddressStream => _addressStream;
 
-        public PageWriter(WriteTransaction writeTransaction, TKey maxValueOfKey, Func<TKey, byte[]> getBytes, int sizeOfT, int pageSize, bool batchMode = false)
+        public PageWriter(WriteTransaction writeTransaction, TKey maxValueOfKey, Func<TKey, byte[]> getBytes, int sizeOfT, int pageSize)
         {
             if (writeTransaction is null)
             {
@@ -44,7 +43,6 @@ namespace Resin.KeyValue
             _valueStream = writeTransaction.ValueStream;
             _keyStream = writeTransaction.KeyStream;
             _addressStream = writeTransaction.AddressStream;
-            _batchMode = batchMode;
 
             if (_keyStream.Length > 0)
             {
@@ -84,11 +82,8 @@ namespace Resin.KeyValue
             _addressBuffer[_keyCount] = address;
             _keyCount++;
 
-            if (!_batchMode)
-            {
-                // sort in memory keys and addresses
-                new Span<TKey>(_keyBuffer).Sort(new Span<Address>(_addressBuffer));
-            }
+            // sort in memory keys and addresses
+            new Span<TKey>(_keyBuffer).Sort(new Span<Address>(_addressBuffer));
 
             return true;
         }
@@ -194,12 +189,6 @@ namespace Resin.KeyValue
         {
             if (_keyCount == 0)
                 return;
-
-            if (_batchMode)
-            {
-                // sort in memory keys and addresses
-                new Span<TKey>(_keyBuffer).Sort(new Span<Address>(_addressBuffer));
-            }
 
             GoToEndOfStream(_keyStream);
 

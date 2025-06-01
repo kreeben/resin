@@ -78,7 +78,7 @@ namespace Resin.TextAnalysis
                 throw new ArgumentNullException(nameof(source));
             }
 
-            using (var pageWriter = new ColumnWriter<double>(new DoubleWriter(tx, _pageSize, batchMode: true)))
+            using (var writer = new ColumnWriter<double>(new DoubleWriter(tx, _pageSize)))
             {
                 long docCount = 0;
                 long tokenCount = 0;
@@ -89,7 +89,7 @@ namespace Resin.TextAnalysis
                         var angle = _unitVector.CosAngle(token.vector);
                         var vectorBuf = token.vector.GetBytes(x => BitConverter.GetBytes(x));
 
-                        if (pageWriter.TryPut(angle, vectorBuf))
+                        if (writer.TryPut(angle, vectorBuf))
                         {
                             tokenCount++;
                         }
@@ -98,7 +98,7 @@ namespace Resin.TextAnalysis
                     if (log != null)
                         log.LogInformation($"doc count: {docCount} tokens: {tokenCount}");
                 }
-                pageWriter.Serialize();
+                writer.Serialize();
             }
         }
 
@@ -122,6 +122,11 @@ namespace Resin.TextAnalysis
                     {
                         throw new InvalidOperationException($"could not find '{token.label}' at {angle}");
                     }
+
+                    var storedVec = buf.ToArray().ToVectorDouble(_numOfDimensions);
+                    double mutualAngle = storedVec.CosAngle(token.vector);
+                    if (mutualAngle < 0.99)
+                        throw new InvalidOperationException($"mutual angle of {mutualAngle} is not zero!");
                 }
                 docCount++;
                 if (log != null)

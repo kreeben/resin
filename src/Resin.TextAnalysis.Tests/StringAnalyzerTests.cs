@@ -33,7 +33,7 @@ namespace Resin.TextAnalysis.Tests
         public void CanBuildAndValidateLexiconWithWikipediaData()
         {
             var dataSource = new WikipediaCirrussearchDataSource(@"d:\enwiki-20211122-cirrussearch-content.json.gz").GetData(new HashSet<string> { "text" });
-            var data = dataSource.First().values.Take(35);
+            var data = dataSource.First().values.Take(100);
             using (var tx = new WriteTransaction())
             using (var readSession = new ReadSession(tx))
             {
