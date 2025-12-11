@@ -6,49 +6,53 @@
         private readonly Stream _keyStream;
         private readonly Stream _valueStream;
 
+        public int PageSize { get; }
         public Stream KeyStream => _keyStream;
         public Stream ValueStream => _valueStream;
         public Stream AddressStream => _addressStream;
 
-        private readonly bool _keepOpen;
-
-        public ReadSession(WriteTransaction tx)
+        public ReadSession(WriteSession tx)
         {
+            if (tx is null)
+                throw new ArgumentNullException(nameof(tx));
+
             _keyStream = tx.KeyStream;
             _valueStream = tx.ValueStream;
             _addressStream = tx.AddressStream;
-            _keepOpen = true;
+            PageSize = tx.PageSize;
         }
 
-        public ReadSession(Stream keyStream, Stream valueStream, Stream addressStream)
+        public ReadSession(Stream keyStream, Stream valueStream, Stream addressStream, int pageSize = 4096)
         {
+            if (keyStream is null) throw new ArgumentNullException(nameof(keyStream));
+            if (valueStream is null) throw new ArgumentNullException(nameof(valueStream));
+            if (addressStream is null) throw new ArgumentNullException(nameof(addressStream));
+            if (pageSize < 0) throw new ArgumentOutOfRangeException(nameof(pageSize));
+
             _keyStream = keyStream;
             _valueStream = valueStream;
             _addressStream = addressStream;
+            PageSize = pageSize;
         }
 
-        public ReadSession(DirectoryInfo workingDir, ulong collectionId)
+        public ReadSession(DirectoryInfo workingDir, ulong collectionId, int pageSize = 4096)
         {
+            if (workingDir is null)
+                throw new ArgumentNullException(nameof(workingDir));
+
             var streamFactory = new StreamFactory(workingDir);
 
             _keyStream = streamFactory.CreateReadStream(collectionId, FileExtensions.Key);
             _valueStream = streamFactory.CreateReadStream(collectionId, FileExtensions.Value);
             _addressStream = streamFactory.CreateReadStream(collectionId, FileExtensions.Address);
+            PageSize = pageSize;
         }
 
         public void Dispose()
         {
-            if (!_keepOpen)
-            {
-                if (_keyStream != null)
-                    _keyStream.Dispose();
-
-                if (_valueStream != null)
-                    _valueStream.Dispose();
-
-                if (_addressStream != null)
-                    _addressStream.Dispose();
-            }
+            _keyStream?.Dispose();
+            _valueStream?.Dispose();
+            _addressStream?.Dispose();
         }
     }
 }

@@ -38,7 +38,6 @@
         public void Serialize()
         {
             _writer.Serialize();
-            _allKeys = ReadUtil.ReadSortedSetOfAllKeysInColumn<TKey>(_writer.KeyStream);
         }
 
         public void Dispose()

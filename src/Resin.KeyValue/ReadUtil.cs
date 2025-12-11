@@ -9,9 +9,22 @@ namespace Resin.KeyValue
             stream.Position = 0;
             var kbuf = new byte[stream.Length];
             stream.ReadExactly(kbuf);
-            var keys = MemoryMarshal.Cast<byte, TKey>(kbuf);
-            keys.Sort();
-            return keys.ToArray();
+            var keys = MemoryMarshal.Cast<byte, long>(kbuf);
+            int indexOfFirstEmptySlot = -1;
+            for (int i = 0; i < keys.Length; i++)
+            {
+                if (i > 0 && keys[i] == 0)
+                {
+                    indexOfFirstEmptySlot = i;
+                    break;
+                }
+            }
+            var totalNoOfSlots = keys.Length;
+
+            var keyCount = indexOfFirstEmptySlot == -1 ? totalNoOfSlots : indexOfFirstEmptySlot;
+            var typedKeys = MemoryMarshal.Cast<long, TKey>(keys.Slice(0, keyCount));
+            typedKeys.Sort();
+            return typedKeys.ToArray();
         }
 
         public static Address GetAddress(Stream stream, int index, long offset)

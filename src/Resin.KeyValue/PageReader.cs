@@ -8,14 +8,14 @@ namespace Resin.KeyValue
         private readonly Stream _addressStream;
         private readonly long _addressOffset;
 
-        public PageReader(ReadSession readSession, int sizeOfT, int pageSize)
+        public PageReader(ReadSession readSession, int sizeOfT)
         {
             if (readSession is null)
             {
                 throw new ArgumentNullException(nameof(readSession));
             }
 
-            Span<byte> keyBuf = new byte[pageSize];
+            Span<byte> keyBuf = new byte[readSession.PageSize];
             readSession.KeyStream.ReadExactly(keyBuf);
             var keys = MemoryMarshal.Cast<byte, TKey>(keyBuf);
             _keyBuf = keys.ToArray();

@@ -18,7 +18,7 @@ namespace Resin.WikipediaCommandLine
             var dataSource = new WikipediaCirrussearchDataSource(args["source"]).GetData(new HashSet<string> { "text" });
             if (args.ContainsKey("truncate") && args["truncate"] == "true")
                 new StreamFactory(dir).Truncate("wikipedia".ToHash());
-            using (var tx = new WriteTransaction(dir, "wikipedia".ToHash()))
+            using (var tx = new WriteSession(dir, "wikipedia".ToHash()))
             {
                 new StringAnalyzer().BuildFirstOrderLexicon(dataSource.First().values.Take(take), tx, logger);
             }

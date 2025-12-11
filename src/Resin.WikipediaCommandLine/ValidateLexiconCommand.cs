@@ -15,7 +15,7 @@ namespace Resin.WikipediaCommandLine
         {
             var dir = new DirectoryInfo(args["dir"]);
             var dataSource = new WikipediaCirrussearchDataSource(args["source"]).GetData(new HashSet<string> { args["field"] });
-            using (var tx = new WriteTransaction(dir, "wikipedia".ToHash()))
+            using (var tx = new WriteSession(dir, "wikipedia".ToHash()))
             using (var readSession = new ReadSession(tx))
             {
                 new StringAnalyzer().ValidateLexicon(dataSource.First().values.Take(int.Parse(args["take"])), readSession, logger);

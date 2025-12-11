@@ -14,25 +14,20 @@ namespace Resin.TextAnalysis
 
             stream.Write(BitConverter.GetBytes(componentCount));
 
-            var passedZero = false;
-            foreach (var index in storage.Indices)
+            for (int i = 0; i < storage.Indices.Length; i++)
             {
-                if (index == 0 && !passedZero)
-                {
-                    stream.Write(BitConverter.GetBytes(index));
-                    passedZero = true;
-                    continue;
-                }
-                else if (index == 0)
+                var index = storage.Indices[i];
+                if (i > 0 && index == 0)
                     break;
-
                 stream.Write(BitConverter.GetBytes(index));
             }
 
-            foreach (var value in storage.Values)
+            for (int i = 0; i < storage.Values.Length; i++)
             {
-                if (!value.Equals(default(T)))
-                    stream.Write(serialize(value));
+                var value = storage.Values[i];
+                if (i > 0 && value.Equals(default(T)))
+                    break;
+                stream.Write(serialize(value));
             }
 
             return stream.ToArray();
@@ -79,6 +74,71 @@ namespace Resin.TextAnalysis
             var cosineDistance = dotProduct / (dotSelf1 * dotSelf2);
 
             return cosineDistance;
+        }
+
+        public static Vector<double> Analyze(this Vector<double> first, Vector<double> second)
+        {
+            // Core metrics
+            var dot = first.DotProduct(second);
+
+            var norm1 = first.Norm(2);
+            var norm2 = second.Norm(2);
+
+            double cos = 0d;
+            if (dot != 0d && norm1 != 0d && norm2 != 0d)
+            {
+                cos = dot / (norm1 * norm2);
+                // Clamp to valid domain for acos to be safe against numerical drift
+                if (cos > 1d) cos = 1d;
+                else if (cos < -1d) cos = -1d;
+            }
+
+            var angleRad = Math.Acos(cos);
+
+            // Distance metrics
+            var diff = first - second;
+            var euclidean = diff.L2Norm();
+            var manhattan = diff.L1Norm();
+
+            // Projection of first onto second (scalar length along second)
+            var projLenOnSecond = norm2 > 0d ? dot / norm2 : 0d;
+
+            // Overlap/Jaccard over non-zero indices to capture sparsity structure
+            // Use EnumerateIndexed to support both sparse and dense storage safely.
+            var firstIndices = new HashSet<int>();
+            foreach (var (index, value) in first.EnumerateIndexed(Zeros.AllowSkip))
+            {
+                firstIndices.Add(index);
+            }
+
+            var overlapCount = 0;
+            var secondIndices = new HashSet<int>();
+            foreach (var (index, value) in second.EnumerateIndexed(Zeros.AllowSkip))
+            {
+                secondIndices.Add(index);
+                if (firstIndices.Contains(index)) overlapCount++;
+            }
+
+            var unionCount = firstIndices.Count + secondIndices.Count - overlapCount;
+            var jaccard = unionCount > 0 ? (double)overlapCount / unionCount : 0d;
+
+            // Assemble a dense signature vector that is stable and informative
+            // [cos, angle (rad), dot, ||first||, ||second||, euclidean, manhattan, projLenOnSecond, overlapCount, jaccard]
+            var components = new[]
+            {
+                cos,
+                angleRad,
+                dot,
+                norm1,
+                norm2,
+                euclidean,
+                manhattan,
+                projLenOnSecond,
+                (double)overlapCount,
+                jaccard
+            };
+
+            return CreateVector.DenseOfArray(components);
         }
 
         public static string AsString(this Vector<float> vector)

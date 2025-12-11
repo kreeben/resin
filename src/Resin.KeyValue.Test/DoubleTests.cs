@@ -4,14 +4,174 @@
     public sealed class DoubleTests
     {
         [TestMethod]
+        public void ColumnWriter_CanWriteOneKey()
+        {
+            const int testCount = 1;
+            const int pageSize = 512 * sizeof(double);
+
+            using (var tx = new WriteSession(pageSize))
+            {
+                using (var writer = new ColumnWriter<double>(new DoubleWriter(tx)))
+                {
+                    for (int i = 0; i < testCount; i++)
+                    {
+                        double val = i;
+                        writer.TryPut(key: val, value: BitConverter.GetBytes(val));
+                    }
+                }
+
+                tx.KeyStream.Position = 0;
+                tx.ValueStream.Position = 0;
+                tx.AddressStream.Position = 0;
+
+                using (var session = new ReadSession(tx.KeyStream, tx.ValueStream, tx.AddressStream, pageSize))
+                {
+                    var reader = new ColumnReader<double>(session, pageSize);
+
+                    Assert.IsTrue(BitConverter.ToDouble(reader.Get(0)) == 0);
+                    Assert.IsTrue(reader.Get(1) == ReadOnlySpan<byte>.Empty);
+
+                    for (int i = testCount * 10; i > testCount - 1; i--)
+                    {
+                        double val = i;
+                        Assert.IsTrue(reader.Get(val) == ReadOnlySpan<byte>.Empty);
+                    }
+                }
+            }
+        }
+
+        [TestMethod]
+        public void ColumnWriter_CanWriteExactlyOnePage()
+        {
+            const int testCount = 512;
+            const int pageSize = 512 * sizeof(double);
+
+            using (var tx = new WriteSession(pageSize))
+            {
+                using (var writer = new ColumnWriter<double>(new DoubleWriter(tx)))
+                {
+                    for (int i = 0; i < testCount; i++)
+                    {
+                        double val = i;
+                        writer.TryPut(key: val, value: BitConverter.GetBytes(val));
+                    }
+                }
+
+                tx.KeyStream.Position = 0;
+                tx.ValueStream.Position = 0;
+                tx.AddressStream.Position = 0;
+
+                using (var session = new ReadSession(tx.KeyStream, tx.ValueStream, tx.AddressStream))
+                {
+                    var reader = new ColumnReader<double>(session, pageSize);
+
+                    Assert.IsTrue(BitConverter.ToDouble(reader.Get(0)) == 0);
+                    Assert.IsTrue(BitConverter.ToDouble(reader.Get(1)) == 1);
+                    Assert.IsTrue(BitConverter.ToDouble(reader.Get(511)) == 511);
+                    Assert.IsTrue(reader.Get(512) == ReadOnlySpan<byte>.Empty);
+
+                    for (int i = testCount * 10; i > testCount - 1; i--)
+                    {
+                        double val = i;
+                        Assert.IsTrue(reader.Get(val) == ReadOnlySpan<byte>.Empty);
+                    }
+                }
+            }
+        }
+
+        [TestMethod]
+        public void ColumnWriter_CanWriteLessThanOnePage()
+        {
+            const int testCount = 511;
+            const int pageSize = 512 * sizeof(double);
+
+            using (var tx = new WriteSession(pageSize))
+            {
+                using (var writer = new ColumnWriter<double>(new DoubleWriter(tx)))
+                {
+                    for (int i = 0; i < testCount; i++)
+                    {
+                        double val = i;
+                        writer.TryPut(key: val, value: BitConverter.GetBytes(val));
+                    }
+                }
+
+                tx.KeyStream.Position = 0;
+                tx.ValueStream.Position = 0;
+                tx.AddressStream.Position = 0;
+
+                using (var session = new ReadSession(tx.KeyStream, tx.ValueStream, tx.AddressStream, pageSize))
+                {
+                    var reader = new ColumnReader<double>(session, pageSize);
+
+                    Assert.IsTrue(BitConverter.ToDouble(reader.Get(0)) == 0);
+                    Assert.IsTrue(BitConverter.ToDouble(reader.Get(1)) == 1);
+                    Assert.IsTrue(BitConverter.ToDouble(reader.Get(510)) == 510);
+                    Assert.IsTrue(reader.Get(511) == ReadOnlySpan<byte>.Empty);
+
+                    for (int i = testCount * 10; i > testCount - 1; i--)
+                    {
+                        double val = i;
+                        Assert.IsTrue(reader.Get(val) == ReadOnlySpan<byte>.Empty);
+                    }
+                }
+            }
+        }
+
+        [TestMethod]
+        public void ColumnWriter_TryPut_CanWritePages()
+        {
+            const int testCount = 513;
+            const int pageSize = 512 * sizeof(double);
+
+            using (var tx = new WriteSession(pageSize))
+            {
+                var testCases = new List<double>();
+                using (var writer = new ColumnWriter<double>(new DoubleWriter(tx)))
+                {
+                    for (int i = 0; i < testCount; i++)
+                    {
+                        double val = i;
+                        writer.TryPut(key: val, value: BitConverter.GetBytes(val));
+                        testCases.Add(val);
+                    }
+                }
+
+                tx.KeyStream.Position = 0;
+                tx.ValueStream.Position = 0;
+                tx.AddressStream.Position = 0;
+
+                using (var session = new ReadSession(tx.KeyStream, tx.ValueStream, tx.AddressStream, pageSize))
+                {
+                    var reader = new ColumnReader<double>(session, pageSize);
+                    Assert.IsTrue(BitConverter.ToDouble(reader.Get(0)) == 0);
+                    Assert.IsTrue(BitConverter.ToDouble(reader.Get(1)) == 1);
+                    Assert.IsTrue(BitConverter.ToDouble(reader.Get(511)) == 511);
+                    Assert.IsTrue(BitConverter.ToDouble(reader.Get(512)) == 512);
+                    Assert.IsTrue(reader.Get(513) == ReadOnlySpan<byte>.Empty);
+
+                    reader = new ColumnReader<double>(session, pageSize);
+
+                    Assert.IsTrue(BitConverter.ToDouble(reader.Get(512)) == 512);
+
+                    for (int i = testCount * 10; i > testCount - 1; i--)
+                    {
+                        double val = i;
+                        Assert.IsTrue(reader.Get(val) == ReadOnlySpan<byte>.Empty);
+                    }
+                }
+            }
+        }
+
+        [TestMethod]
         public void PageWriter_TryPut_CanThrowOutOfPageStorageException()
         {
             const int testCount = 11;
             int pageSize = 10 * sizeof(double);
 
-            using (var tx = new WriteTransaction())
+            using (var tx = new WriteSession(pageSize))
             {
-                var writer = new DoubleWriter(tx, pageSize);
+                var writer = new DoubleWriter(tx);
 
                 for (int i = 0; i < testCount; i++)
                 {
@@ -32,159 +192,42 @@
         }
 
         [TestMethod]
-        public void PageReader_Get_CanReadAndReturnEmptySpanIfNoMatch()
-        {
-            const int testCount = 10;
-            const int pageSize = 4096;
-            var testCases = new List<double>();
-            using (var tx = new WriteTransaction())
-            {
-                var writer = new DoubleWriter(tx, pageSize);
-                for (int i = 0; i < testCount; i++)
-                {
-                    double val = i;
-                    writer.TryPut(key: val, value: BitConverter.GetBytes(val));
-                    testCases.Add(val);
-                }
-                writer.Serialize();
-                tx.KeyStream.Position = 0;
-                tx.ValueStream.Position = 0;
-                tx.AddressStream.Position = 0;
-                using var session = new ReadSession(tx.KeyStream, tx.ValueStream, tx.AddressStream);
-                var reader = new DoubleReader(session, pageSize: pageSize);
-                for (int i = testCases.Count - 1; i > -1; i--)
-                {
-                    var buf = reader.Get(i);
-                    var val = BitConverter.ToDouble(buf);
-                    Assert.IsTrue(val == testCases[i]);
-                }
-                for (int i = testCount * 10; i > testCount - 1; i--)
-                {
-                    Assert.IsTrue(reader.Get(i) == ReadOnlySpan<byte>.Empty);
-                }
-            }
-        }
-
-        [TestMethod]
-        public void PageReaderWriter_CanReadWritePages()
-        {
-            const int testCount = 513;
-            const int pageSize = 512 * sizeof(double);
-
-            using (var tx = new WriteTransaction())
-            {
-                var testCases = new List<double>();
-                var writer = new DoubleWriter(tx, pageSize);
-                for (int i = 0; i < testCount; i++)
-                {
-                    double val = i;
-                    try
-                    {
-                        writer.TryPut(key: val, value: BitConverter.GetBytes(val));
-                    }
-                    catch (OutOfPageStorageException ex)
-                    {
-                        writer.Serialize();
-                        writer.TryPut(key: val, value: BitConverter.GetBytes(val));
-                    }
-                    testCases.Add(val);
-                }
-                writer.Serialize();
-                tx.KeyStream.Position = 0;
-                tx.ValueStream.Position = 0;
-                tx.AddressStream.Position = 0;
-
-                using var session = new ReadSession(tx.KeyStream, tx.ValueStream, tx.AddressStream);
-                var reader = new DoubleReader(session, pageSize: pageSize);
-
-                Assert.IsTrue(BitConverter.ToDouble(reader.Get(0)) == 0);
-                Assert.IsTrue(BitConverter.ToDouble(reader.Get(1)) == 1);
-                Assert.IsTrue(BitConverter.ToDouble(reader.Get(511)) == 511);
-                Assert.IsTrue(reader.Get(512) == ReadOnlySpan<byte>.Empty);
-
-                reader = new DoubleReader(session, pageSize: pageSize);
-
-                Assert.IsTrue(BitConverter.ToDouble(reader.Get(512)) == 512);
-
-                for (int i = testCount * 10; i > testCount - 1; i--)
-                {
-                    Assert.IsTrue(reader.Get(i) == ReadOnlySpan<byte>.Empty);
-                }
-            }
-        }
-
-        [TestMethod]
-        public void ColumnWriter_TryPut_CanWritePages()
-        {
-            const int testCount = 513;
-            const int pageSize = 512 * sizeof(double);
-
-            using (var tx = new WriteTransaction())
-            {
-                var testCases = new List<double>();
-                using (var writer = new ColumnWriter<double>(new DoubleWriter(tx, pageSize)))
-                    for (int i = 0; i < testCount; i++)
-                    {
-                        double val = i;
-                        writer.TryPut(key: val, value: BitConverter.GetBytes(val));
-                        testCases.Add(val);
-                    }
-                tx.KeyStream.Position = 0;
-                tx.ValueStream.Position = 0;
-                tx.AddressStream.Position = 0;
-
-                using var session = new ReadSession(tx.KeyStream, tx.ValueStream, tx.AddressStream);
-                var reader = new DoubleReader(session, pageSize: pageSize);
-
-                Assert.IsTrue(BitConverter.ToDouble(reader.Get(0)) == 0);
-                Assert.IsTrue(BitConverter.ToDouble(reader.Get(1)) == 1);
-                Assert.IsTrue(BitConverter.ToDouble(reader.Get(511)) == 511);
-                Assert.IsTrue(reader.Get(512) == ReadOnlySpan<byte>.Empty);
-
-                reader = new DoubleReader(session, pageSize: pageSize);
-
-                Assert.IsTrue(BitConverter.ToDouble(reader.Get(512)) == 512);
-
-                for (int i = testCount * 10; i > testCount - 1; i--)
-                {
-                    double val = i;
-                    Assert.IsTrue(reader.Get(val) == ReadOnlySpan<byte>.Empty);
-                }
-            }
-        }
-
-        [TestMethod]
         public void ColumnReader_Get_CanReadPages()
         {
             const int testCount = 513;
             const int pageSize = 512 * sizeof(double);
 
-            using (var tx = new WriteTransaction())
+            using (var tx = new WriteSession(pageSize))
             {
                 var testCases = new List<double>();
-                using (var writer = new ColumnWriter<double>(new DoubleWriter(tx, pageSize)))
+                using (var writer = new ColumnWriter<double>(new DoubleWriter(tx)))
+                {
                     for (int i = 0; i < testCount; i++)
                     {
                         double val = i;
                         writer.TryPut(key: val, value: BitConverter.GetBytes(val));
                         testCases.Add(val);
                     }
+                }
+
                 tx.KeyStream.Position = 0;
                 tx.ValueStream.Position = 0;
                 tx.AddressStream.Position = 0;
 
-                using var session = new ReadSession(tx.KeyStream, tx.ValueStream, tx.AddressStream);
-                var reader = new ColumnReader<double>(session, sizeOfT: 8, pageSize: pageSize);
-
-                Assert.IsTrue(BitConverter.ToDouble(reader.Get(0)) == 0);
-                Assert.IsTrue(BitConverter.ToDouble(reader.Get(1)) == 1);
-                Assert.IsTrue(BitConverter.ToDouble(reader.Get(511)) == 511);
-                Assert.IsTrue(BitConverter.ToDouble(reader.Get(512)) == 512);
-
-                for (int i = testCount * 10; i > testCount - 1; i--)
+                using (var session = new ReadSession(tx.KeyStream, tx.ValueStream, tx.AddressStream, pageSize))
                 {
-                    double val = i;
-                    Assert.IsTrue(reader.Get(val) == ReadOnlySpan<byte>.Empty);
+                    var reader = new ColumnReader<double>(session, pageSize);
+
+                    Assert.IsTrue(BitConverter.ToDouble(reader.Get(0)) == 0);
+                    Assert.IsTrue(BitConverter.ToDouble(reader.Get(1)) == 1);
+                    Assert.IsTrue(BitConverter.ToDouble(reader.Get(511)) == 511);
+                    Assert.IsTrue(BitConverter.ToDouble(reader.Get(512)) == 512);
+
+                    for (int i = testCount * 10; i > testCount - 1; i--)
+                    {
+                        double val = i;
+                        Assert.IsTrue(reader.Get(val) == ReadOnlySpan<byte>.Empty);
+                    }
                 }
             }
         }
@@ -192,9 +235,9 @@
         [TestMethod]
         public void PageWriter_TryPut_ReturnsFalseWhenAddingDuplicateKey()
         {
-            using (var tx = new WriteTransaction())
+            using (var tx = new WriteSession())
             {
-                var writer = new DoubleWriter(tx, 4096);
+                var writer = new DoubleWriter(tx);
                 Assert.IsTrue(writer.TryPut(key: 0, value: BitConverter.GetBytes((double)0)));
                 Assert.IsFalse(writer.TryPut(key: 0, value: BitConverter.GetBytes((double)0)));
             }
@@ -205,29 +248,9 @@
         {
             const int testCount = 512;
             const int pageSize = 512 * sizeof(double);
-            using (var tx = new WriteTransaction())
+            using (var session = new WriteSession(pageSize))
             {
-                using (var writer = new ColumnWriter<double>(new DoubleWriter(tx, pageSize)))
-                {
-                    for (int i = 0; i < testCount; i++)
-                    {
-                        double val = i;
-                        writer.TryPut(key: val, value: BitConverter.GetBytes(val));
-                    }
-                    var zeroAlreadyExistsSoThisShouldBeFalse = writer.TryPut(key: 0, value: BitConverter.GetBytes((double)0));
-                    Assert.IsFalse(zeroAlreadyExistsSoThisShouldBeFalse);
-                }
-            }
-        }
-
-        [TestMethod]
-        public void ColumnWriter_TryPut_ReturnsFalseWhenAddingDuplicateKeyThatExistsInAPreviousPageWhenUsingFreshWriterInstance()
-        {
-            const int testCount = 512;
-            const int pageSize = 512 * sizeof(double);
-            using (var tx = new WriteTransaction())
-            {
-                using (var writer = new ColumnWriter<double>(new DoubleWriter(tx, pageSize)))
+                using (var writer = new ColumnWriter<double>(new DoubleWriter(session)))
                 {
                     for (int i = 0; i < testCount; i++)
                     {
@@ -235,10 +258,10 @@
                         writer.TryPut(key: val, value: BitConverter.GetBytes(val));
                     }
                 }
-                tx.KeyStream.Position = 0;
-                tx.ValueStream.Position = 0;
-                tx.AddressStream.Position = 0;
-                using (var writer = new ColumnWriter<double>(new DoubleWriter(tx, pageSize)))
+                session.KeyStream.Position = 0;
+                session.ValueStream.Position = 0;
+                session.AddressStream.Position = 0;
+                using (var writer = new ColumnWriter<double>(new DoubleWriter(session)))
                 {
                     var zeroAlreadyExistsSoThisShouldBeFalse = writer.TryPut(key: 0, value: BitConverter.GetBytes((double)0));
                     Assert.IsFalse(zeroAlreadyExistsSoThisShouldBeFalse);

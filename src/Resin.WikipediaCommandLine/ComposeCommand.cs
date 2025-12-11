@@ -18,7 +18,7 @@ namespace Resin.WikipediaCommandLine
                 new StreamFactory(dir).Truncate("wikipedia.composed".ToHash());
             var dataSource = new WikipediaCirrussearchDataSource(args["source"]).GetData(new HashSet<string> { args["field"] });
             using (var readSession = new ReadSession(dir, "wikipedia".ToHash()))
-            using (var tx = new WriteTransaction(dir, "wikipedia.composed".ToHash()))
+            using (var tx = new WriteSession(dir, "wikipedia.composed".ToHash()))
             {
                 new StringAnalyzer().Compose(
                     dataSource.First().values.Take(int.Parse(args["take"])),

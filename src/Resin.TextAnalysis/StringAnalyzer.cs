@@ -31,15 +31,15 @@ namespace Resin.TextAnalysis
             _label = new List<char>(_numOfDimensions);
         }
 
-        public void Compose(IEnumerable<string> source, ReadSession readSession, WriteTransaction tx, bool labelVectors = true, ILogger? logger = null)
+        public void Compose(IEnumerable<string> source, ReadSession readSession, WriteSession tx, bool labelVectors = true, ILogger? logger = null)
         {
             if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
 
-            var tokenReader = new ColumnReader<double>(readSession, sizeof(double), _pageSize);
-            using (var tokenWriter = new ColumnWriter<double>(new DoubleWriter(tx, _pageSize)))
+            var tokenReader = new ColumnReader<double>(readSession, readSession.PageSize);
+            using (var tokenWriter = new ColumnWriter<double>(new DoubleWriter(tx)))
             {
                 var docCount = 0;
                 long tokenCount = 0;
@@ -71,14 +71,14 @@ namespace Resin.TextAnalysis
             }
         }
 
-        public void BuildFirstOrderLexicon(IEnumerable<string> source, WriteTransaction tx, ILogger? log = null)
+        public void BuildFirstOrderLexicon(IEnumerable<string> source, WriteSession tx, ILogger? log = null)
         {
             if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
 
-            using (var writer = new ColumnWriter<double>(new DoubleWriter(tx, _pageSize)))
+            using (var writer = new ColumnWriter<double>(new DoubleWriter(tx)))
             {
                 long docCount = 0;
                 long tokenCount = 0;
@@ -109,7 +109,7 @@ namespace Resin.TextAnalysis
                 throw new ArgumentNullException(nameof(source));
             }
 
-            var tokenReader = new ColumnReader<double>(readSession, sizeof(double), _pageSize);
+            var tokenReader = new ColumnReader<double>(readSession, _pageSize);
             var docCount = 0;
             foreach (var str in source)
             {
@@ -126,7 +126,7 @@ namespace Resin.TextAnalysis
                     var storedVec = buf.ToArray().ToVectorDouble(_numOfDimensions);
                     double mutualAngle = storedVec.CosAngle(token.vector);
                     if (mutualAngle < 0.99)
-                        throw new InvalidOperationException($"mutual angle of {mutualAngle} is not zero!");
+                        throw new InvalidOperationException($"mutual angle of {mutualAngle} is too low.");
                 }
                 docCount++;
                 if (log != null)
@@ -143,8 +143,8 @@ namespace Resin.TextAnalysis
                 throw new ArgumentNullException(nameof(source));
             }
 
-            var tokenReader = new ColumnReader<double>(readSession, sizeof(double), _pageSize);
-            var tokenReaderComposed = new ColumnReader<double>(readSessionComposed, sizeof(double), _pageSize);
+            var tokenReader = new ColumnReader<double>(readSession, _pageSize);
+            var tokenReaderComposed = new ColumnReader<double>(readSessionComposed, _pageSize);
             var docCount = 0;
             foreach (var str in source)
             {
@@ -186,7 +186,7 @@ namespace Resin.TextAnalysis
                 throw new ArgumentNullException(nameof(source));
             }
 
-            var tokenReader = new ColumnReader<double>(readSession, sizeof(double), _pageSize);
+            var tokenReader = new ColumnReader<double>(readSession, _pageSize);
             var docCount = 0;
             foreach (var str in source)
             {

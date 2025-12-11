@@ -43,7 +43,7 @@ namespace Resin.KeyValue
             return new Address(ofs, len);
         }
 
-        public static void SerializeMany(Stream stream, Address[] addresses)
+        public static void Serialize(Stream stream, Address[] addresses)
         {
             foreach (var adr in addresses)
             {
