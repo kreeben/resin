@@ -1,15 +1,26 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Buffers;
+using System.Runtime.InteropServices;
 
 namespace Resin.KeyValue
 {
-    public class ByteArrayWriter
+    public class ByteArrayWriter : IDisposable
     {
         private readonly Stream _keyStream;
         private readonly Stream _valueStream;
         private readonly Stream _addressStream;
         private readonly WriteSession _session;
+
+        // Pooled buffers
+        private readonly ArrayPool<long> _longPool = ArrayPool<long>.Shared;
+        private readonly ArrayPool<Address> _addressPool = ArrayPool<Address>.Shared;
+        private readonly ArrayPool<byte> _bytePool = ArrayPool<byte>.Shared;
+
         private long[] _keyBuf;
         private Address[] _addressBuf;
+
+        // Reusable copy buffer for append path
+        private byte[]? _copyBuf;
+        private const int DefaultCopyBufferSize = 8192;
 
         // Number of keys currently stored in the page/index of next key to insert.
         private int _keyCount;
@@ -32,17 +43,23 @@ namespace Resin.KeyValue
             _session = writeSession;
             _noOfKeysPerPage = _session.PageSize / sizeof(long);
 
+            // Rent pooled buffers sized to the page capacity
+            _keyBuf = _longPool.Rent(_noOfKeysPerPage);
+            _addressBuf = _addressPool.Rent(_noOfKeysPerPage);
+            _keyCount = 0;
+
+            // Rent reusable copy buffer once (will be reused for all appends)
+            _copyBuf = _bytePool.Rent(DefaultCopyBufferSize);
+
             if (_keyStream.Length > 0)
             {
-                _keyBuf = ReadKeys(_keyStream, _session.PageSize);
-                _keyCount = _keyBuf.Length;
-                _addressBuf = ReadAddresses(_addressStream);
-            }
-            else
-            {
-                _keyBuf = new long[_noOfKeysPerPage];
-                _keyCount = 0;
-                _addressBuf = new Address[_noOfKeysPerPage];
+                // Read existing page directly into the rented buffers
+                var loadedKeys = ReadKeys(_keyStream, _session.PageSize);
+                loadedKeys.CopyTo(_keyBuf, 0);
+                _keyCount = loadedKeys.Length;
+
+                var loadedAddresses = ReadAddresses(_addressStream);
+                loadedAddresses.CopyTo(_addressBuf, 0);
             }
         }
 
@@ -127,25 +144,28 @@ namespace Resin.KeyValue
             if (append == Span<byte>.Empty || append.Length == 0)
                 throw new ArgumentOutOfRangeException(nameof(append.Length), "Append value cannot be null or empty.");
 
+            if (_copyBuf is null || _copyBuf.Length < 1)
+            {
+                _copyBuf = _bytePool.Rent(DefaultCopyBufferSize);
+            }
+
             // Position value stream at end to begin new record
             GoToEndOfStream(_valueStream);
             var start = _valueStream.Position;
 
-            // Copy existing value from its original offset to the end, in small chunks to minimize memory
-            const int chunkSize = 8192;
-            Span<byte> chunk = stackalloc byte[Math.Min(chunkSize, (int)Math.Min(address.Length, chunkSize))];
-
+            // Copy existing value from its original offset to the end, using reusable heap buffer
             long remaining = address.Length;
             _valueStream.Position = address.Offset;
+
             while (remaining > 0)
             {
-                int toRead = (int)Math.Min(chunk.Length, remaining);
-                int read = _valueStream.Read(chunk.Slice(0, toRead));
+                int toRead = (int)Math.Min(_copyBuf!.Length, remaining);
+                int read = _valueStream.Read(_copyBuf.AsSpan(0, toRead));
                 if (read != toRead)
                     throw new InvalidDataException();
 
                 _valueStream.Position = start + (address.Length - remaining);
-                _valueStream.Write(chunk.Slice(0, read));
+                _valueStream.Write(_copyBuf.AsSpan(0, read));
                 remaining -= read;
             }
 
@@ -162,16 +182,12 @@ namespace Resin.KeyValue
                 return;
 
             GoToEndOfStream(_keyStream);
-
-            // Cast Span<long> to Span<byte> before writing
             _keyStream.Write(MemoryMarshal.AsBytes(new Span<long>(_keyBuf, 0, _keyCount)));
 
             GoToEndOfStream(_addressStream);
-
-            // Cast Span<Address> to Span<byte> before writing
             _addressStream.Write(MemoryMarshal.AsBytes(new Span<Address>(_addressBuf, 0, _keyCount)));
 
-            // Reset count and reuse existing buffers (avoid allocating new arrays)
+            // Reset count; keep pooled buffers for reuse.
             _keyCount = 0;
         }
 
@@ -255,6 +271,28 @@ namespace Resin.KeyValue
             var addresses = new Address[_noOfKeysPerPage];
             addressStream.ReadExactly(MemoryMarshal.AsBytes(new Span<Address>(addresses)));
             return addresses;
+        }
+
+        public void Dispose()
+        {
+            // Return rented buffers to pools
+            if (_keyBuf != null)
+            {
+                _longPool.Return(_keyBuf, clearArray: false);
+                _keyBuf = Array.Empty<long>();
+            }
+
+            if (_addressBuf != null)
+            {
+                _addressPool.Return(_addressBuf, clearArray: false);
+                _addressBuf = Array.Empty<Address>();
+            }
+
+            if (_copyBuf != null)
+            {
+                _bytePool.Return(_copyBuf, clearArray: false);
+                _copyBuf = null;
+            }
         }
     }
 }
