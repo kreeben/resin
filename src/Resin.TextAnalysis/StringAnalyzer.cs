@@ -53,8 +53,14 @@ namespace Resin.TextAnalysis
                     {
                         var idVec = token.vector.Analyze(_unitVector);
                         var angleOfId = idVec.CosAngle(_unitVector);
-                        var tokenBuf = token.vector.GetBytes(BitConverter.GetBytes);
-                        batches.Add((angleOfId, tokenBuf));
+
+                        // Use ArrayPool to avoid repeated temporary allocations when preparing buffers.
+                        var tmp = token.vector.GetBytes(BitConverter.GetBytes);
+                        var rented = System.Buffers.ArrayPool<byte>.Shared.Rent(tmp.Length);
+                        Buffer.BlockCopy(tmp, 0, rented, 0, tmp.Length);
+
+                        // Store the rented buffer; it will be written then returned to the pool.
+                        batches.Add((angleOfId, rented));
                     }
                     docCount++;
                     log?.LogInformation($"doc count: {docCount} tokens (queued): {batches.Count}");
@@ -66,10 +72,13 @@ namespace Resin.TextAnalysis
 
                 foreach (var (angle, buf) in batches)
                 {
+                    // Write from the pooled buffer, then return it to the pool to minimize GC pressure.
                     if (writer.TryPut(angle, buf))
                     {
                         tokenCount++;
                     }
+                    // Return the buffer after use.
+                    System.Buffers.ArrayPool<byte>.Shared.Return(buf);
                 }
 
                 log?.LogInformation($"completed: docs={docCount} tokens (written): {tokenCount}");
@@ -203,116 +212,102 @@ namespace Resin.TextAnalysis
             }
         }
 
-        public IEnumerable<(string label, Vector<float> vector)> TokenizeIntoFloat(string source, bool labelVectors = true)
+        // Split input into words using the same boundary rules as IsData (no ToCharArray to reduce allocations).
+        private static List<string> SplitWords(string source, Func<char, bool> isData)
         {
-            int index = 0;
-            var word = CreateVector.Sparse<float>(_numOfDimensions);
-            var labelBuffer = new List<char>(_numOfDimensions);
+            var words = new List<string>();
+            var buf = new List<char>(64);
 
-            foreach (var c in source.ToCharArray())
+            foreach (var c in source)
             {
-                if (IsData(c))
+                if (isData(c))
                 {
-                    if (index < _numOfDimensions)
-                    {
-                        word[index] = c;
-                        labelBuffer.Add(c);
-                        index++;
-                    }
+                    buf.Add(c);
                 }
                 else if (c == '’')
                 {
-                    var cat = char.GetUnicodeCategory(c);
+                    // Keep behavior consistent with existing code (special apostrophe ignored).
+                    var _ = char.GetUnicodeCategory(c);
                 }
                 else
                 {
-                    if (index > 0)
+                    if (buf.Count > 0)
                     {
-                        if (labelVectors)
-                            yield return (new string(labelBuffer.ToArray()), word);
-                        else
-                            yield return (string.Empty, word);
-                        word = CreateVector.Sparse<float>(_numOfDimensions);
-                        labelBuffer.Clear();
-                        index = 0;
+                        words.Add(new string(buf.ToArray()));
+                        buf.Clear();
                     }
                 }
             }
-            if (((SparseVectorStorage<float>)word.Storage).Values.Length > 0 && labelBuffer.Count > 0)
+
+            if (buf.Count > 0)
             {
-                if (labelVectors)
-                    yield return (new string(labelBuffer.ToArray()), word);
-                else
-                    yield return (string.Empty, word);
+                words.Add(new string(buf.ToArray()));
+                buf.Clear();
             }
-            labelBuffer.Clear();
+
+            return words;
+        }
+
+        public IEnumerable<(string label, Vector<float> vector)> TokenizeIntoFloat(string source, bool labelVectors = true)
+        {
+            var words = SplitWords(source, IsData);
+            foreach (var label in words)
+            {
+                // Build vector from the word label using original positional scheme.
+                var word = CreateVector.Sparse<float>(_numOfDimensions);
+
+                int index = 0;
+                foreach (var c in label)
+                {
+                    if (index >= _numOfDimensions) break;
+                    word[index] = c;
+                    index++;
+                }
+
+                if (((SparseVectorStorage<float>)word.Storage).Values.Length > 0 && label.Length > 0)
+                {
+                    if (labelVectors)
+                        yield return (label, word);
+                    else
+                        yield return (string.Empty, word);
+                }
+            }
         }
 
         public IEnumerable<(string label, Vector<double> vector)> TokenizeIntoDouble(string source, bool labelVectors = true)
         {
-            int index = 0;
-            var word = CreateVector.Sparse<double>(_numOfDimensions);
-            var labelBuffer = new List<char>(_numOfDimensions);
-
-            foreach (var c in source.ToCharArray())
+            var words = SplitWords(source, IsData);
+            foreach (var label in words)
             {
-                if (IsData(c))
+                var word = CreateVector.Sparse<double>(_numOfDimensions);
+
+                // Base character contribution using position (kept for backward compatibility)
+                int index = 0;
+                foreach (var c in label)
                 {
-                    if (index < _numOfDimensions)
-                    {
-                        // Base character contribution using position (kept for backward compatibility)
-                        word[index] = c;
-                        labelBuffer.Add(c);
-                        index++;
-                    }
+                    if (index >= _numOfDimensions) break;
+                    word[index] = c;
+                    index++;
                 }
-                else if (c == '’')
-                {
-                    var cat = char.GetUnicodeCategory(c);
-                }
-                else
-                {
-                    if (index > 0)
-                    {
-                        // Add deterministic char n-gram features to stabilize the word vector.
-                        var label = new string(labelBuffer.ToArray());
-                        foreach (var ng in GetCharNGrams(label))
-                        {
-                            var dim = HashToIndex(ng, _numOfDimensions);
-                            word[dim] += 1.0;
-                        }
 
-                        AddCaseAndCategoryFeatures(label, word);
-
-                        if (labelVectors)
-                            yield return (label, word);
-                        else
-                            yield return (string.Empty, word);
-
-                        word = CreateVector.Sparse<double>(_numOfDimensions);
-                        labelBuffer.Clear();
-                        index = 0;
-                    }
-                }
-            }
-
-            if (((SparseVectorStorage<double>)word.Storage).Values.Length > 0 && labelBuffer.Count > 0)
-            {
-                var label = new string(labelBuffer.ToArray());
+                // Deterministic char n-gram features to stabilize the word vector.
                 foreach (var ng in GetCharNGrams(label))
                 {
                     var dim = HashToIndex(ng, _numOfDimensions);
                     word[dim] += 1.0;
                 }
 
+                // Case and Unicode category features
                 AddCaseAndCategoryFeatures(label, word);
 
-                if (labelVectors)
-                    yield return (label, word);
-                else
-                    yield return (string.Empty, word);
+                if (((SparseVectorStorage<double>)word.Storage).Values.Length > 0 && label.Length > 0)
+                {
+                    if (labelVectors)
+                        yield return (label, word);
+                    else
+                        yield return (string.Empty, word);
+                }
             }
-            labelBuffer.Clear();
         }
 
         public IEnumerable<(string label, Vector<float> vector)> TokenizeIntoFloat(IEnumerable<string> source)
