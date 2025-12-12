@@ -93,7 +93,7 @@ namespace Resin.TextAnalysis
                     var tokenVec = tokenBuf.ToVectorDouble(_numOfDimensions);
                     double mutualAngle = tokenVec.CosAngle(token.vector);
                     if (mutualAngle < 0.99)
-                        throw new InvalidOperationException($"mutual angle of {mutualAngle} is too low. token: {token.label}");
+                        throw new InvalidOperationException($"collision. mutual angle of {mutualAngle} is too low. token: {token.label}");
                 }
                 docCount++;
                 if (log != null)
@@ -146,6 +146,39 @@ namespace Resin.TextAnalysis
                 h *= prime;
             }
             return (int)(h % (ulong)dims);
+        }
+
+        // Adds lightweight case and Unicode category features for the label into the vector.
+        // This increases entropy without changing existing positional and n-gram signals.
+        private void AddCaseAndCategoryFeatures(string label, Vector<double> word)
+        {
+            if (string.IsNullOrEmpty(label))
+                return;
+
+            // Case features
+            bool isAllLower = label.ToLowerInvariant() == label;
+            bool isAllUpper = label.ToUpperInvariant() == label;
+            bool isTitle = char.IsLetter(label[0]) && char.IsUpper(label[0]);
+
+            // Hash dedicated feature keys into dimensions to avoid colliding with raw n-grams.
+            void bump(string featureKey, double weight)
+            {
+                var d = HashToIndex(featureKey, _numOfDimensions);
+                word[d] += weight;
+            }
+
+            bump(isAllLower ? "case:lower" : "case:mixed", 0.5);
+            if (isAllUpper) bump("case:upper", 0.5);
+            if (isTitle) bump("case:title", 0.5);
+
+            // Unicode category distribution across label characters
+            foreach (var ch in label)
+            {
+                var cat = char.GetUnicodeCategory(ch);
+                var key = "uc:" + (int)cat;
+                var d = HashToIndex(key, _numOfDimensions);
+                word[d] += 0.25;
+            }
         }
 
         public IEnumerable<(string label, Vector<float> vector)> TokenizeIntoFloat(string source, bool labelVectors = true)
@@ -227,6 +260,8 @@ namespace Resin.TextAnalysis
                             word[dim] += 1.0;
                         }
 
+                        AddCaseAndCategoryFeatures(label, word);
+
                         if (labelVectors)
                             yield return (label, word);
                         else
@@ -247,6 +282,8 @@ namespace Resin.TextAnalysis
                     var dim = HashToIndex(ng, _numOfDimensions);
                     word[dim] += 1.0;
                 }
+
+                AddCaseAndCategoryFeatures(label, word);
 
                 if (labelVectors)
                     yield return (label, word);

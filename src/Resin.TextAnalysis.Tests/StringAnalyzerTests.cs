@@ -62,7 +62,8 @@ namespace Resin.TextAnalysis.Tests
             {
                 var analyzer = new StringAnalyzer(numOfDimensions: 2048);
                 analyzer.BuildLexicon(data, session);
-                Assert.IsTrue(analyzer.ValidateLexicon(data, readSession));
+                var result = analyzer.ValidateLexicon(data, readSession);
+                Assert.IsTrue(result);
             }
         }
 
