@@ -33,11 +33,11 @@ namespace Resin.TextAnalysis.Tests
         [TestMethod]
         public void CanBuildAndValidateLexiconWithSyntheticData()
         {
-            using (var tx = new WriteSession())
-            using (var readSession = new ReadSession(tx))
+            using (var session = new WriteSession())
+            using (var readSession = new ReadSession(session))
             {
                 var analyzer = new StringAnalyzer();
-                analyzer.BuildFirstOrderLexicon(Data, tx);
+                analyzer.BuildFirstOrderLexicon(Data, session);
                 Assert.IsTrue(analyzer.ValidateLexicon(Data, readSession));
             }
         }
@@ -57,39 +57,17 @@ namespace Resin.TextAnalysis.Tests
 
             Assert.IsTrue(data.Any(), "Wikipedia data source returned no usable content.");
 
-            using (var tx = new WriteSession())
-            using (var readSession = new ReadSession(tx))
+            using (var session = new WriteSession())
+            using (var readSession = new ReadSession(session))
             {
                 var analyzer = new StringAnalyzer();
-                analyzer.BuildFirstOrderLexicon(data, tx);
+                analyzer.BuildFirstOrderLexicon(data, session);
 
-                tx.AddressStream.Position = 0;
-                tx.KeyStream.Position = 0;
-                tx.ValueStream.Position = 0;
+                //session.AddressStream.Position = 0;
+                //session.KeyStream.Position = 0;
+                //session.ValueStream.Position = 0;
 
                 Assert.IsTrue(analyzer.ValidateLexicon(data, readSession));
-            }
-        }
-
-        [TestMethod]
-        public void CanBuildAndValidateComposedLexicon()
-        {
-            using (var tx = new WriteSession())
-            {
-                var analyzer = new StringAnalyzer();
-                analyzer.BuildFirstOrderLexicon(Data, tx);
-                using (var tx1 = new WriteSession())
-                {
-                    using (var readSession = new ReadSession(tx))
-                    {
-                        analyzer.Compose(Data, readSession, tx1);
-
-                        using (var readSession1 = new ReadSession(tx1))
-                        {
-                            Assert.IsTrue(analyzer.ValidateComposed(Data, readSession, readSession1));
-                        }
-                    }
-                }
             }
         }
 
@@ -119,7 +97,7 @@ namespace Resin.TextAnalysis.Tests
 
                 using (var readSession = new ReadSession(tx))
                 {
-                    var tokenReader = new ColumnReader<double>(readSession, pageSize);
+                    var tokenReader = new ColumnReader<double>(readSession);
                     var buf = tokenReader.Get(angle);
                     var storedVector = buf.ToArray().ToVectorFloat(numOfDimensions);
                     var a = vector.CosAngle(storedVector);
@@ -148,7 +126,7 @@ namespace Resin.TextAnalysis.Tests
 
                 using (var readSession = new ReadSession(tx))
                 {
-                    var tokenReader = new ColumnReader<double>(readSession, pageSize);
+                    var tokenReader = new ColumnReader<double>(readSession);
                     var buf = tokenReader.Get(angle);
                     var storedVector = buf.ToArray().ToVectorDouble(numOfDimensions);
                     var a = vector.CosAngle(storedVector);

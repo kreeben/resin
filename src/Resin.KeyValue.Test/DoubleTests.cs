@@ -26,7 +26,7 @@
 
                 using (var session = new ReadSession(tx.KeyStream, tx.ValueStream, tx.AddressStream, pageSize))
                 {
-                    var reader = new ColumnReader<double>(session, pageSize);
+                    var reader = new ColumnReader<double>(session);
 
                     Assert.IsTrue(BitConverter.ToDouble(reader.Get(0)) == 0);
                     Assert.IsTrue(reader.Get(1) == ReadOnlySpan<byte>.Empty);
@@ -63,7 +63,7 @@
 
                 using (var session = new ReadSession(tx.KeyStream, tx.ValueStream, tx.AddressStream))
                 {
-                    var reader = new ColumnReader<double>(session, pageSize);
+                    var reader = new ColumnReader<double>(session);
 
                     Assert.IsTrue(BitConverter.ToDouble(reader.Get(0)) == 0);
                     Assert.IsTrue(BitConverter.ToDouble(reader.Get(1)) == 1);
@@ -102,7 +102,7 @@
 
                 using (var session = new ReadSession(tx.KeyStream, tx.ValueStream, tx.AddressStream, pageSize))
                 {
-                    var reader = new ColumnReader<double>(session, pageSize);
+                    var reader = new ColumnReader<double>(session);
 
                     Assert.IsTrue(BitConverter.ToDouble(reader.Get(0)) == 0);
                     Assert.IsTrue(BitConverter.ToDouble(reader.Get(1)) == 1);
@@ -143,14 +143,14 @@
 
                 using (var session = new ReadSession(tx.KeyStream, tx.ValueStream, tx.AddressStream, pageSize))
                 {
-                    var reader = new ColumnReader<double>(session, pageSize);
+                    var reader = new ColumnReader<double>(session);
                     Assert.IsTrue(BitConverter.ToDouble(reader.Get(0)) == 0);
                     Assert.IsTrue(BitConverter.ToDouble(reader.Get(1)) == 1);
                     Assert.IsTrue(BitConverter.ToDouble(reader.Get(511)) == 511);
                     Assert.IsTrue(BitConverter.ToDouble(reader.Get(512)) == 512);
                     Assert.IsTrue(reader.Get(513) == ReadOnlySpan<byte>.Empty);
 
-                    reader = new ColumnReader<double>(session, pageSize);
+                    reader = new ColumnReader<double>(session);
 
                     Assert.IsTrue(BitConverter.ToDouble(reader.Get(512)) == 512);
 
@@ -216,7 +216,7 @@
 
                 using (var session = new ReadSession(tx.KeyStream, tx.ValueStream, tx.AddressStream, pageSize))
                 {
-                    var reader = new ColumnReader<double>(session, pageSize);
+                    var reader = new ColumnReader<double>(session);
 
                     Assert.IsTrue(BitConverter.ToDouble(reader.Get(0)) == 0);
                     Assert.IsTrue(BitConverter.ToDouble(reader.Get(1)) == 1);

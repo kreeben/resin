@@ -7,7 +7,7 @@
         private readonly IDictionary<TKey, Address> _addressCache;
         private TKey[] _allKeys;
 
-        public ColumnReader(ReadSession readSession, int pageSize)
+        public ColumnReader(ReadSession readSession)
         {
             _addressStream = readSession.AddressStream;
             _valueStream = readSession.ValueStream;

@@ -54,6 +54,19 @@ namespace Resin.TextAnalysis
             return CreateVector.SparseOfIndexed(numOfDimensions, indices.Select(index => (index, values[i++])));
         }
 
+        public static Vector<double> ToVectorDouble(this ReadOnlySpan<byte> bufferWithHeader, int numOfDimensions)
+        {
+            var componentCount = BitConverter.ToInt32(bufferWithHeader);
+            var ixLen = componentCount * sizeof(int);
+            var valLen = componentCount * sizeof(double);
+
+            var indices = MemoryMarshal.Cast<byte, int>(bufferWithHeader.Slice(sizeof(int), ixLen)).ToArray();
+            var values = MemoryMarshal.Cast<byte, double>(bufferWithHeader.Slice(sizeof(int) + ixLen, valLen)).ToArray();
+
+            int i = 0;
+            return CreateVector.SparseOfIndexed(numOfDimensions, indices.Select(index => (index, values[i++])));
+        }
+
         public static double CosAngle(this Vector<float> first, Vector<float> second)
         {
             var dotProduct = first.DotProduct(second);
@@ -78,6 +91,7 @@ namespace Resin.TextAnalysis
 
         public static Vector<double> Analyze(this Vector<double> first, Vector<double> second)
         {
+            //var numOfDimensions = first.
             // Core metrics
             var dot = first.DotProduct(second);
 
@@ -138,7 +152,7 @@ namespace Resin.TextAnalysis
                 jaccard
             };
 
-            return CreateVector.DenseOfArray(components);
+            return CreateVector.SparseOfIndexed(first.Count, components.Select((v, i) => (i, v)));
         }
 
         public static string AsString(this Vector<float> vector)

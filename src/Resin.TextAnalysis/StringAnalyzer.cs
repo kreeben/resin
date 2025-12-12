@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics;
+using System.Globalization;
 using System.Text.Unicode;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Storage;
@@ -38,7 +39,7 @@ namespace Resin.TextAnalysis
                 throw new ArgumentNullException(nameof(source));
             }
 
-            var tokenReader = new ColumnReader<double>(readSession, readSession.PageSize);
+            var tokenReader = new ColumnReader<double>(readSession);
             using (var tokenWriter = new ColumnWriter<double>(new DoubleWriter(tx)))
             {
                 var docCount = 0;
@@ -86,12 +87,17 @@ namespace Resin.TextAnalysis
                 {
                     foreach (var token in TokenizeIntoDouble(str))
                     {
-                        var angle = _unitVector.CosAngle(token.vector);
-                        var vectorBuf = token.vector.GetBytes(x => BitConverter.GetBytes(x));
+                        var idVec = token.vector.Analyze(_unitVector);
+                        var angleOfId = idVec.CosAngle(_unitVector);
+                        var tokenBuf = token.vector.GetBytes(x => BitConverter.GetBytes(x));
 
-                        if (writer.TryPut(angle, vectorBuf))
+                        if (writer.TryPut(angleOfId, tokenBuf))
                         {
                             tokenCount++;
+                        }
+                        else
+                        {
+                            Debug.WriteLine($"could not add token '{token.label}' at angle {angleOfId}");
                         }
                     }
                     docCount++;
@@ -109,24 +115,25 @@ namespace Resin.TextAnalysis
                 throw new ArgumentNullException(nameof(source));
             }
 
-            var tokenReader = new ColumnReader<double>(readSession, _pageSize);
+            var tokenReader = new ColumnReader<double>(readSession);
             var docCount = 0;
             foreach (var str in source)
             {
                 foreach (var token in TokenizeIntoDouble(str))
                 {
-                    var angle = _unitVector.CosAngle(token.vector);
-                    var buf = tokenReader.Get(angle);
+                    var idVec = token.vector.Analyze(_unitVector);
+                    var angleOfId = idVec.CosAngle(_unitVector);
+                    var tokenBuf = tokenReader.Get(angleOfId);
 
-                    if (buf.IsEmpty)
+                    if (tokenBuf.IsEmpty)
                     {
-                        throw new InvalidOperationException($"could not find '{token.label}' at {angle}");
+                        throw new InvalidOperationException($"could not find '{token.label}' at {angleOfId}");
                     }
 
-                    var storedVec = buf.ToArray().ToVectorDouble(_numOfDimensions);
-                    double mutualAngle = storedVec.CosAngle(token.vector);
+                    var tokenVec = tokenBuf.ToVectorDouble(_numOfDimensions);
+                    double mutualAngle = tokenVec.CosAngle(token.vector);
                     if (mutualAngle < 0.99)
-                        throw new InvalidOperationException($"mutual angle of {mutualAngle} is too low.");
+                        throw new InvalidOperationException($"mutual angle of {mutualAngle} is too low. token: {token.label}");
                 }
                 docCount++;
                 if (log != null)
@@ -134,107 +141,6 @@ namespace Resin.TextAnalysis
             }
 
             return true;
-        }
-
-        public bool ValidateComposed(IEnumerable<string> source, ReadSession readSession, ReadSession readSessionComposed, ILogger? log = null)
-        {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-
-            var tokenReader = new ColumnReader<double>(readSession, _pageSize);
-            var tokenReaderComposed = new ColumnReader<double>(readSessionComposed, _pageSize);
-            var docCount = 0;
-            foreach (var str in source)
-            {
-                foreach (var token in TokenizeIntoDouble(str))
-                {
-                    double angle = _unitVector.CosAngle(token.vector);
-                    var buf = tokenReader.Get(angle);
-
-                    if (buf.IsEmpty)
-                    {
-                        throw new InvalidOperationException($"could not find '{token.label}' at {angle}");
-                    }
-
-                    var storedVec = buf.ToArray().ToVectorDouble(_numOfDimensions);
-                    double mutualAngle = storedVec.CosAngle(token.vector);
-                    var composedVec = CreateVector.Sparse<double>(_numOfDimensions);
-                    composedVec[0] = angle;
-                    composedVec[1] = mutualAngle;
-                    var bufComposed = tokenReaderComposed.Get(angle);
-                    var storedComposedVec = bufComposed.ToArray().ToVectorDouble(_numOfDimensions);
-                    double mutualAngleComposed = storedComposedVec.CosAngle(composedVec);
-                    if (mutualAngleComposed < 0.99)
-                    {
-                        throw new InvalidOperationException($"could not find composed '{token.label}' at {angle}");
-                    }
-                }
-                docCount++;
-                if (log != null)
-                    log.LogInformation($"VALID: doc {docCount} content: {str.Substring(0, 25)}...{str.Substring(Math.Max(0, str.Length - 25), Math.Min(25, str.Length))}");
-            }
-
-            return true;
-        }
-
-        public void FindClusters(IEnumerable<string> source, ReadSession readSession, ILogger? log = null)
-        {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-
-            var tokenReader = new ColumnReader<double>(readSession, _pageSize);
-            var docCount = 0;
-            foreach (var str in source)
-            {
-                foreach (var token in TokenizeIntoDouble(str))
-                {
-                    var angle = _unitVector.CosAngle(token.vector);
-                    var buf = tokenReader.Get(angle);
-
-                    if (buf.IsEmpty)
-                    {
-                        throw new InvalidOperationException($"could not find '{token.label}' at {angle}");
-                    }
-
-                    var storedToken = buf.ToArray().ToVectorDouble(_numOfDimensions);
-                    var mutualAngle = storedToken.CosAngle(token.vector);
-                    if (mutualAngle < 0.99)
-                    {
-                        var storedLabel = storedToken.AsString();
-                        var msg = $"CLUSTER FOUND at angle:{angle}! query/label: {token.label}/{storedLabel} mutual angle: {mutualAngle}";
-                        if (log != null)
-                            log.LogInformation(msg);
-                    }
-                }
-                docCount++;
-                if (log != null)
-                    log.LogInformation($"ANALYZE: doc {docCount}");
-            }
-        }
-
-        public int FindMaxWordLength(IEnumerable<string> source, ILogger? log = null)
-        {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-
-            int maxWordLen = 0;
-            foreach (var token in TokenizeIntoFloat(source))
-            {
-                var lengtOfWord = ((SparseVectorStorage<float>)token.vector.Storage).Values.Length;
-                if (lengtOfWord > maxWordLen)
-                {
-                    maxWordLen = lengtOfWord;
-                }
-            }
-            if (log != null)
-                log.LogInformation($"maxWordLen {maxWordLen}");
-            return maxWordLen;
         }
 
         private bool IsData(char c)
