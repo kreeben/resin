@@ -37,7 +37,7 @@ namespace Resin.TextAnalysis.Tests
             using (var readSession = new ReadSession(session))
             {
                 var analyzer = new StringAnalyzer();
-                analyzer.BuildFirstOrderLexicon(Data, session);
+                analyzer.BuildLexicon(Data, session);
                 Assert.IsTrue(analyzer.ValidateLexicon(Data, readSession));
             }
         }
@@ -61,7 +61,7 @@ namespace Resin.TextAnalysis.Tests
             using (var readSession = new ReadSession(session))
             {
                 var analyzer = new StringAnalyzer();
-                analyzer.BuildFirstOrderLexicon(data, session);
+                analyzer.BuildLexicon(data, session);
 
                 //session.AddressStream.Position = 0;
                 //session.KeyStream.Position = 0;

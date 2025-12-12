@@ -20,7 +20,7 @@ namespace Resin.WikipediaCommandLine
                 new StreamFactory(dir).Truncate("wikipedia".ToHash());
             using (var tx = new WriteSession(dir, "wikipedia".ToHash()))
             {
-                new StringAnalyzer().BuildFirstOrderLexicon(dataSource.First().values.Take(take), tx, logger);
+                new StringAnalyzer().BuildLexicon(dataSource.First().values.Take(take), tx, logger);
             }
         }
     }
