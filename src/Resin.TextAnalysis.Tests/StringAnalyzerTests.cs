@@ -60,13 +60,8 @@ namespace Resin.TextAnalysis.Tests
             using (var session = new WriteSession())
             using (var readSession = new ReadSession(session))
             {
-                var analyzer = new StringAnalyzer();
+                var analyzer = new StringAnalyzer(numOfDimensions: 2048);
                 analyzer.BuildLexicon(data, session);
-
-                //session.AddressStream.Position = 0;
-                //session.KeyStream.Position = 0;
-                //session.ValueStream.Position = 0;
-
                 Assert.IsTrue(analyzer.ValidateLexicon(data, readSession));
             }
         }

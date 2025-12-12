@@ -12,7 +12,6 @@ namespace Resin.TextAnalysis
     {
         private readonly int _numOfDimensions;
         private readonly Vector<double> _unitVector;
-        private readonly List<char> _label;
         private readonly HashSet<UnicodeCategory> _validData = new HashSet<UnicodeCategory>
         {
             // punctuation
@@ -27,46 +26,44 @@ namespace Resin.TextAnalysis
         {
             _numOfDimensions = numOfDimensions;
 
-            // normalized ones vector
+            // Normalize the reference vector to a true unit vector (all-ones normalized).
             var ones = CreateVector.Dense<double>(_numOfDimensions, 1.0);
             var norm = ones.L2Norm();
             _unitVector = ones / norm;
-
-            // remove shared mutable label; handled locally in tokenizers
-            _label = new List<char>(_numOfDimensions);
         }
 
         public void BuildLexicon(IEnumerable<string> source, WriteSession tx, ILogger? log = null)
         {
             if (source is null)
+            {
                 throw new ArgumentNullException(nameof(source));
+            }
 
             using (var writer = new ColumnWriter<double>(new DoubleWriter(tx)))
             {
                 long docCount = 0;
                 long tokenCount = 0;
-
                 foreach (var str in source)
                 {
-                    foreach (var token in TokenizeIntoDouble(str, labelVectors: true, useCharNGrams: true))
+                    foreach (var token in TokenizeIntoDouble(str))
                     {
-                        var key = StableKeyFromLabel(token.label);
+                        var idVec = token.vector.Analyze(_unitVector);
+                        var angleOfId = idVec.CosAngle(_unitVector);
                         var tokenBuf = token.vector.GetBytes(x => BitConverter.GetBytes(x));
 
-                        if (writer.TryPut(key, tokenBuf))
+                        if (writer.TryPut(angleOfId, tokenBuf))
                         {
                             tokenCount++;
                         }
                         else
                         {
-                            Debug.WriteLine($"could not add token '{token.label}' at key {key}");
+                            Debug.WriteLine($"could not add token '{token.label}' at angle {angleOfId}");
                         }
                     }
-
                     docCount++;
-                    log?.LogInformation($"doc count: {docCount} tokens: {tokenCount}");
+                    if (log != null)
+                        log.LogInformation($"doc count: {docCount} tokens: {tokenCount}");
                 }
-
                 writer.Serialize();
             }
         }
@@ -74,35 +71,36 @@ namespace Resin.TextAnalysis
         public bool ValidateLexicon(IEnumerable<string> source, ReadSession readSession, ILogger? log = null)
         {
             if (source is null)
+            {
                 throw new ArgumentNullException(nameof(source));
+            }
 
             var tokenReader = new ColumnReader<double>(readSession);
             var docCount = 0;
-
             foreach (var str in source)
             {
-                foreach (var token in TokenizeIntoDouble(str, labelVectors: true, useCharNGrams: true))
+                foreach (var token in TokenizeIntoDouble(str))
                 {
-                    var key = StableKeyFromLabel(token.label);
-                    var tokenBuf = tokenReader.Get(key);
+                    var idVec = token.vector.Analyze(_unitVector);
+                    var angleOfId = idVec.CosAngle(_unitVector);
+                    var tokenBuf = tokenReader.Get(angleOfId);
 
                     if (tokenBuf.IsEmpty)
-                        throw new InvalidOperationException($"could not find '{token.label}' at {key}");
+                    {
+                        throw new InvalidOperationException($"could not find '{token.label}' at {angleOfId}");
+                    }
 
                     var tokenVec = tokenBuf.ToVectorDouble(_numOfDimensions);
-                    var mutualAngle = tokenVec.CosAngle(token.vector);
-
-                    // Keep your corruption/collision signal
+                    double mutualAngle = tokenVec.CosAngle(token.vector);
                     if (mutualAngle < 0.99)
                         throw new InvalidOperationException($"mutual angle of {mutualAngle} is too low. token: {token.label}");
                 }
-
                 docCount++;
                 if (log != null)
                 {
                     var headLen = Math.Min(25, str.Length);
-                    var tailLen = Math.Min(25, str.Length);
                     var head = str.Substring(0, headLen);
+                    var tailLen = Math.Min(25, str.Length);
                     var tailStart = Math.Max(0, str.Length - tailLen);
                     var tail = str.Substring(tailStart, str.Length - tailStart);
                     log.LogInformation($"VALID: doc {docCount} content: {head}...{tail}");
@@ -120,50 +118,7 @@ namespace Resin.TextAnalysis
             return false;
         }
 
-        public IEnumerable<(string label, Vector<float> vector)> TokenizeIntoFloat(string source, bool labelVectors = true)
-        {
-            int index = 0;
-            var word = CreateVector.Sparse<float>(_numOfDimensions);
-            foreach (var c in source.ToCharArray())
-            {
-                if (IsData(c))
-                {
-                    if (index < _numOfDimensions)
-                    {
-                        word[index] = c;
-                        _label.Add(c);
-                        index++;
-                    }
-                }
-                else if (c == '’')
-                {
-                    var cat = char.GetUnicodeCategory(c);
-                }
-                else
-                {
-                    if (index > 0)
-                    {
-                        if (labelVectors)
-                            yield return (new string(_label.ToArray()), word);
-                        else
-                            yield return (string.Empty, word);
-                        word = CreateVector.Sparse<float>(_numOfDimensions);
-                        _label.Clear();
-                        index = 0;
-                    }
-                }
-            }
-            if (((SparseVectorStorage<float>)word.Storage).Values.Length > 0)
-            {
-                if (labelVectors)
-                    yield return (new string(_label.ToArray()), word);
-                else
-                    yield return (string.Empty, word);
-            }
-            _label.Clear();
-        }
-
-        // Add utility: deterministic n-gram extraction
+        // Deterministic char n-gram extraction to improve token stability.
         private static IEnumerable<string> GetCharNGrams(string s, int minN = 3, int maxN = 5)
         {
             if (string.IsNullOrEmpty(s))
@@ -179,10 +134,9 @@ namespace Resin.TextAnalysis
             }
         }
 
-        // Deterministic hashing to dimension index
+        // Simple deterministic hash to choose a dimension for n-gram features.
         private static int HashToIndex(string key, int dims)
         {
-            // 64-bit FNV-1a (simple, fast, deterministic)
             const ulong offset = 14695981039346656037UL;
             const ulong prime = 1099511628211UL;
             ulong h = offset;
@@ -194,43 +148,90 @@ namespace Resin.TextAnalysis
             return (int)(h % (ulong)dims);
         }
 
-        // Stateless character-based tokenization that composes a word vector from subword n-grams
-        public IEnumerable<(string label, Vector<double> vector)> TokenizeIntoDouble(string source, bool labelVectors = true, bool useCharNGrams = true)
+        public IEnumerable<(string label, Vector<float> vector)> TokenizeIntoFloat(string source, bool labelVectors = true)
         {
-            if (source == null)
-                yield break;
-
-            var labelBuffer = new List<char>(_numOfDimensions);
-            var word = CreateVector.Sparse<double>(_numOfDimensions);
             int index = 0;
+            var word = CreateVector.Sparse<float>(_numOfDimensions);
+            var labelBuffer = new List<char>(_numOfDimensions);
 
-            foreach (var c in source)
+            foreach (var c in source.ToCharArray())
             {
                 if (IsData(c))
                 {
                     if (index < _numOfDimensions)
                     {
-                        // base character contribution
                         word[index] = c;
                         labelBuffer.Add(c);
                         index++;
                     }
                 }
+                else if (c == '’')
+                {
+                    var cat = char.GetUnicodeCategory(c);
+                }
                 else
                 {
-                    if (labelBuffer.Count > 0)
+                    if (index > 0)
                     {
+                        if (labelVectors)
+                            yield return (new string(labelBuffer.ToArray()), word);
+                        else
+                            yield return (string.Empty, word);
+                        word = CreateVector.Sparse<float>(_numOfDimensions);
+                        labelBuffer.Clear();
+                        index = 0;
+                    }
+                }
+            }
+            if (((SparseVectorStorage<float>)word.Storage).Values.Length > 0 && labelBuffer.Count > 0)
+            {
+                if (labelVectors)
+                    yield return (new string(labelBuffer.ToArray()), word);
+                else
+                    yield return (string.Empty, word);
+            }
+            labelBuffer.Clear();
+        }
+
+        public IEnumerable<(string label, Vector<double> vector)> TokenizeIntoDouble(string source, bool labelVectors = true)
+        {
+            int index = 0;
+            var word = CreateVector.Sparse<double>(_numOfDimensions);
+            var labelBuffer = new List<char>(_numOfDimensions);
+
+            foreach (var c in source.ToCharArray())
+            {
+                if (IsData(c))
+                {
+                    if (index < _numOfDimensions)
+                    {
+                        // Base character contribution using position (kept for backward compatibility)
+                        word[index] = c;
+                        labelBuffer.Add(c);
+                        index++;
+                    }
+                }
+                else if (c == '’')
+                {
+                    var cat = char.GetUnicodeCategory(c);
+                }
+                else
+                {
+                    if (index > 0)
+                    {
+                        // Add deterministic char n-gram features to stabilize the word vector.
                         var label = new string(labelBuffer.ToArray());
-                        if (useCharNGrams)
+                        foreach (var ng in GetCharNGrams(label))
                         {
-                            // add deterministic subword features
-                            foreach (var ng in GetCharNGrams(label))
-                            {
-                                var dim = HashToIndex(ng, _numOfDimensions);
-                                word[dim] += 1.0;
-                            }
+                            var dim = HashToIndex(ng, _numOfDimensions);
+                            word[dim] += 1.0;
                         }
-                        yield return (labelVectors ? label : string.Empty, word);
+
+                        if (labelVectors)
+                            yield return (label, word);
+                        else
+                            yield return (string.Empty, word);
+
                         word = CreateVector.Sparse<double>(_numOfDimensions);
                         labelBuffer.Clear();
                         index = 0;
@@ -241,16 +242,18 @@ namespace Resin.TextAnalysis
             if (((SparseVectorStorage<double>)word.Storage).Values.Length > 0 && labelBuffer.Count > 0)
             {
                 var label = new string(labelBuffer.ToArray());
-                if (useCharNGrams)
+                foreach (var ng in GetCharNGrams(label))
                 {
-                    foreach (var ng in GetCharNGrams(label))
-                    {
-                        var dim = HashToIndex(ng, _numOfDimensions);
-                        word[dim] += 1.0;
-                    }
+                    var dim = HashToIndex(ng, _numOfDimensions);
+                    word[dim] += 1.0;
                 }
-                yield return (labelVectors ? label : string.Empty, word);
+
+                if (labelVectors)
+                    yield return (label, word);
+                else
+                    yield return (string.Empty, word);
             }
+            labelBuffer.Clear();
         }
 
         public IEnumerable<(string label, Vector<float> vector)> TokenizeIntoFloat(IEnumerable<string> source)
@@ -318,23 +321,6 @@ namespace Resin.TextAnalysis
             var tokens = TokenizeIntoDouble(new[] { str1 });
             var angle = tokens.First().vector.CosAngle(_unitVector);
             return angle;
-        }
-
-        // Map a 64-bit hash to a stable double in [0,1]
-        private static double StableKeyFromLabel(string label)
-        {
-            // 64-bit FNV-1a
-            const ulong offset = 14695981039346656037UL;
-            const ulong prime = 1099511628211UL;
-            ulong h = offset;
-            foreach (var ch in label)
-            {
-                h ^= ch;
-                h *= prime;
-            }
-            // scale to [0,1] avoiding endpoints
-            const double denom = 18446744073709551615.0; // 2^64 - 1
-            return (h + 0.5) / (denom + 1.0);
         }
     }
 }
