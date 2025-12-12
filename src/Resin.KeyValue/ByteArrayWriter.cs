@@ -51,7 +51,8 @@ namespace Resin.KeyValue
             if (IsPageFull)
                 throw new OutOfPageStorageException();
 
-            int index = new Span<long>(_keyBuf, 0, _keyCount).BinarySearch(key);
+            var keySpan = new Span<long>(_keyBuf, 0, _keyCount);
+            int index = keySpan.BinarySearch(key);
             if (index >= 0)
             {
                 return false;
@@ -59,11 +60,19 @@ namespace Resin.KeyValue
 
             var address = SerializeValue(value);
 
-            _keyBuf[_keyCount] = key;
-            _addressBuf[_keyCount] = address;
-            _keyCount++;
+            // insertion point: ~index
+            int insertAt = ~index;
 
-            new Span<long>(_keyBuf, 0, _keyCount).Sort(new Span<Address>(_addressBuf, 0, _keyCount));
+            if (insertAt < _keyCount)
+            {
+                // shift right by one for both arrays
+                Array.Copy(_keyBuf, insertAt, _keyBuf, insertAt + 1, _keyCount - insertAt);
+                Array.Copy(_addressBuf, insertAt, _addressBuf, insertAt + 1, _keyCount - insertAt);
+            }
+
+            _keyBuf[insertAt] = key;
+            _addressBuf[insertAt] = address;
+            _keyCount++;
 
             return true;
         }
@@ -73,30 +82,29 @@ namespace Resin.KeyValue
             if (IsPageFull)
                 throw new OutOfPageStorageException();
 
-            int index = new Span<long>(_keyBuf, 0, _keyCount).BinarySearch(key);
+            var keySpan = new Span<long>(_keyBuf, 0, _keyCount);
+            int index = keySpan.BinarySearch(key);
 
             if (index >= 0)
             {
                 var address = _addressBuf[index];
-                var buf = new byte[address.Length + value.Length];
-                _valueStream.Position = address.Offset;
-                var read = _valueStream.Read(buf, 0, (int)address.Length);
-                if (read != address.Length)
-                    throw new InvalidDataException();
-
-                value.CopyTo(buf.AsSpan((int)address.Length));
-
-                _addressBuf[index] = SerializeValue(buf);
+                var combinedAddress = SerializeValueAppendExisting(address, value);
+                _addressBuf[index] = combinedAddress;
             }
             else
             {
-                var address = SerializeValue(value);
+                var newAddress = SerializeValue(value);
 
-                _keyBuf[_keyCount] = key;
-                _addressBuf[_keyCount] = address;
+                int insertAt = ~index;
+                if (insertAt < _keyCount)
+                {
+                    Array.Copy(_keyBuf, insertAt, _keyBuf, insertAt + 1, _keyCount - insertAt);
+                    Array.Copy(_addressBuf, insertAt, _addressBuf, insertAt + 1, _keyCount - insertAt);
+                }
+
+                _keyBuf[insertAt] = key;
+                _addressBuf[insertAt] = newAddress;
                 _keyCount++;
-
-                new Span<long>(_keyBuf, 0, _keyCount).Sort(new Span<Address>(_addressBuf, 0, _keyCount));
             }
         }
 
@@ -112,6 +120,42 @@ namespace Resin.KeyValue
             return new Address(pos, value.Length);
         }
 
+        // Writes the existing value (referenced by 'address') followed by 'append' directly to the end of the value stream,
+        // returning the new combined Address, without allocating an intermediate combined buffer.
+        private Address SerializeValueAppendExisting(Address address, ReadOnlySpan<byte> append)
+        {
+            if (append == Span<byte>.Empty || append.Length == 0)
+                throw new ArgumentOutOfRangeException(nameof(append.Length), "Append value cannot be null or empty.");
+
+            // Position value stream at end to begin new record
+            GoToEndOfStream(_valueStream);
+            var start = _valueStream.Position;
+
+            // Copy existing value from its original offset to the end, in small chunks to minimize memory
+            const int chunkSize = 8192;
+            Span<byte> chunk = stackalloc byte[Math.Min(chunkSize, (int)Math.Min(address.Length, chunkSize))];
+
+            long remaining = address.Length;
+            _valueStream.Position = address.Offset;
+            while (remaining > 0)
+            {
+                int toRead = (int)Math.Min(chunk.Length, remaining);
+                int read = _valueStream.Read(chunk.Slice(0, toRead));
+                if (read != toRead)
+                    throw new InvalidDataException();
+
+                _valueStream.Position = start + (address.Length - remaining);
+                _valueStream.Write(chunk.Slice(0, read));
+                remaining -= read;
+            }
+
+            // After copying existing bytes, write the appended span directly
+            _valueStream.Position = start + address.Length;
+            _valueStream.Write(append);
+
+            return new Address(start, address.Length + append.Length);
+        }
+
         public void Serialize()
         {
             if (_keyCount == 0)
@@ -120,17 +164,15 @@ namespace Resin.KeyValue
             GoToEndOfStream(_keyStream);
 
             // Cast Span<long> to Span<byte> before writing
-            _keyStream.Write(MemoryMarshal.AsBytes(new Span<long>(_keyBuf)));
+            _keyStream.Write(MemoryMarshal.AsBytes(new Span<long>(_keyBuf, 0, _keyCount)));
 
             GoToEndOfStream(_addressStream);
 
             // Cast Span<Address> to Span<byte> before writing
-            _addressStream.Write(MemoryMarshal.AsBytes(new Span<Address>(_addressBuf)));
+            _addressStream.Write(MemoryMarshal.AsBytes(new Span<Address>(_addressBuf, 0, _keyCount)));
 
+            // Reset count and reuse existing buffers (avoid allocating new arrays)
             _keyCount = 0;
-
-            _keyBuf = new long[_noOfKeysPerPage];
-            _addressBuf = new Address[_noOfKeysPerPage];
         }
 
         public bool TryPut(double key, ReadOnlySpan<byte> value)
@@ -197,9 +239,11 @@ namespace Resin.KeyValue
             if (keyStream.Length == 0)
                 throw new InvalidOperationException("Key stream stream is empty.");
 
-            var kbuf = new byte[pageSize];
-            keyStream.ReadExactly(kbuf);
-            return MemoryMarshal.Cast<byte, long>(kbuf).ToArray();
+            // Read directly into final long[] without intermediate byte[]
+            int count = pageSize / sizeof(long);
+            var longs = new long[count];
+            keyStream.ReadExactly(MemoryMarshal.AsBytes(new Span<long>(longs)));
+            return longs;
         }
 
         private Address[] ReadAddresses(Stream addressStream)
@@ -207,23 +251,10 @@ namespace Resin.KeyValue
             if (addressStream.Length == 0)
                 throw new InvalidOperationException("Address stream is empty.");
 
-            int addressBufSize = _noOfKeysPerPage * Address.Size;
-            Span<byte> adrBuf = new byte[addressBufSize];
-            addressStream.ReadExactly(adrBuf);
-            Span<long> adrSpan = MemoryMarshal.Cast<byte, long>(adrBuf);
-
-            var numOfAddresses = adrBuf.Length / Address.Size;
-            var addressList = new Address[numOfAddresses];
-            var addressListIndex = 0;
-
-            for (int i = 0; i < numOfAddresses; i += 2)
-            {
-                long ofs = adrSpan[i];
-                long len = adrSpan[i + 1];
-                addressList[addressListIndex++] = new Address(ofs, len);
-            }
-
-            return addressList;
+            // Read directly into final Address[] without intermediate byte[]
+            var addresses = new Address[_noOfKeysPerPage];
+            addressStream.ReadExactly(MemoryMarshal.AsBytes(new Span<Address>(addresses)));
+            return addresses;
         }
     }
 }
