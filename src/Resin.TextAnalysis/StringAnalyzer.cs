@@ -43,23 +43,36 @@ namespace Resin.TextAnalysis
             {
                 long docCount = 0;
                 long tokenCount = 0;
+
+                // Collect all (angle, buffer) pairs to allow sorting by angle for better write locality.
+                var batches = new List<(double angle, byte[] buf)>(capacity: 4096);
+
                 foreach (var str in source)
                 {
                     foreach (var token in TokenizeIntoDouble(str))
                     {
                         var idVec = token.vector.Analyze(_unitVector);
                         var angleOfId = idVec.CosAngle(_unitVector);
-                        var tokenBuf = token.vector.GetBytes(x => BitConverter.GetBytes(x));
-
-                        if (writer.TryPut(angleOfId, tokenBuf))
-                        {
-                            tokenCount++;
-                        }
+                        var tokenBuf = token.vector.GetBytes(BitConverter.GetBytes);
+                        batches.Add((angleOfId, tokenBuf));
                     }
                     docCount++;
-                    log?.LogInformation($"doc count: {docCount} tokens: {tokenCount}");
-                    Debug.WriteLine($"doc count: {docCount} tokens: {tokenCount}");
+                    log?.LogInformation($"doc count: {docCount} tokens (queued): {batches.Count}");
+                    Debug.WriteLine($"doc count: {docCount} tokens (queued): {batches.Count}");
                 }
+
+                // Sort by angle to improve write locality and reduce random access during storage.
+                batches.Sort((a, b) => a.angle.CompareTo(b.angle));
+
+                foreach (var (angle, buf) in batches)
+                {
+                    if (writer.TryPut(angle, buf))
+                    {
+                        tokenCount++;
+                    }
+                }
+
+                log?.LogInformation($"completed: docs={docCount} tokens (written): {tokenCount}");
                 writer.Serialize();
             }
         }
@@ -94,6 +107,10 @@ namespace Resin.TextAnalysis
                     {
                         lowestAngleCollision = mutualAngle;
                         leastEntropicToken = token.label;
+                    }
+                    if (mutualAngle < 0.9)
+                    {
+                        throw new InvalidOperationException($"collision for '{token.label}' at {angleOfId} mutualAngle:{mutualAngle}");
                     }
                 }
                 Debug.WriteLine($"lowestAngleCollision:{lowestAngleCollision} {leastEntropicToken}");
