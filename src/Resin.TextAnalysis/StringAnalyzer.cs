@@ -55,14 +55,10 @@ namespace Resin.TextAnalysis
                         {
                             tokenCount++;
                         }
-                        else
-                        {
-                            Debug.WriteLine($"could not add token '{token.label}' at angle {angleOfId}");
-                        }
                     }
                     docCount++;
-                    if (log != null)
-                        log.LogInformation($"doc count: {docCount} tokens: {tokenCount}");
+                    log?.LogInformation($"doc count: {docCount} tokens: {tokenCount}");
+                    Debug.WriteLine($"doc count: {docCount} tokens: {tokenCount}");
                 }
                 writer.Serialize();
             }
@@ -79,6 +75,8 @@ namespace Resin.TextAnalysis
             var docCount = 0;
             foreach (var str in source)
             {
+                double lowestAngleCollision = 1;
+                string leastEntropicToken = string.Empty;
                 foreach (var token in TokenizeIntoDouble(str))
                 {
                     var idVec = token.vector.Analyze(_unitVector);
@@ -92,9 +90,16 @@ namespace Resin.TextAnalysis
 
                     var tokenVec = tokenBuf.ToVectorDouble(_numOfDimensions);
                     double mutualAngle = tokenVec.CosAngle(token.vector);
-                    if (mutualAngle < 0.99)
-                        throw new InvalidOperationException($"collision. mutual angle of {mutualAngle} is too low. token: {token.label}");
+                    if (mutualAngle < lowestAngleCollision)
+                    {
+                        lowestAngleCollision = mutualAngle;
+                        leastEntropicToken = token.label;
+                    }
                 }
+                Debug.WriteLine($"lowestAngleCollision:{lowestAngleCollision} {leastEntropicToken}");
+                log?.LogInformation($"lowestAngleCollision:{lowestAngleCollision} {leastEntropicToken}");
+
+
                 docCount++;
                 if (log != null)
                 {
