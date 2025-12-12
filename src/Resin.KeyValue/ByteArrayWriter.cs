@@ -11,7 +11,7 @@ namespace Resin.KeyValue
         private long[] _keyBuf;
         private Address[] _addressBuf;
 
-        // Number of keys currently stored in the page, or index of next key to insert.
+        // Number of keys currently stored in the page/index of next key to insert.
         private int _keyCount;
 
         private int _noOfKeysPerPage;
@@ -68,29 +68,6 @@ namespace Resin.KeyValue
             return true;
         }
 
-        public bool TryPut(double key, ReadOnlySpan<byte> value)
-        {
-            long bits = BitConverter.DoubleToInt64Bits(key);
-            return TryPut(bits, value);
-        }
-
-        public bool TryPut(int key, ReadOnlySpan<byte> value) => TryPut((long)key, value);
-
-        public bool TryPut(float key, ReadOnlySpan<byte> value)
-        {
-            long bitsAsLong = BitConverter.SingleToInt32Bits(key);
-            return TryPut(bitsAsLong, value);
-        }
-
-        public bool TryPut(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
-        {
-            if (key == Span<byte>.Empty || key.Length == 0)
-                throw new ArgumentOutOfRangeException(nameof(key), "Key cannot be null or empty.");
-
-            long hashedKey = HashKey64(key);
-            return TryPut(hashedKey, value);
-        }
-
         public void PutOrAppend(long key, ReadOnlySpan<byte> value)
         {
             if (IsPageFull)
@@ -121,36 +98,6 @@ namespace Resin.KeyValue
 
                 new Span<long>(_keyBuf, 0, _keyCount).Sort(new Span<Address>(_addressBuf, 0, _keyCount));
             }
-        }
-
-        public void PutOrAppend(int key, ReadOnlySpan<byte> value) => PutOrAppend((long)key, value);
-
-        public void PutOrAppend(float key, ReadOnlySpan<byte> value)
-        {
-            long bitsAsLong = BitConverter.SingleToInt32Bits(key);
-            PutOrAppend(bitsAsLong, value);
-        }
-
-        public void PutOrAppend(double key, ReadOnlySpan<byte> value)
-        {
-            long bits = BitConverter.DoubleToInt64Bits(key);
-            PutOrAppend(bits, value);
-        }
-
-        private static long HashKey64(ReadOnlySpan<byte> key)
-        {
-            // FNV-1a 64-bit for wider key space
-            const ulong fnvOffset = 14695981039346656037UL;
-            const ulong fnvPrime = 1099511628211UL;
-
-            ulong hash = fnvOffset;
-            foreach (byte b in key)
-            {
-                hash ^= b;
-                hash *= fnvPrime;
-            }
-
-            return unchecked((long)hash);
         }
 
         private Address SerializeValue(ReadOnlySpan<byte> value)
@@ -184,6 +131,59 @@ namespace Resin.KeyValue
 
             _keyBuf = new long[_noOfKeysPerPage];
             _addressBuf = new Address[_noOfKeysPerPage];
+        }
+
+        public bool TryPut(double key, ReadOnlySpan<byte> value)
+        {
+            long bits = BitConverter.DoubleToInt64Bits(key);
+            return TryPut(bits, value);
+        }
+
+        public bool TryPut(int key, ReadOnlySpan<byte> value) => TryPut((long)key, value);
+
+        public bool TryPut(float key, ReadOnlySpan<byte> value)
+        {
+            long bitsAsLong = BitConverter.SingleToInt32Bits(key);
+            return TryPut(bitsAsLong, value);
+        }
+
+        public bool TryPut(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
+        {
+            if (key == Span<byte>.Empty || key.Length == 0)
+                throw new ArgumentOutOfRangeException(nameof(key), "Key cannot be null or empty.");
+
+            long hashedKey = HashKey64(key);
+            return TryPut(hashedKey, value);
+        }
+
+        public void PutOrAppend(int key, ReadOnlySpan<byte> value) => PutOrAppend((long)key, value);
+
+        public void PutOrAppend(float key, ReadOnlySpan<byte> value)
+        {
+            long bitsAsLong = BitConverter.SingleToInt32Bits(key);
+            PutOrAppend(bitsAsLong, value);
+        }
+
+        public void PutOrAppend(double key, ReadOnlySpan<byte> value)
+        {
+            long bits = BitConverter.DoubleToInt64Bits(key);
+            PutOrAppend(bits, value);
+        }
+
+        private static long HashKey64(ReadOnlySpan<byte> key)
+        {
+            // FNV-1a 64-bit for wider key space
+            const ulong fnvOffset = 14695981039346656037UL;
+            const ulong fnvPrime = 1099511628211UL;
+
+            ulong hash = fnvOffset;
+            foreach (byte b in key)
+            {
+                hash ^= b;
+                hash *= fnvPrime;
+            }
+
+            return unchecked((long)hash);
         }
 
         private static void GoToEndOfStream(Stream stream)
