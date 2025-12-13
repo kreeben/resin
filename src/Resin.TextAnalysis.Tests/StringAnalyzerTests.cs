@@ -96,8 +96,66 @@ namespace Resin.TextAnalysis.Tests
         [TestMethod]
         public void CanTokenize()
         {
-            var analyzer = new StringAnalyzer();
-            Assert.IsTrue(analyzer.TokenizeIntoDouble(SyntheticData).Any());
+            var analyzer = new StringAnalyzer(512);
+
+            // Mixed input: valid words, empty strings, whitespace, control chars, punctuation
+            var input = new[]
+            {
+                "Resin resin RESIN",
+                "",
+                "   ",
+                "\0\0",
+                "!!!",
+                "A lovely sunset"
+            };
+
+            var tokens = analyzer.TokenizeIntoDouble(input).ToArray();
+
+            // Positive: we should get tokens from the valid text parts
+            Assert.IsTrue(tokens.Any(), "Expected at least one token from valid input.");
+
+            // Negative: ensure noisy entries (empty/whitespace/control/punctuation-only)
+            // only produce tokens for punctuation, not for empty/whitespace/control.
+            var noiseOnly = new[] { string.Empty, "   ", "\0\0", "!!!" };
+            var noiseTokens = analyzer.TokenizeIntoDouble(noiseOnly).ToArray();
+
+            // Expect only the punctuation token to be produced.
+            Assert.AreEqual(1, noiseTokens.Length, "Only punctuation should produce a token among noise inputs.");
+            Assert.AreEqual("!!!", noiseTokens[0].label, "Expected punctuation token label to be '!!!'.");
+
+            // Structural: all token vectors should have correct dimensionality and sensible values
+            foreach (var t in tokens)
+            {
+                var v = t.vector;
+
+                // Dimensions must match analyzer configuration
+                Assert.AreEqual(512, v.Count, "Token vector dimensionality mismatch.");
+
+                // Values should be finite (no NaN/Infinity)
+                for (int i = 0; i < v.Count; i++)
+                {
+                    var val = v[i];
+                    Assert.IsFalse(double.IsNaN(val) || double.IsInfinity(val), $"Invalid value in vector at index {i}.");
+                }
+
+                // Norm should be positive and bounded (basic sanity for feature vectors)
+                var norm = v.L2Norm();
+                Assert.IsTrue(norm > 0.0, "Vector norm must be positive.");
+                Assert.IsTrue(norm < 1e6, "Vector norm is suspiciously large.");
+            }
+
+            // Consistency: tokenization of pure valid input should yield expected minimum count
+            var validOnly = new[] { "Resin resin RESIN", "A lovely sunset" };
+            var validTokens = analyzer.TokenizeIntoDouble(validOnly).ToArray();
+            Assert.IsTrue(validTokens.Length >= 5, "Expected at least five tokens from valid input sample.");
+
+            // Similarity sanity: vectors should have a defined cosine with a unit basis vector
+            var unit = CreateVector.Sparse<double>(512, 1.0);
+            foreach (var t in validTokens)
+            {
+                var angle = unit.CosAngle(t.vector);
+                Assert.IsTrue(angle >= -1.0 && angle <= 1.0, "Cosine angle must be within [-1, 1].");
+            }
         }
 
         [TestMethod]
