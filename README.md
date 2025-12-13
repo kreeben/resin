@@ -44,6 +44,9 @@ When working with `TKey`, please adhere to the following restrictions to ensure 
   - `GetHashCode()` is stable and evenly distributed; collisions affect page-level operations since non-primitive keys are hashed to `long`.
 - Keys must be comparable across the entire column; duplicate detection relies on the column snapshot and `BinarySearch` over sorted keys.
 
+### Column model and set operations
+- Each column stores any given `TKey` at most once in its column-wide snapshot (duplicate keys are prevented by both `TryPut` and `PutOrAppend`). This makes columns effectively sets of keys, enabling set operations such as union, intersection, and joins across columns. Linked values (via `PutOrAppend`) attach additional data to the existing key without introducing duplicates.
+
 ## Project Structure
 - `Resin.KeyValue` — Low level storage primitives (page, column, and byte array readers/writers; sessions)
 - `Resin.TextAnalysis` — String analysis, vector operations, and text models
