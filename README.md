@@ -1,6 +1,6 @@
 # Resin
 
-Resin is a fast, compact, and modern .NET 9 toolkit for text analysis and high performance key/value storage. It powers efficient string processing, vector operations, and custom storage primitives designed for speed and simplicity.
+Resin is a vector space index based search engine, a vector database and an anything key/value store. It powers efficient string processing, vector operations, and custom storage primitives designed for speed and simplicity.
 
 ## Highlights
 - Fast key/value storage with page/column readers and writers
@@ -52,4 +52,5 @@ This project is licensed under the MIT License.
 
 ## Learn More
 - **Issues**: [Report Issues](https://github.com/kreeben/resin/issues)
+
 
