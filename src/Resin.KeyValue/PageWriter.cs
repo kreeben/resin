@@ -1,8 +1,8 @@
 ﻿namespace Resin.KeyValue
 {
-    public class PageWriter<TKey> where TKey : struct, IEquatable<TKey>, IComparable<TKey>
+    public class PageWriter<TKey> : IDisposable where TKey : struct, IEquatable<TKey>, IComparable<TKey>
     {
-        private ByteArrayWriter _writer;
+        private readonly ByteArrayWriter _writer;
 
         public PageWriter(WriteSession writeTransaction)
         {
@@ -46,6 +46,11 @@
         public void Serialize()
         {
             _writer.Serialize();
+        }
+
+        public void Dispose()
+        {
+            _writer.Dispose();
         }
     }
 }
