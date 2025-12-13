@@ -68,7 +68,7 @@ namespace Resin.TextAnalysis.Tests
         }
 
         [TestMethod]
-        public void CanValidateLexicon_PositiveAndNegativeCases()
+        public void CanValidateSyntheticLexicon_PositiveAndNegativeCases()
         {
             using (var session = new WriteSession())
             using (var readSession = new ReadSession(session))
