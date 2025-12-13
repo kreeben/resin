@@ -50,7 +50,6 @@ When working with `TKey`, please adhere to the following restrictions to ensure 
 ## Project Structure
 - `Resin.KeyValue` — Low level storage primitives (page, column, and byte array readers/writers; sessions)
 - `Resin.TextAnalysis` — String analysis, vector operations, and text models
-- `Sir.Strings` — BagofWords and BagofChars models
 - `Resin.WikipediaCommandLine` — CLI utilities: lexicon build/validate and string compare
 - `Resin.TextAnalysis.Tests` — Unit tests for text analysis components
 
