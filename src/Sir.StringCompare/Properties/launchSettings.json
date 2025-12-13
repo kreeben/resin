@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "Sir.StringCompare": {
-      "commandName": "Project",
-      "commandLineArgs": "apple äpple"
-    }
-  }
-}
