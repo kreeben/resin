@@ -26,7 +26,7 @@ namespace Resin.TextAnalysis
         {
             _numOfDimensions = numOfDimensions;
 
-            // Normalize the reference vector to a true unit vector (all-ones normalized).
+            // Normalize the reference vector to a all-ones normalized unit vector.
             var ones = CreateVector.Dense<double>(_numOfDimensions, 1.0);
             var norm = ones.L2Norm();
             _unitVector = ones / norm;
@@ -212,7 +212,7 @@ namespace Resin.TextAnalysis
             }
         }
 
-        // Split input into words using the same boundary rules as IsData (no ToCharArray to reduce allocations).
+        // Split input into words using the same boundary rules as IsData.
         private static List<string> SplitWords(string source, Func<char, bool> isData)
         {
             var words = new List<string>();
@@ -224,11 +224,11 @@ namespace Resin.TextAnalysis
                 {
                     buf.Add(c);
                 }
-                else if (c == '’')
-                {
-                    // Keep behavior consistent with existing code (special apostrophe ignored).
-                    var _ = char.GetUnicodeCategory(c);
-                }
+                //else if (c == '’')
+                //{
+                //    // special apostrophe ignored.
+                //    var _ = char.GetUnicodeCategory(c);
+                //}
                 else
                 {
                     if (buf.Count > 0)
