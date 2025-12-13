@@ -47,31 +47,30 @@ When working with `TKey`, please adhere to the following restrictions to ensure 
 ### Column model and set operations
 - Each column stores any given `TKey` at most once in its column-wide snapshot (duplicate keys are prevented by both `TryPut` and `PutOrAppend`). This makes columns effectively sets of keys, enabling set operations such as union, intersection, and joins across columns. Linked values (via `PutOrAppend`) attach additional data to the existing key without introducing duplicates.
 
-## Project Structure
-- `Resin.KeyValue` — Low level storage primitives (page, column, and byte array readers/writers; sessions)
-- `Resin.TextAnalysis` — String analysis, vector operations, and text models
-- `Resin.WikipediaCommandLine` — CLI utilities: lexicon build/validate and string compare
-- `Resin.TextAnalysis.Tests` — Unit tests for text analysis components
+### Storage artefacts: *.key, *.adr, *.val
+- **.key (Key stream)**
+  - Stores the sorted sequence of `TKey` representations per page/column. Keys are written in fixed-size slots (`sizeof(long)` per entry for page-level storage) and serialized in page batches. The column-wide snapshot is built by reading and sorting this stream.
+- **.adr (Address stream)**
+  - Stores `Address` structs aligned with `.key` entries. Each `Address` contains `Offset` and `Length`:
+    - For raw values: points directly into `.val` (Offset = start of value, Length = byte length).
+    - For linked values: points to a `LinkedAddressNode` head in `.val` (Length equals node size). The node chain yields multiple values for a single key.
+- **.val (Value stream)**
+  - Stores the actual value bytes and any `LinkedAddressNode` headers used for linking. Values are appended at the end of the stream; `LinkedAddressNode`s are also written into `.val` to form singly linked lists via absolute offsets.
 
-## Getting Started
-1. **Prerequisites**: Ensure you have the .NET 9 SDK installed on your machine.
-2. **Clone the Repository**: 
+### Immutability of value files
+- The `.val` stream is treated as append-only:
+  - Existing bytes are never modified in place.
+  - New values are written at the end, preserving previously written offsets.
+  - Linking does not rewrite existing values; instead, `LinkedAddressNode` headers are appended and previous node’s `NextOffset` is patched by writing a new node and updating pointers via `.adr` alignment.
+- Benefits:
+  - Stable offsets enable safe caching of addresses and efficient read paths.
+  - Appending scales linearly, minimizing fragmentation and avoiding in-place mutations.
+  - Historical values remain intact; multi-value chains are expressed via node headers rather than overwriting data.
 
-   git clone https://github.com/kreeben/resin
-
-3. **Build the Project**: 
-
-   dotnet build
-
-4. **Wikipedia Setup and Local Testing**
-
-- [Detailed Instructions](https://github.com/kreeben/resin/blob/sortedlist/src/README.md)
-- Or open the local file at `src/README.md` in your working copy.
-
-## Usage
-- Use `Resin.KeyValue` for fast on disk structures and efficient read/write sessions.
+- ## Usage
+- Use `Resin.KeyValue` for fast on disk structures and efficient read/write key/value sessions.
 - Use `Resin.TextAnalysis` for `StringAnalyzer`, `VectorOperations`, and similarity tooling.
-- Use `Sir.Strings` models for feature extraction from text.
+- Use `Resin.WikipediaCommandLine` for commandline tools to build/validate lexicons.
 
 ## Contributing
 Contributions are welcome! Please open an issue or pull request with clear motivation, tests when applicable, and concise changes.
@@ -81,5 +80,3 @@ This project is licensed under the MIT License.
 
 ## Learn More
 - **Issues**: [Report Issues](https://github.com/kreeben/resin/issues)
-
-
