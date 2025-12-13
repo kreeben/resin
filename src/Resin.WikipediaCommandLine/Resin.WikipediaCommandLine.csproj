@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Resin.CommandLine\Resin.CommandLineTools.csproj" />
+    <ProjectReference Include="..\Resin.CommandLine\Resin.CommandLine.csproj" />
     <ProjectReference Include="..\Resin.DataSources\Resin.DataSources.csproj" />
     <ProjectReference Include="..\Resin.TextAnalysis\Resin.TextAnalysis.csproj" />
   </ItemGroup>

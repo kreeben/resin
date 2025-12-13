@@ -15,7 +15,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resin.TextAnalysis.Tests", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resin.WikipediaCommandLine", "Resin.WikipediaCommandLine\Resin.WikipediaCommandLine.csproj", "{BADAF54B-8334-4253-BE77-2A7F208EFFD3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resin.CommandLineTools", "Resin.CommandLine\Resin.CommandLineTools.csproj", "{A3F200FA-FE87-4FC8-BFCB-4CE3BACBADD0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resin.CommandLine", "Resin.CommandLine\Resin.CommandLine.csproj", "{A3F200FA-FE87-4FC8-BFCB-4CE3BACBADD0}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{86E534BF-D7A0-416F-9EBC-C291F5C8AE6C}"
 EndProject
