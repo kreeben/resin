@@ -269,6 +269,71 @@
             }
         }
 
+        [TestMethod]
+        public void ColumnReader_GetMany_ReturnsSingleValueAndCount1()
+        {
+            const int pageSize = 64 * sizeof(double);
+            using (var tx = new WriteSession(pageSize))
+            {
+                using (var writer = new ColumnWriter<double>(new DoubleWriter(tx)))
+                {
+                    writer.TryPut(1.0, BitConverter.GetBytes(1.0));
+                }
+
+                tx.KeyStream.Position = 0;
+                tx.ValueStream.Position = 0;
+                tx.AddressStream.Position = 0;
+
+                using (var session = new ReadSession(tx.KeyStream, tx.ValueStream, tx.AddressStream, pageSize))
+                {
+                    var reader = new ColumnReader<double>(session);
+                    var span = reader.GetMany(1.0, out var count);
+                    Assert.AreEqual(1, count);
+                    Assert.AreEqual(1.0, BitConverter.ToDouble(span));
+                }
+            }
+        }
+
+        [TestMethod]
+        public void ColumnWriter_PutOrAppend_TailAppendsValuesAcrossColumn()
+        {
+            const int pageSize = 64 * sizeof(double);
+            using (var tx = new WriteSession(pageSize))
+            {
+                using (var writer = new ColumnWriter<double>(new DoubleWriter(tx)))
+                {
+                    Assert.IsTrue(writer.TryPut(2.0, BitConverter.GetBytes(2.0)));
+                }
+
+                using (var writer = new ColumnWriter<double>(new DoubleWriter(tx)))
+                {
+                    writer.PutOrAppend(2.0, BitConverter.GetBytes(3.0));
+                    writer.PutOrAppend(2.0, BitConverter.GetBytes(4.0));
+                }
+
+                tx.KeyStream.Position = 0;
+                tx.ValueStream.Position = 0;
+                tx.AddressStream.Position = 0;
+
+                using (var session = new ReadSession(tx.KeyStream, tx.ValueStream, tx.AddressStream, pageSize))
+                {
+                    var reader = new ColumnReader<double>(session);
+
+                    var span = reader.GetMany(2.0, out var count);
+                    Assert.AreEqual(3, count);
+
+                    // Tail-appending order: original 2.0 first (converted to head->tail), then appended 3.0, then 4.0
+                    var d1 = BitConverter.ToDouble(span.Slice(0, sizeof(double)));
+                    var d2 = BitConverter.ToDouble(span.Slice(sizeof(double), sizeof(double)));
+                    var d3 = BitConverter.ToDouble(span.Slice(sizeof(double) * 2, sizeof(double)));
+
+                    Assert.AreEqual(2.0, d1);
+                    Assert.AreEqual(3.0, d2);
+                    Assert.AreEqual(4.0, d3);
+                }
+            }
+        }
+
         [ClassInitialize]
         public static void ClassInit(TestContext context)
         {

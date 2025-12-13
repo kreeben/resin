@@ -8,19 +8,11 @@
         public ColumnWriter(PageWriter<TKey> writer)
         {
             _writer = writer;
-            // Column-wide snapshot: load all keys for duplicate detection across previous pages.
             _allKeys = ReadOperations.ReadSortedSetOfAllKeysInColumn<TKey>(writer.KeyStream);
         }
 
-        /// <summary>
-        /// TryPut writes the key/value only if the key does not already exist in the column snapshot.
-        /// - Returns false if the key exists in the cached sorted set of all keys (_allKeys), which represents the whole column.
-        /// - Otherwise delegates to PageWriter.TryPut for page-level insertion.
-        /// - If the current page becomes full, triggers serialization of the page.
-        /// </summary>
         public bool TryPut(TKey key, ReadOnlySpan<byte> value)
         {
-            // Scan the whole column snapshot (cached in _allKeys) to detect duplicates across previous pages.
             if (key.KeyExists(_allKeys))
             {
                 return false;
@@ -34,13 +26,42 @@
             return put;
         }
 
-        /// <summary>
-        /// PutOrAppend appends when the key exists in the current page; otherwise inserts a new key in the current page.
-        /// - Does not scan the column-wide snapshot for append semantics; operates at the page level.
-        /// - If the current page becomes full, triggers serialization of the page.
-        /// </summary>
         public void PutOrAppend(TKey key, ReadOnlySpan<byte> value)
         {
+            var index = new Span<TKey>(_allKeys).BinarySearch(key);
+            if (index >= 0)
+            {
+                var newValueAdr = WriteValue(_writer.ValueStream, value);
+
+                var currentAdr = ReadOperations.GetAddress(_writer.AddressStream, index, 0);
+
+                if (IsNodeHead(currentAdr, out var headNode))
+                {
+                    var tailOffset = currentAdr.Offset;
+                    var curAdr = currentAdr;
+                    var curNode = headNode;
+
+                    while (curNode.NextOffset != 0)
+                    {
+                        tailOffset = curNode.NextOffset;
+                        curAdr = new Address(tailOffset, LinkedAddressNode.Size);
+                        curNode = ReadNode(_writer.ValueStream, curAdr);
+                    }
+
+                    var newTailAdr = WriteNode(_writer.ValueStream, new LinkedAddressNode(newValueAdr, nextOffset: 0));
+                    LinkedAddressNode.OverwriteNextOffset(_writer.ValueStream, tailOffset, newTailAdr.Offset);
+                }
+                else
+                {
+                    var headAdr = WriteNode(_writer.ValueStream, new LinkedAddressNode(currentAdr, nextOffset: 0));
+                    var newTailAdr = WriteNode(_writer.ValueStream, new LinkedAddressNode(newValueAdr, nextOffset: 0));
+                    LinkedAddressNode.OverwriteNextOffset(_writer.ValueStream, headAdr.Offset, newTailAdr.Offset);
+                    OverwriteAddressAtIndex(_writer.AddressStream, index, headAdr);
+                }
+
+                return;
+            }
+
             _writer.PutOrAppend(key, value);
             if (_writer.IsPageFull)
             {
@@ -48,9 +69,6 @@
             }
         }
 
-        /// <summary>
-        /// Serialize flushes the current page to the backing streams.
-        /// </summary>
         public void Serialize()
         {
             _writer.Serialize();
@@ -62,6 +80,76 @@
             {
                 Serialize();
             }
+        }
+
+        private static Address WriteValue(Stream valueStream, ReadOnlySpan<byte> value)
+        {
+            if (value == Span<byte>.Empty || value.Length == 0)
+                throw new ArgumentOutOfRangeException(nameof(value.Length), "Value cannot be null or empty.");
+
+            if (valueStream.Position != valueStream.Length)
+                valueStream.Position = valueStream.Length;
+
+            var pos = valueStream.Position;
+            valueStream.Write(value);
+            return new Address(pos, value.Length);
+        }
+
+        private static Address WriteNode(Stream valueStream, in LinkedAddressNode node)
+        {
+            if (valueStream.Position != valueStream.Length)
+                valueStream.Position = valueStream.Length;
+
+            var pos = valueStream.Position;
+            LinkedAddressNode.Serialize(valueStream, node);
+            return new Address(pos, LinkedAddressNode.Size);
+        }
+
+        // FIX: Implement node header reading using the writer's ValueStream.
+        private bool IsNodeHead(Address adr, out LinkedAddressNode node)
+        {
+            node = default;
+            if (adr.Length != LinkedAddressNode.Size)
+                return false;
+
+            return TryReadNodeHeader(_writer.ValueStream, adr, out node) && node.Header == LinkedAddressNode.Magic;
+        }
+
+        private static bool TryReadNodeHeader(Stream valueStream, Address adr, out LinkedAddressNode node)
+        {
+            node = default;
+
+            if (adr.Length != LinkedAddressNode.Size)
+                return false;
+
+            var buf = new byte[LinkedAddressNode.Size];
+            valueStream.Position = adr.Offset;
+            valueStream.ReadExactly(buf);
+
+            var parsed = LinkedAddressNode.Deserialize(buf);
+            if (parsed.Header != LinkedAddressNode.Magic)
+                return false;
+
+            node = parsed;
+            return true;
+        }
+
+        private static LinkedAddressNode ReadNode(Stream valueStream, Address adr)
+        {
+            var buf = new byte[LinkedAddressNode.Size];
+            valueStream.Position = adr.Offset;
+            valueStream.ReadExactly(buf);
+            var node = LinkedAddressNode.Deserialize(buf);
+            if (node.Header != LinkedAddressNode.Magic)
+                throw new InvalidDataException("Invalid LinkedAddressNode header.");
+            return node;
+        }
+
+        private static void OverwriteAddressAtIndex(Stream addressStream, int index, Address newAdr)
+        {
+            var pos = index * Address.Size;
+            addressStream.Position = pos;
+            Address.Serialize(addressStream, new[] { newAdr });
         }
     }
 }

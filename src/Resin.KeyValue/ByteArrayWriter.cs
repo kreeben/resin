@@ -28,6 +28,8 @@ namespace Resin.KeyValue
         private int _noOfKeysPerPage;
 
         internal Stream KeyStream => _keyStream;
+        internal Stream AddressStream => _addressStream;
+        internal Stream ValueStream => _valueStream;
 
         // Indicates whether current page reached capacity
         public bool IsPageFull => _keyCount >= _noOfKeysPerPage;
@@ -53,13 +55,13 @@ namespace Resin.KeyValue
 
             if (_keyStream.Length > 0)
             {
-                // Read existing page directly into the rented buffers
-                var loadedKeys = ReadKeys(_keyStream, _session.PageSize);
-                loadedKeys.CopyTo(_keyBuf, 0);
-                _keyCount = loadedKeys.Length;
+                // Read existing keys/addresses based on actual stream length, not page size
+                var loadedKeys = ReadKeys(_keyStream);
+                var loadedAddresses = ReadAddresses(_addressStream, loadedKeys.Length);
 
-                var loadedAddresses = ReadAddresses(_addressStream);
+                loadedKeys.CopyTo(_keyBuf, 0);
                 loadedAddresses.CopyTo(_addressBuf, 0);
+                _keyCount = loadedKeys.Length;
             }
         }
 
@@ -137,8 +139,6 @@ namespace Resin.KeyValue
             return new Address(pos, value.Length);
         }
 
-        // Writes the existing value (referenced by 'address') followed by 'append' directly to the end of the value stream,
-        // returning the new combined Address, without allocating an intermediate combined buffer.
         private Address SerializeValueAppendExisting(Address address, ReadOnlySpan<byte> append)
         {
             if (append == Span<byte>.Empty || append.Length == 0)
@@ -155,21 +155,22 @@ namespace Resin.KeyValue
 
             // Copy existing value from its original offset to the end, using reusable heap buffer
             long remaining = address.Length;
-            _valueStream.Position = address.Offset;
-
+            var srcPos = address.Offset;
             while (remaining > 0)
             {
                 int toRead = (int)Math.Min(_copyBuf!.Length, remaining);
+                _valueStream.Position = srcPos;
                 int read = _valueStream.Read(_copyBuf.AsSpan(0, toRead));
                 if (read != toRead)
                     throw new InvalidDataException();
 
-                _valueStream.Position = start + (address.Length - remaining);
+                var destPos = start + (address.Length - remaining);
+                _valueStream.Position = destPos;
                 _valueStream.Write(_copyBuf.AsSpan(0, read));
                 remaining -= read;
+                srcPos += read;
             }
 
-            // After copying existing bytes, write the appended span directly
             _valueStream.Position = start + address.Length;
             _valueStream.Write(append);
 
@@ -250,32 +251,40 @@ namespace Resin.KeyValue
                 stream.Position = stream.Length;
         }
 
-        private long[] ReadKeys(Stream keyStream, int pageSize)
+        // Read keys based on actual stream length; supports partially filled pages.
+        private long[] ReadKeys(Stream keyStream)
         {
-            if (keyStream.Length == 0)
-                throw new InvalidOperationException("Key stream stream is empty.");
+            var totalBytes = keyStream.Length;
+            if (totalBytes == 0)
+                throw new InvalidOperationException("Key stream is empty.");
 
-            // Read directly into final long[] without intermediate byte[]
-            int count = pageSize / sizeof(long);
+            var count = (int)(totalBytes / sizeof(long));
             var longs = new long[count];
+            keyStream.Position = 0;
             keyStream.ReadExactly(MemoryMarshal.AsBytes(new Span<long>(longs)));
             return longs;
         }
 
-        private Address[] ReadAddresses(Stream addressStream)
+        // Read addresses based on actual stream length or provided key count to keep arrays aligned.
+        private Address[] ReadAddresses(Stream addressStream, int expectedCount)
         {
-            if (addressStream.Length == 0)
+            var totalBytes = addressStream.Length;
+            if (totalBytes == 0)
                 throw new InvalidOperationException("Address stream is empty.");
 
-            // Read directly into final Address[] without intermediate byte[]
-            var addresses = new Address[_noOfKeysPerPage];
+            var count = (int)(totalBytes / Address.Size);
+            if (count < expectedCount)
+                throw new InvalidDataException("Address stream contains fewer addresses than keys.");
+
+            // Read exactly expectedCount to align with loaded keys
+            var addresses = new Address[expectedCount];
+            addressStream.Position = 0;
             addressStream.ReadExactly(MemoryMarshal.AsBytes(new Span<Address>(addresses)));
             return addresses;
         }
 
         public void Dispose()
         {
-            // Return rented buffers to pools
             if (_keyBuf != null)
             {
                 _longPool.Return(_keyBuf, clearArray: false);

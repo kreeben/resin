@@ -10,6 +10,8 @@
         }
 
         public Stream KeyStream => _writer.KeyStream;
+        public Stream AddressStream => _writer.AddressStream;
+        public Stream ValueStream => _writer.ValueStream;
 
         // True when current page has no remaining capacity for new keys
         public bool IsPageFull => _writer.IsPageFull;
