@@ -11,7 +11,7 @@
         {
             _addressStream = readSession.AddressStream;
             _valueStream = readSession.ValueStream;
-            _allKeys = ReadUtil.ReadSortedSetOfAllKeysInColumn<TKey>(readSession.KeyStream);
+            _allKeys = ReadOperations.ReadSortedSetOfAllKeysInColumn<TKey>(readSession.KeyStream);
             _addressCache = new Dictionary<TKey, Address>();
         }
 
@@ -23,10 +23,10 @@
                 Address adr;
                 if (!_addressCache.TryGetValue(key, out adr))
                 {
-                    adr = ReadUtil.GetAddress(_addressStream, index, 0);
+                    adr = ReadOperations.GetAddress(_addressStream, index, 0);
                     _addressCache.Add(key, adr);
                 }
-                return ReadUtil.ReadValue(_valueStream, adr);
+                return ReadOperations.ReadValue(_valueStream, adr);
 
             }
             return ReadOnlySpan<byte>.Empty;

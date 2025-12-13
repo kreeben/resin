@@ -30,8 +30,8 @@ namespace Resin.KeyValue
             int index = _keyBuf.Span.BinarySearch(key);
             if (index > -1)
             {
-                var address = ReadUtil.GetAddress(_addressStream, index, _addressOffset);
-                return ReadUtil.ReadValue(_valueStream, address);
+                var address = ReadOperations.GetAddress(_addressStream, index, _addressOffset);
+                return ReadOperations.ReadValue(_valueStream, address);
             }
             return ReadOnlySpan<byte>.Empty;
         }

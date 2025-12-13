@@ -2,7 +2,7 @@
 
 namespace Resin.KeyValue
 {
-    public static class ReadUtil
+    public static class ReadOperations
     {
         public static TKey[] ReadSortedSetOfAllKeysInColumn<TKey>(Stream stream) where TKey : struct, IEquatable<TKey>, IComparable<TKey>
         {

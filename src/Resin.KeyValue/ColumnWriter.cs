@@ -8,7 +8,7 @@
         public ColumnWriter(PageWriter<TKey> writer)
         {
             _writer = writer;
-            _allKeys = ReadUtil.ReadSortedSetOfAllKeysInColumn<TKey>(writer.KeyStream);
+            _allKeys = ReadOperations.ReadSortedSetOfAllKeysInColumn<TKey>(writer.KeyStream);
         }
 
         public bool TryPut(TKey key, ReadOnlySpan<byte> value)
