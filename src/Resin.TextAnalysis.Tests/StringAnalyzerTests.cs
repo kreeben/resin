@@ -164,7 +164,7 @@ namespace Resin.TextAnalysis.Tests
             const int pageSize = 4096;
             const int numOfDimensions = 512;
             using (var tx = new WriteSession(pageSize))
-            using (var pageWriter = new ColumnWriter<double>(new DoubleWriter(tx)))
+            using (var pageWriter = new ColumnWriter<double>(new PageWriter<double>(tx)))
             {
                 var analyzer = new StringAnalyzer();
                 var tokens = analyzer.TokenizeIntoFloat(new[] { "Resin" });
@@ -193,7 +193,7 @@ namespace Resin.TextAnalysis.Tests
             const int pageSize = 4096;
             const int numOfDimensions = 512;
             using (var tx = new WriteSession(pageSize))
-            using (var pageWriter = new ColumnWriter<double>(new DoubleWriter(tx)))
+            using (var pageWriter = new ColumnWriter<double>(new PageWriter<double>(tx)))
             {
                 var analyzer = new StringAnalyzer();
                 var tokens = analyzer.TokenizeIntoDouble(new[] { "Resin" });

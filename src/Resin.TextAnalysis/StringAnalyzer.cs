@@ -41,7 +41,7 @@ namespace Resin.TextAnalysis
                 throw new ArgumentNullException(nameof(source));
             }
 
-            using (var writer = new ColumnWriter<double>(new DoubleWriter(tx)))
+            using (var writer = new ColumnWriter<double>(new PageWriter<double>(tx)))
             {
                 long docCount = 0;
                 long tokenCount = 0;

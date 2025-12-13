@@ -11,7 +11,7 @@
 
             using (var tx = new WriteSession(pageSize))
             {
-                using (var writer = new ColumnWriter<double>(new DoubleWriter(tx)))
+                using (var writer = new ColumnWriter<double>(new PageWriter<double>(tx)))
                 {
                     for (int i = 0; i < testCount; i++)
                     {
@@ -48,7 +48,7 @@
 
             using (var tx = new WriteSession(pageSize))
             {
-                using (var writer = new ColumnWriter<double>(new DoubleWriter(tx)))
+                using (var writer = new ColumnWriter<double>(new PageWriter<double>(tx)))
                 {
                     for (int i = 0; i < testCount; i++)
                     {
@@ -87,7 +87,7 @@
 
             using (var tx = new WriteSession(pageSize))
             {
-                using (var writer = new ColumnWriter<double>(new DoubleWriter(tx)))
+                using (var writer = new ColumnWriter<double>(new PageWriter<double>(tx)))
                 {
                     for (int i = 0; i < testCount; i++)
                     {
@@ -127,7 +127,7 @@
             using (var tx = new WriteSession(pageSize))
             {
                 var testCases = new List<double>();
-                using (var writer = new ColumnWriter<double>(new DoubleWriter(tx)))
+                using (var writer = new ColumnWriter<double>(new PageWriter<double>(tx)))
                 {
                     for (int i = 0; i < testCount; i++)
                     {
@@ -171,7 +171,7 @@
 
             using (var tx = new WriteSession(pageSize))
             {
-                var writer = new DoubleWriter(tx);
+                var writer = new PageWriter<double>(tx);
 
                 for (int i = 0; i < testCount; i++)
                 {
@@ -200,7 +200,7 @@
             using (var tx = new WriteSession(pageSize))
             {
                 var testCases = new List<double>();
-                using (var writer = new ColumnWriter<double>(new DoubleWriter(tx)))
+                using (var writer = new ColumnWriter<double>(new PageWriter<double>(tx)))
                 {
                     for (int i = 0; i < testCount; i++)
                     {
@@ -237,7 +237,7 @@
         {
             using (var tx = new WriteSession())
             {
-                var writer = new DoubleWriter(tx);
+                var writer = new PageWriter<double>(tx);
                 Assert.IsTrue(writer.TryPut(key: 0, value: BitConverter.GetBytes((double)0)));
                 Assert.IsFalse(writer.TryPut(key: 0, value: BitConverter.GetBytes((double)0)));
             }
@@ -250,7 +250,7 @@
             const int pageSize = 512 * sizeof(double);
             using (var session = new WriteSession(pageSize))
             {
-                using (var writer = new ColumnWriter<double>(new DoubleWriter(session)))
+                using (var writer = new ColumnWriter<double>(new PageWriter<double>(session)))
                 {
                     for (int i = 0; i < testCount; i++)
                     {
@@ -261,7 +261,7 @@
                 session.KeyStream.Position = 0;
                 session.ValueStream.Position = 0;
                 session.AddressStream.Position = 0;
-                using (var writer = new ColumnWriter<double>(new DoubleWriter(session)))
+                using (var writer = new ColumnWriter<double>(new PageWriter<double>(session)))
                 {
                     var zeroAlreadyExistsSoThisShouldBeFalse = writer.TryPut(key: 0, value: BitConverter.GetBytes((double)0));
                     Assert.IsFalse(zeroAlreadyExistsSoThisShouldBeFalse);
@@ -275,7 +275,7 @@
             const int pageSize = 64 * sizeof(double);
             using (var tx = new WriteSession(pageSize))
             {
-                using (var writer = new ColumnWriter<double>(new DoubleWriter(tx)))
+                using (var writer = new ColumnWriter<double>(new PageWriter<double>(tx)))
                 {
                     writer.TryPut(1.0, BitConverter.GetBytes(1.0));
                 }
@@ -300,12 +300,12 @@
             const int pageSize = 64 * sizeof(double);
             using (var tx = new WriteSession(pageSize))
             {
-                using (var writer = new ColumnWriter<double>(new DoubleWriter(tx)))
+                using (var writer = new ColumnWriter<double>(new PageWriter<double>(tx)))
                 {
                     Assert.IsTrue(writer.TryPut(2.0, BitConverter.GetBytes(2.0)));
                 }
 
-                using (var writer = new ColumnWriter<double>(new DoubleWriter(tx)))
+                using (var writer = new ColumnWriter<double>(new PageWriter<double>(tx)))
                 {
                     writer.PutOrAppend(2.0, BitConverter.GetBytes(3.0));
                     writer.PutOrAppend(2.0, BitConverter.GetBytes(4.0));
@@ -332,30 +332,6 @@
                     Assert.AreEqual(4.0, d3);
                 }
             }
-        }
-
-        [ClassInitialize]
-        public static void ClassInit(TestContext context)
-        {
-            // This method is called once for the test class, before any tests of the class are run.
-        }
-
-        [ClassCleanup]
-        public static void ClassCleanup()
-        {
-            // This method is called once for the test class, after all tests of the class are run.
-        }
-
-        [TestInitialize]
-        public void TestInit()
-        {
-            // This method is called before each test method.
-        }
-
-        [TestCleanup]
-        public void TestCleanup()
-        {
-            // This method is called after each test method.
         }
     }
 }
