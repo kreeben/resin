@@ -8,6 +8,29 @@ Resin is a vector space index based search engine, a vector database and an anyt
 - Commandline tools for building and validating lexicons and comparing strings
 - Clean, dependency light design that is easy to extend
 
+## Key/Value Column Semantics
+
+### ColumnWriter
+- **TryPut(TKey key, ReadOnlySpan<byte> value)**
+  - Inserts the key/value only if the key does not exist in the column-wide snapshot (previous pages included).
+  - Returns `false` when the key already exists; otherwise writes to the current page.
+  - Triggers page serialization when the page becomes full.
+
+- **PutOrAppend(TKey key, ReadOnlySpan<byte> value)**
+  - If the key exists anywhere in the column, no new key is stored. Instead, values are linked using a fixed-size node (`LinkedAddressNode`) written to the value stream.
+  - Tail-appending order: the original value remains first, followed by each appended value in insertion order. Address entry for the key points to the list head when linking is active.
+  - If the key does not exist in the column snapshot, operates at the page level (insert/append within the current page) and may serialize when full.
+
+### ColumnReader
+- **Get(TKey key)**
+  - Returns the value for `key`. If the key’s address entry points to a linked-list head, returns the concatenated bytes of all linked values.
+  - Returns `ReadOnlySpan<byte>.Empty` when the key does not exist.
+
+- **GetMany(TKey key, out int count)**
+  - Returns a concatenated `ReadOnlySpan<byte>` of all values linked for `key` and outputs the number of items via `count`.
+  - When the key points to a single raw value, returns that value and `count = 1`. If the key does not exist, returns empty and `count = 0`.
+
+
 ## Project Structure
 - `Resin.KeyValue` — Low level storage primitives (page, column, and byte array readers/writers; sessions)
 - `Resin.TextAnalysis` — String analysis, vector operations, and text models
@@ -25,34 +48,16 @@ Resin is a vector space index based search engine, a vector database and an anyt
 
    dotnet build
 
-4. **Run CLI Examples**:
-- Build lexicon: 
-  ```bash
-  dotnet run --project Resin.WikipediaCommandLine -- lexicon
-  ```
-- Validate lexicon: 
-  ```bash
-  dotnet run --project Resin.WikipediaCommandLine -- validate
-  ```
-- Compare strings: 
-  ```bash
-  dotnet run --project Resin.WikipediaCommandLine -- compare "left" "right"
-  ```
-
-## Usage
-- Use `Resin.KeyValue` for fast on disk structures and efficient read/write sessions.
-- Use `Resin.TextAnalysis` for `StringAnalyzer`, `VectorOperations`, and similarity tooling.
-- Use `Sir.Strings` models for feature extraction from text.
-
- ## Wikipedia Setup and Local Testing
-
-Step-by-step guide to download a Wikipedia CirrusSearch dump and run the build/validate commands: 
+4. **Wikipedia Setup and Local Testing**
 
 See the detailed instructions in `src/README.md`:
 - [Detailed Instructions](https://github.com/kreeben/resin/blob/sortedlist/src/README.md)
 - Or open the local file at `src/README.md` in your working copy.
 
-This link provides the “Setup Wikipedia locally” flow, including the `wikipediadownload` command and usage examples for `lexicon` and `validatelexicon`.
+## Usage
+- Use `Resin.KeyValue` for fast on disk structures and efficient read/write sessions.
+- Use `Resin.TextAnalysis` for `StringAnalyzer`, `VectorOperations`, and similarity tooling.
+- Use `Sir.Strings` models for feature extraction from text.
 
 ## Contributing
 Contributions are welcome! Please open an issue or pull request with clear motivation, tests when applicable, and concise changes.
