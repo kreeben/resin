@@ -70,7 +70,7 @@ When working with `TKey`, please adhere to the following restrictions to ensure 
 - ## Usage
 - Use `Resin.KeyValue` for fast on disk structures and efficient read/write key/value sessions.
 - Use `Resin.TextAnalysis` for `StringAnalyzer`, `VectorOperations`, and similarity tooling.
-- Use `Resin.WikipediaCommandLine` for commandline tools to build/validate lexicons.
+- Use `Resin.WikipediaCommandLine` for commandline tools to build/validate lexicons. See detailed CLI usage and setup in [`Resin.WikipediaCommandLine/README.md`](src/Resin.WikipediaCommandLine/README.md).
 
 ## Contributing
 Contributions are welcome! Please open an issue or pull request with clear motivation, tests when applicable, and concise changes.
