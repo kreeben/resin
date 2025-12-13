@@ -7,7 +7,7 @@ using Resin.TextAnalysis;
 namespace Resin.WikipediaCommandLine
 {
     /// <summary>
-    /// validatelexicon --dir "c:\data" --source "d:\enwiki-20211122-cirrussearch-content.json.gz" --field "text" --take 100
+    /// validatelexicon --dir "c:\data" --source "d:\enwiki-20211122-cirrussearch-content.json.gz" --field "text" --take 100 --debug true
     /// </summary>
     public class ValidateLexiconCommand : ICommand
     {

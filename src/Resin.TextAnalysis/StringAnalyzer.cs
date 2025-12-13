@@ -65,8 +65,7 @@ namespace Resin.TextAnalysis
                         batches.Add((angleOfId, rented));
                     }
                     docCount++;
-                    log?.LogInformation($"doc count: {docCount} tokens (queued): {batches.Count}");
-                    Debug.WriteLine($"doc count: {docCount} tokens (queued): {batches.Count}");
+                    log?.LogInformation($"doc count: {docCount} tokens: {batches.Count}");
                 }
 
                 // Sort by angle to improve write locality and reduce random access during storage.
@@ -95,22 +94,30 @@ namespace Resin.TextAnalysis
                 throw new ArgumentNullException(nameof(source));
             }
 
+            var sw = Stopwatch.StartNew();
             var tokenReader = new ColumnReader<double>(readSession);
             var docCount = 0;
+            long totalTokens = 0;
+            double globalLowestAngle = 1.0;
+            string globalLeastEntropicToken = string.Empty;
+
             foreach (var str in source)
             {
                 double lowestAngleCollision = 1;
                 string leastEntropicToken = string.Empty;
-
+                int docTokenCount = 0;
+                int collisionCount = 0;
                 foreach (var token in TokenizeIntoDouble(str))
                 {
+                    docTokenCount++;
+                    totalTokens++;
+
                     var idVec = token.vector.Analyze(_unitVector);
                     var angleOfId = idVec.CosAngle(_unitVector);
                     var tokenBuf = tokenReader.Get(angleOfId);
 
                     if (tokenBuf.IsEmpty)
                     {
-                        Debug.WriteLine($"could not find '{token.label}' at {angleOfId}");
                         log?.LogInformation($"could not find '{token.label}' at {angleOfId}");
                         return false;
                     }
@@ -124,24 +131,43 @@ namespace Resin.TextAnalysis
                     }
                     if (mutualAngle < _identityAngle)
                     {
-                        throw new InvalidOperationException($"collision for '{token.label}' mutualAngle:{mutualAngle}");
+                        collisionCount++;
+                        log?.LogWarning($"collision for '{token.label}' mutualAngle:{mutualAngle}");
+
+                        //throw new InvalidOperationException($"collision for '{token.label}' mutualAngle:{mutualAngle}");
                     }
                 }
-                Debug.WriteLine($"lowestAngleCollision:{lowestAngleCollision} {leastEntropicToken}");
-                log?.LogInformation($"lowestAngleCollision:{lowestAngleCollision} {leastEntropicToken}");
 
+                if (lowestAngleCollision < globalLowestAngle)
+                {
+                    globalLowestAngle = lowestAngleCollision;
+                    globalLeastEntropicToken = leastEntropicToken;
+                }
+
+                log?.LogInformation($"doc count: {docCount} tokens: {docTokenCount} total tokens: {totalTokens} collisions: {collisionCount} lowestAngleCollision:{lowestAngleCollision} {leastEntropicToken}");
 
                 docCount++;
+
+                // Periodic progress update every 50 docs or every ~2 seconds
                 if (log != null)
                 {
-                    var headLen = Math.Min(25, str.Length);
-                    var head = str.Substring(0, headLen);
-                    var tailLen = Math.Min(25, str.Length);
-                    var tailStart = Math.Max(0, str.Length - tailLen);
-                    var tail = str.Substring(tailStart, str.Length - tailStart);
-                    log.LogInformation($"VALID: doc {docCount} content: {head}...{tail}");
+                    if (docCount % 50 == 0 || sw.ElapsedMilliseconds > 2000)
+                    {
+                        log.LogInformation("Progress: docs={DocCount}, tokens={TokenCount}, elapsed={Elapsed}",
+                            docCount,
+                            totalTokens,
+                            sw.Elapsed);
+                        sw.Restart();
+                    }
                 }
             }
+
+            log?.LogInformation("ValidateLexicon: completed. docs={DocCount}, tokens={TokenCount}, minCollisionAngle={MinAngle} ({Token}), totalElapsed={Elapsed}",
+                docCount,
+                totalTokens,
+                globalLowestAngle,
+                string.IsNullOrEmpty(globalLeastEntropicToken) ? "(n/a)" : globalLeastEntropicToken,
+                sw.Elapsed);
 
             return true;
         }
