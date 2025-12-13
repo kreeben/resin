@@ -44,6 +44,16 @@ Resin is a vector space index based search engine, a vector database and an anyt
 - Use `Resin.TextAnalysis` for `StringAnalyzer`, `VectorOperations`, and similarity tooling.
 - Use `Sir.Strings` models for feature extraction from text.
 
+ ## Wikipedia Setup and Local Testing
+
+Step-by-step guide to download a Wikipedia CirrusSearch dump and run the build/validate commands: 
+
+See the detailed instructions in `src/README.md`:
+- [Detailed Instructions](https://github.com/kreeben/resin/blob/sortedlist/src/README.md)
+- Or open the local file at `src/README.md` in your working copy.
+
+This link provides the “Setup Wikipedia locally” flow, including the `wikipediadownload` command and usage examples for `lexicon` and `validatelexicon`.
+
 ## Contributing
 Contributions are welcome! Please open an issue or pull request with clear motivation, tests when applicable, and concise changes.
 
