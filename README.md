@@ -40,7 +40,7 @@ Resin is a fast, compact, and modern .NET 9 toolkit for text analysis and high p
   ```
 
 ## Usage
-- Use `Resin.KeyValue` for fast on?disk structures and efficient read/write sessions.
+- Use `Resin.KeyValue` for fast on disk structures and efficient read/write sessions.
 - Use `Resin.TextAnalysis` for `StringAnalyzer`, `VectorOperations`, and similarity tooling.
 - Use `Sir.Strings` models for feature extraction from text.
 
@@ -52,3 +52,4 @@ This project is licensed under the MIT License.
 
 ## Learn More
 - **Issues**: [Report Issues](https://github.com/kreeben/resin/issues)
+
