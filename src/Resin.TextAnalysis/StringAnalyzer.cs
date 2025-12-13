@@ -108,7 +108,9 @@ namespace Resin.TextAnalysis
 
                     if (tokenBuf.IsEmpty)
                     {
-                        throw new InvalidOperationException($"could not find '{token.label}' at {angleOfId}");
+                        Debug.WriteLine($"could not find '{token.label}' at {angleOfId}");
+                        log?.LogInformation($"could not find '{token.label}' at {angleOfId}");
+                        return false;
                     }
 
                     var tokenVec = tokenBuf.ToVectorDouble(_numOfDimensions);
@@ -118,7 +120,7 @@ namespace Resin.TextAnalysis
                         lowestAngleCollision = mutualAngle;
                         leastEntropicToken = token.label;
                     }
-                    if (mutualAngle < 0.85)
+                    if (mutualAngle < 0.9)
                     {
                         throw new InvalidOperationException($"collision for '{token.label}' mutualAngle:{mutualAngle}");
                     }

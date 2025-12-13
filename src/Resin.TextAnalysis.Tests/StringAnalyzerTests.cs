@@ -8,7 +8,7 @@ namespace Resin.TextAnalysis.Tests
     [TestClass]
     public class StringAnalyzerTests
     {
-        string[] Data = new[]
+        string[] SyntheticData = new[]
         {
             "\0\0 A world of dew,\r\n\r\nAnd within [every} §dewdrop.\r\n\r\nA world of struggle.",
             "I write, erase, rewrite\r\n\r\nErase \0\0again, and then\r\n\r\nA poppy blooms.",
@@ -37,8 +37,8 @@ namespace Resin.TextAnalysis.Tests
             using (var readSession = new ReadSession(session))
             {
                 var analyzer = new StringAnalyzer();
-                analyzer.BuildLexicon(Data, session);
-                Assert.IsTrue(analyzer.ValidateLexicon(Data, readSession));
+                analyzer.BuildLexicon(SyntheticData, session);
+                Assert.IsTrue(analyzer.ValidateLexicon(SyntheticData, readSession));
             }
         }
 
@@ -68,10 +68,36 @@ namespace Resin.TextAnalysis.Tests
         }
 
         [TestMethod]
+        public void Can_ValidateLexicon_PositiveAndNegativeCases()
+        {
+            using (var session = new WriteSession())
+            using (var readSession = new ReadSession(session))
+            {
+                var analyzer = new StringAnalyzer(numOfDimensions: 256);
+
+                // Positive: build and validate against the same corpus
+                analyzer.BuildLexicon(SyntheticData, session);
+                Assert.IsTrue(analyzer.ValidateLexicon(SyntheticData, readSession), "Expected validation to succeed for known corpus.");
+
+                // Negative: validate against out-of-lexicon tokens (intentionally different words)
+                var unknownData = new[]
+                {
+                    "quantum entanglement",
+                    "distributed ledger",
+                    "neural radiance fields",
+                    "gamma ray bursts",
+                    "hyperbolic embeddings"
+                };
+
+                Assert.IsFalse(analyzer.ValidateLexicon(unknownData, readSession), "Expected validation to fail for unknown corpus.");
+            }
+        }
+
+        [TestMethod]
         public void CanTokenize()
         {
             var analyzer = new StringAnalyzer();
-            Assert.IsTrue(analyzer.TokenizeIntoDouble(Data).Any());
+            Assert.IsTrue(analyzer.TokenizeIntoDouble(SyntheticData).Any());
         }
 
         [TestMethod]
