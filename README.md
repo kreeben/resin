@@ -1,8 +1,6 @@
-Here's the improved `README.md` file, incorporating the new content while maintaining the existing structure and information:
-
 # Resin
 
-Resin is a fast, compact, and modern .NET 9 toolkit for text analysis and high performance key/value storage. It powers efficient string processing, vector operations, and custom storage primitives designed for speed and simplicity.
+Resin is a vector space index based search engine, a vector database and an anything key/value store. It powers efficient string processing, vector operations, and custom storage primitives designed for speed and simplicity.
 
 ## Highlights
 - Fast key/value storage with page/column readers and writers
@@ -11,18 +9,22 @@ Resin is a fast, compact, and modern .NET 9 toolkit for text analysis and high p
 - Clean, dependency light design that is easy to extend
 
 ## Project Structure
-- `Resin.KeyValue` — Low level storage primitives (page, column, and byte array readers/writers; sessions)
-- `Resin.TextAnalysis` — String analysis, vector operations, and text models
-- `Sir.Strings` — BagofWords and BagofChars models
-- `Resin.WikipediaCommandLine` — CLI utilities: lexicon build/validate and string compare
-- `Resin.TextAnalysis.Tests` — Unit tests for text analysis components
+- `Resin.KeyValue` â€” Low level storage primitives (page, column, and byte array readers/writers; sessions)
+- `Resin.TextAnalysis` â€” String analysis, vector operations, and text models
+- `Sir.Strings` â€” BagofWords and BagofChars models
+- `Resin.WikipediaCommandLine` â€” CLI utilities: lexicon build/validate and string compare
+- `Resin.TextAnalysis.Tests` â€” Unit tests for text analysis components
 
 ## Getting Started
 1. **Prerequisites**: Ensure you have the .NET 9 SDK installed on your machine.
-2. **Clone the Repository**: 
-   git clone https://github.com/kreeben/resin
-3. **Build the Project**: 
-   dotnet build
+2. **Clone the Repository**: 
+
+   git clone https://github.com/kreeben/resin
+
+3. **Build the Project**: 
+
+   dotnet build
+
 4. **Run CLI Examples**:
 - Build lexicon: 
   ```bash
@@ -38,7 +40,7 @@ Resin is a fast, compact, and modern .NET 9 toolkit for text analysis and high p
   ```
 
 ## Usage
-- Use `Resin.KeyValue` for fast on?disk structures and efficient read/write sessions.
+- Use `Resin.KeyValue` for fast on disk structures and efficient read/write sessions.
 - Use `Resin.TextAnalysis` for `StringAnalyzer`, `VectorOperations`, and similarity tooling.
 - Use `Sir.Strings` models for feature extraction from text.
 
@@ -49,4 +51,6 @@ Contributions are welcome! Please open an issue or pull request with clear motiv
 This project is licensed under the MIT License.
 
 ## Learn More
-- **Issues**: [Report Issues](https://github.com/kreeben/resin/issues)
+- **Issues**: [Report Issues](https://github.com/kreeben/resin/issues)
+
+
