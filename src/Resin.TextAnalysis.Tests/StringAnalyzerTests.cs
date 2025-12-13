@@ -60,7 +60,7 @@ namespace Resin.TextAnalysis.Tests
             using (var session = new WriteSession())
             using (var readSession = new ReadSession(session))
             {
-                var analyzer = new StringAnalyzer(numOfDimensions: 256);
+                var analyzer = new StringAnalyzer(numOfDimensions: 256, identityAngle: 0.9);
                 analyzer.BuildLexicon(data, session);
                 var result = analyzer.ValidateLexicon(data, readSession);
                 Assert.IsTrue(result);
@@ -73,7 +73,7 @@ namespace Resin.TextAnalysis.Tests
             using (var session = new WriteSession())
             using (var readSession = new ReadSession(session))
             {
-                var analyzer = new StringAnalyzer(numOfDimensions: 256);
+                var analyzer = new StringAnalyzer(numOfDimensions: 64, identityAngle: 0.8);
 
                 // Positive: build and validate against the same corpus
                 analyzer.BuildLexicon(SyntheticData, session);

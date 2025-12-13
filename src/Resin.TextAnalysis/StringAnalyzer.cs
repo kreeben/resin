@@ -12,6 +12,7 @@ namespace Resin.TextAnalysis
     {
         private readonly int _numOfDimensions;
         private readonly Vector<double> _unitVector;
+        private readonly double _identityAngle;
         private readonly HashSet<UnicodeCategory> _validData = new HashSet<UnicodeCategory>
         {
             // punctuation
@@ -22,7 +23,7 @@ namespace Resin.TextAnalysis
             UnicodeCategory.CurrencySymbol, UnicodeCategory.DecimalDigitNumber, UnicodeCategory.MathSymbol, UnicodeCategory.ModifierSymbol, UnicodeCategory.OtherNumber, UnicodeCategory.OtherSymbol
         };
 
-        public StringAnalyzer(int numOfDimensions = 512)
+        public StringAnalyzer(int numOfDimensions = 512, double identityAngle = 0.9)
         {
             _numOfDimensions = numOfDimensions;
 
@@ -30,6 +31,7 @@ namespace Resin.TextAnalysis
             var ones = CreateVector.Dense<double>(_numOfDimensions, 1.0);
             var norm = ones.L2Norm();
             _unitVector = ones / norm;
+            _identityAngle = identityAngle;
         }
 
         public void BuildLexicon(IEnumerable<string> source, WriteSession tx, ILogger? log = null)
@@ -120,7 +122,7 @@ namespace Resin.TextAnalysis
                         lowestAngleCollision = mutualAngle;
                         leastEntropicToken = token.label;
                     }
-                    if (mutualAngle < 0.9)
+                    if (mutualAngle < _identityAngle)
                     {
                         throw new InvalidOperationException($"collision for '{token.label}' mutualAngle:{mutualAngle}");
                     }
