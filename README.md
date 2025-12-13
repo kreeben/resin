@@ -65,7 +65,6 @@ When working with `TKey`, please adhere to the following restrictions to ensure 
 
 4. **Wikipedia Setup and Local Testing**
 
-See the detailed instructions in `src/README.md`:
 - [Detailed Instructions](https://github.com/kreeben/resin/blob/sortedlist/src/README.md)
 - Or open the local file at `src/README.md` in your working copy.
 
