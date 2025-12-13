@@ -30,6 +30,19 @@ Resin is a vector space index based search engine, a vector database and an anyt
   - Returns a concatenated `ReadOnlySpan<byte>` of all values linked for `key` and outputs the number of items via `count`.
   - When the key points to a single raw value, returns that value and `count = 1`. If the key does not exist, returns empty and `count = 0`.
 
+### TKey Restrictions for ColumnWriter/ColumnReader
+When working with `TKey`, please adhere to the following restrictions to ensure proper functionality:
+
+- `TKey` must be a value type (`struct`) and implement both `IEquatable<TKey>` and `IComparable<TKey>`.
+- Ordering and equality must be stable across sessions. The column-wide key snapshot uses `BinarySearch`/sorting, so `CompareTo` must define a strict total order consistent with `Equals`.
+- Page-level storage operates on `long` keys. For primitive numeric keys:
+  - `double` and `float` are stored via their IEEE bit representations.
+  - `int` and `long` are stored directly.
+  - Other `TKey` types are hashed via `GetHashCode()` to a `long` for page-level operations.
+- **Recommendation:** Use numeric primitives (`double`, `float`, `int`, `long`) for deterministic ordering and lookup. If using a custom struct, ensure:
+  - `Equals` and `CompareTo` are consistent and deterministic.
+  - `GetHashCode()` is stable and evenly distributed; collisions affect page-level operations since non-primitive keys are hashed to `long`.
+- Keys must be comparable across the entire column; duplicate detection relies on the column snapshot and `BinarySearch` over sorted keys.
 
 ## Project Structure
 - `Resin.KeyValue` — Low level storage primitives (page, column, and byte array readers/writers; sessions)
