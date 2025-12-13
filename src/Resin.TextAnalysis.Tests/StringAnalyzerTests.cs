@@ -60,7 +60,7 @@ namespace Resin.TextAnalysis.Tests
             using (var session = new WriteSession())
             using (var readSession = new ReadSession(session))
             {
-                var analyzer = new StringAnalyzer(numOfDimensions: 2048);
+                var analyzer = new StringAnalyzer(numOfDimensions: 256);
                 analyzer.BuildLexicon(data, session);
                 var result = analyzer.ValidateLexicon(data, readSession);
                 Assert.IsTrue(result);

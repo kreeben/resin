@@ -99,6 +99,7 @@ namespace Resin.TextAnalysis
             {
                 double lowestAngleCollision = 1;
                 string leastEntropicToken = string.Empty;
+
                 foreach (var token in TokenizeIntoDouble(str))
                 {
                     var idVec = token.vector.Analyze(_unitVector);
@@ -117,9 +118,9 @@ namespace Resin.TextAnalysis
                         lowestAngleCollision = mutualAngle;
                         leastEntropicToken = token.label;
                     }
-                    if (mutualAngle < 0.9)
+                    if (mutualAngle < 0.85)
                     {
-                        throw new InvalidOperationException($"collision for '{token.label}' at {angleOfId} mutualAngle:{mutualAngle}");
+                        throw new InvalidOperationException($"collision for '{token.label}' mutualAngle:{mutualAngle}");
                     }
                 }
                 Debug.WriteLine($"lowestAngleCollision:{lowestAngleCollision} {leastEntropicToken}");
