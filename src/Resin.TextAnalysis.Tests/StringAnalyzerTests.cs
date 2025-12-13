@@ -87,7 +87,7 @@ namespace Resin.TextAnalysis.Tests
                 var vector = tokens.First().vector;
                 var unitVector = CreateVector.Sparse<float>(numOfDimensions, (float)1);
                 var angle = unitVector.CosAngle(vector);
-                var vectorBuf = vector.GetBytes(x => BitConverter.GetBytes(x));
+                var vectorBuf = vector.GetBytes(x => BitConverter.GetBytes(x), sizeof(float));
                 pageWriter.TryPut(angle, vectorBuf);
                 pageWriter.Serialize();
 
@@ -116,7 +116,7 @@ namespace Resin.TextAnalysis.Tests
                 var vector = tokens.First().vector;
                 var unitVector = CreateVector.Sparse<double>(numOfDimensions, (double)1);
                 var angle = unitVector.CosAngle(vector);
-                var vectorBuf = vector.GetBytes(x => BitConverter.GetBytes(x));
+                var vectorBuf = vector.GetBytes(x => BitConverter.GetBytes(x), sizeof(double));
                 pageWriter.TryPut(angle, vectorBuf);
                 pageWriter.Serialize();
 

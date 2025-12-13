@@ -55,7 +55,7 @@ namespace Resin.TextAnalysis
                         var angleOfId = idVec.CosAngle(_unitVector);
 
                         // Use ArrayPool to avoid repeated temporary allocations when preparing buffers.
-                        var tmp = token.vector.GetBytes(BitConverter.GetBytes);
+                        var tmp = token.vector.GetBytes((double d) => BitConverter.GetBytes(d), sizeof(double));
                         var rented = System.Buffers.ArrayPool<byte>.Shared.Rent(tmp.Length);
                         Buffer.BlockCopy(tmp, 0, rented, 0, tmp.Length);
 

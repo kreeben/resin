@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Buffers;
+using System.Runtime.InteropServices;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Storage;
 
@@ -6,39 +7,160 @@ namespace Resin.TextAnalysis
 {
     public static class VectorOperations
     {
-        public static byte[] GetBytes<T>(this Vector<T> vector, Func<T, byte[]> serialize) where T : struct, IEquatable<T>, IFormattable
+        // Consistent format: [int count][count * int indices][count * float values]
+        public static byte[] GetBytes(this Vector<float> vector)
         {
-            var stream = new MemoryStream();
-            var storage = (SparseVectorStorage<T>)vector.Storage;
-            int componentCount = storage.ValueCount;
-
-            stream.Write(BitConverter.GetBytes(componentCount));
-
-            for (int i = 0; i < storage.Indices.Length; i++)
+            // Collect non-zero components and their indices
+            var pairs = new List<(int Index, float Value)>();
+            foreach (var (index, value) in vector.EnumerateIndexed(Zeros.AllowSkip))
             {
-                var index = storage.Indices[i];
-                if (i > 0 && index == 0)
-                    break;
-                stream.Write(BitConverter.GetBytes(index));
+                pairs.Add((index, value));
             }
 
-            for (int i = 0; i < storage.Values.Length; i++)
+            int count = pairs.Count;
+            int headerSize = sizeof(int);
+            int indicesSize = count * sizeof(int);
+            int valuesSize = count * sizeof(float);
+            int totalSize = headerSize + indicesSize + valuesSize;
+
+            byte[] rented = ArrayPool<byte>.Shared.Rent(totalSize);
+            try
             {
-                var value = storage.Values[i];
-                if (i > 0 && value.Equals(default(T)))
-                    break;
-                stream.Write(serialize(value));
+                var span = rented.AsSpan(0, totalSize);
+
+                // Write header (count)
+                MemoryMarshal.Write(span, ref count);
+                int offset = headerSize;
+
+                // Write indices
+                var indicesSpan = MemoryMarshal.Cast<byte, int>(span.Slice(offset, indicesSize));
+                for (int i = 0; i < count; i++)
+                {
+                    indicesSpan[i] = pairs[i].Index;
+                }
+                offset += indicesSize;
+
+                // Write values
+                var valuesSpan = MemoryMarshal.Cast<byte, float>(span.Slice(offset, valuesSize));
+                for (int i = 0; i < count; i++)
+                {
+                    valuesSpan[i] = pairs[i].Value;
+                }
+
+                // Return exact-sized array
+                return span.ToArray();
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
+        }
+
+        // Consistent format: [int count][count * int indices][count * double values]
+        public static byte[] GetBytes(this Vector<double> vector)
+        {
+            var pairs = new List<(int Index, double Value)>();
+            foreach (var (index, value) in vector.EnumerateIndexed(Zeros.AllowSkip))
+            {
+                pairs.Add((index, value));
             }
 
-            return stream.ToArray();
+            int count = pairs.Count;
+            int headerSize = sizeof(int);
+            int indicesSize = count * sizeof(int);
+            int valuesSize = count * sizeof(double);
+            int totalSize = headerSize + indicesSize + valuesSize;
+
+            byte[] rented = ArrayPool<byte>.Shared.Rent(totalSize);
+            try
+            {
+                var span = rented.AsSpan(0, totalSize);
+
+                // Write header (count)
+                MemoryMarshal.Write(span, ref count);
+                int offset = headerSize;
+
+                // Write indices
+                var indicesSpan = MemoryMarshal.Cast<byte, int>(span.Slice(offset, indicesSize));
+                for (int i = 0; i < count; i++)
+                {
+                    indicesSpan[i] = pairs[i].Index;
+                }
+                offset += indicesSize;
+
+                // Write values
+                var valuesSpan = MemoryMarshal.Cast<byte, double>(span.Slice(offset, valuesSize));
+                for (int i = 0; i < count; i++)
+                {
+                    valuesSpan[i] = pairs[i].Value;
+                }
+
+                return span.ToArray();
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
+        }
+
+        // Generic path that enforces fixed-size element serialization.
+        // Format: [int count][count * int indices][count * elementSize values]
+        public static byte[] GetBytes<T>(this Vector<T> vector, Func<T, ReadOnlySpan<byte>> serialize, int elementSize)
+            where T : struct, IEquatable<T>, IFormattable
+        {
+            var pairs = new List<(int Index, T Value)>();
+            foreach (var (index, value) in vector.EnumerateIndexed(Zeros.AllowSkip))
+            {
+                pairs.Add((index, value));
+            }
+
+            int count = pairs.Count;
+            int headerSize = sizeof(int);
+            int indicesSize = count * sizeof(int);
+            int valuesSize = count * elementSize;
+            int totalSize = headerSize + indicesSize + valuesSize;
+
+            byte[] rented = ArrayPool<byte>.Shared.Rent(totalSize);
+            try
+            {
+                var span = rented.AsSpan(0, totalSize);
+
+                // Write header (count)
+                MemoryMarshal.Write(span, ref count);
+                int offset = headerSize;
+
+                // Write indices
+                var indicesSpan = MemoryMarshal.Cast<byte, int>(span.Slice(offset, indicesSize));
+                for (int i = 0; i < count; i++)
+                {
+                    indicesSpan[i] = pairs[i].Index;
+                }
+                offset += indicesSize;
+
+                // Write values (fixed-size per element)
+                var valuesBytes = span.Slice(offset, valuesSize);
+                for (int i = 0; i < count; i++)
+                {
+                    var elemBytes = serialize(pairs[i].Value);
+                    if (elemBytes.Length != elementSize)
+                        throw new ArgumentException("serialize must return fixed-size element bytes", nameof(serialize));
+                    elemBytes.CopyTo(valuesBytes.Slice(i * elementSize, elementSize));
+                }
+
+                return span.ToArray();
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
         }
 
         public static Vector<float> ToVectorFloat(this byte[] bufferWithHeader, int numOfDimensions)
         {
             var componentCount = BitConverter.ToInt32(bufferWithHeader);
             var len = componentCount * sizeof(float);
-            var indices = MemoryMarshal.Cast<byte, int>(bufferWithHeader.AsSpan(sizeof(int), len)).ToArray();
-            var values = MemoryMarshal.Cast<byte, float>(bufferWithHeader.AsSpan(sizeof(int) + len, len)).ToArray();
+            var indices = MemoryMarshal.Cast<byte, int>(bufferWithHeader.AsSpan(sizeof(int), componentCount * sizeof(int))).ToArray();
+            var values = MemoryMarshal.Cast<byte, float>(bufferWithHeader.AsSpan(sizeof(int) + componentCount * sizeof(int), len)).ToArray();
             int i = 0;
             return CreateVector.SparseOfIndexed(numOfDimensions, indices.Select(index => (index, values[i++])));
         }
