@@ -132,7 +132,7 @@ namespace Resin.TextAnalysis
                     if (mutualAngle < _identityAngle)
                     {
                         collisionCount++;
-                        log?.LogWarning($"collision for '{token.label}' mutualAngle:{mutualAngle}");
+                        log?.LogWarning($"doc count: {docCount} collision for '{token.label}' mutualAngle:{mutualAngle}");
 
                         //throw new InvalidOperationException($"collision for '{token.label}' mutualAngle:{mutualAngle}");
                     }
