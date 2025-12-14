@@ -1,6 +1,6 @@
 # Resin
 
-Resin is a vector space based search engine, a vector database and an anything key/value store. It powers efficient string processing, vector operations, and custom storage primitives designed for speed and simplicity. It can produce large language models out of strings and large anything models out of byte arrays.
+Resin is a vector space search engine, a vector database and an anything key/value store. It powers efficient string processing, vector operations, and custom storage primitives designed for speed and simplicity. It can produce large language models out of strings and large anything models out of byte arrays.
 
 ## Highlights
 - Fast key/value storage with page/column readers and writers
