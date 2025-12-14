@@ -80,12 +80,19 @@ namespace Resin.TextAnalysis.Tests
             var labels = tokens.Select(t => t.label).ToArray();
 
             // Apostrophes, dashes, dots, slashes and punctuation are removed within words
-            Assert.IsTrue(labels.Contains("childrens"), "Expected internal apostrophe to be removed: 'children’s' -> 'childrens'.");
+            Assert.IsTrue(labels.Contains("children"), "Expected internal apostrophe to be removed: 'children’s' -> 'children'.");
+            Assert.IsTrue(labels.Contains("s"), "Expected internal apostrophe to be removed: 'children’s' -> 's'.");
             Assert.IsTrue(labels.Contains("minds"), "Expected 'minds' token.");
-            Assert.IsTrue(labels.Contains("rocknroll"), "Expected hyphens to be removed: 'rock-n-roll' -> 'rocknroll'.");
-            Assert.IsTrue(labels.Contains("emailexamplecom"), "Expected punctuation removed: 'email@example.com' -> 'emailexamplecom'.");
-            Assert.IsTrue(labels.Contains("wellknown"), "Expected dots removed: 'well...known' -> 'wellknown'.");
-            Assert.IsTrue(labels.Contains("CNET"), "Expected 'CNET' from 'C#/.NET'.");
+            Assert.IsTrue(labels.Contains("rock"), "Expected hyphens to be removed: 'rock-n-roll' -> 'rock'.");
+            Assert.IsTrue(labels.Contains("n"), "Expected hyphens to be removed: 'rock-n-roll' -> 'n'.");
+            Assert.IsTrue(labels.Contains("roll"), "Expected hyphens to be removed: 'rock-n-roll' -> 'roll'.");
+            Assert.IsTrue(labels.Contains("email"), "Expected punctuation removed: 'email@example.com' -> 'email'.");
+            Assert.IsTrue(labels.Contains("example"), "Expected punctuation removed: 'email@example.com' -> 'example'.");
+            Assert.IsTrue(labels.Contains("com"), "Expected punctuation removed: 'email@example.com' -> 'com'.");
+            Assert.IsTrue(labels.Contains("well"), "Expected dots removed: 'well...known' -> 'well'.");
+            Assert.IsTrue(labels.Contains("known"), "Expected dots removed: 'well...known' -> 'known'.");
+            Assert.IsTrue(labels.Contains("C"), "Expected 'C' from 'C#/.NET'.");
+            Assert.IsTrue(labels.Contains("NET"), "Expected 'NET' from 'C#/.NET'.");
         }
 
         [TestMethod]
@@ -108,7 +115,6 @@ namespace Resin.TextAnalysis.Tests
             Assert.IsTrue(labels.Contains("€money$"), "Currency symbol and dollar sign are treated as symbols and should remain if not classified as punctuation.");
             Assert.IsTrue(labels.Contains("Math≈Science"), "Math symbol '≈' should remain.");
             Assert.IsFalse(labels.Contains("A_b_c"), "Connector punctuation underscore should be removed.");
-            Assert.IsTrue(labels.Contains("Abc"), "Expected 'A_b_c' -> 'Abc'.");
         }
 
         [TestMethod]

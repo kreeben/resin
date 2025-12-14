@@ -15,8 +15,6 @@ namespace Resin.TextAnalysis
         private readonly double _identityAngle;
         private readonly HashSet<UnicodeCategory> _validData = new HashSet<UnicodeCategory>
         {
-            // punctuation
-            UnicodeCategory.ClosePunctuation, UnicodeCategory.OpenPunctuation, UnicodeCategory.ConnectorPunctuation, UnicodeCategory.DashPunctuation, UnicodeCategory.FinalQuotePunctuation, UnicodeCategory.InitialQuotePunctuation, UnicodeCategory.OtherPunctuation,
             //letters
             UnicodeCategory.UppercaseLetter, UnicodeCategory.LowercaseLetter, UnicodeCategory.LetterNumber, UnicodeCategory.ModifierLetter, UnicodeCategory.TitlecaseLetter, UnicodeCategory.OtherLetter,
             //numbers and symbols
@@ -253,23 +251,6 @@ namespace Resin.TextAnalysis
         // Split input into words using the same boundary rules as IsData, but remove punctuation from emitted words.
         private static List<string> SplitWords(string source, Func<char, bool> isData)
         {
-            static bool IsPunctuationChar(char ch)
-            {
-                switch (char.GetUnicodeCategory(ch))
-                {
-                    case UnicodeCategory.ClosePunctuation:
-                    case UnicodeCategory.OpenPunctuation:
-                    case UnicodeCategory.ConnectorPunctuation:
-                    case UnicodeCategory.DashPunctuation:
-                    case UnicodeCategory.FinalQuotePunctuation:
-                    case UnicodeCategory.InitialQuotePunctuation:
-                    case UnicodeCategory.OtherPunctuation:
-                        return true;
-                    default:
-                        return false;
-                }
-            }
-
             var words = new List<string>();
             var buf = new List<char>(64);
 
@@ -277,11 +258,7 @@ namespace Resin.TextAnalysis
             {
                 if (isData(c))
                 {
-                    // Skip punctuation characters from the token buffer
-                    if (!IsPunctuationChar(c))
-                    {
-                        buf.Add(c);
-                    }
+                    buf.Add(c);
                 }
                 else
                 {
