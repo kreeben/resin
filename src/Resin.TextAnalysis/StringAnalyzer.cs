@@ -180,38 +180,41 @@ namespace Resin.TextAnalysis
             return false;
         }
 
-        // Deterministic char n-gram extraction to improve token stability.
-        private static IEnumerable<string> GetCharNGrams(string s, int minN = 3, int maxN = 5)
+        // Deterministic char n-gram extraction without allocations using spans.
+        private static void AddCharNGramFeatures(ReadOnlySpan<char> s, int dims, Vector<double> word)
         {
-            if (string.IsNullOrEmpty(s))
-                yield break;
-
-            var len = s.Length;
-            for (int n = minN; n <= maxN; n++)
+            if (s.Length == 0) return;
+            for (int n = 3; n <= 5; n++)
             {
-                for (int i = 0; i + n <= len; i++)
+                for (int i = 0; i + n <= s.Length; i++)
                 {
-                    yield return s.Substring(i, n);
+                    var d = HashToIndex(s.Slice(i, n), dims);
+                    word[d] += 1.0;
                 }
             }
         }
 
-        // Simple deterministic hash to choose a dimension for n-gram features.
-        private static int HashToIndex(string key, int dims)
+        // FNV-1a-like hash over spans to avoid string allocations
+        private static int HashToIndex(ReadOnlySpan<char> key, int dims)
         {
             const ulong offset = 14695981039346656037UL;
             const ulong prime = 1099511628211UL;
             ulong h = offset;
-            foreach (var ch in key)
+            for (int i = 0; i < key.Length; i++)
             {
-                h ^= ch;
+                h ^= key[i];
                 h *= prime;
             }
             return (int)(h % (ulong)dims);
         }
 
+        // Simple deterministic hash to choose a dimension for n-gram features (string overload retained for callers).
+        private static int HashToIndex(string key, int dims)
+        {
+            return HashToIndex(key.AsSpan(), dims);
+        }
+
         // Adds lightweight case and Unicode category features for the label into the vector.
-        // This increases entropy without changing existing positional and n-gram signals.
         private void AddCaseAndCategoryFeatures(string label, Vector<double> word)
         {
             if (string.IsNullOrEmpty(label))
@@ -222,24 +225,31 @@ namespace Resin.TextAnalysis
             bool isAllUpper = label.ToUpperInvariant() == label;
             bool isTitle = char.IsLetter(label[0]) && char.IsUpper(label[0]);
 
-            // Hash dedicated feature keys into dimensions to avoid colliding with raw n-grams.
-            void bump(string featureKey, double weight)
+            // bump via span without allocating
+            void bump(ReadOnlySpan<char> featureKey, double weight)
             {
                 var d = HashToIndex(featureKey, _numOfDimensions);
                 word[d] += weight;
             }
 
-            bump(isAllLower ? "case:lower" : "case:mixed", 0.5);
-            if (isAllUpper) bump("case:upper", 0.5);
-            if (isTitle) bump("case:title", 0.5);
+            bump((isAllLower ? "case:lower" : "case:mixed").AsSpan(), 0.5);
+            if (isAllUpper) bump("case:upper".AsSpan(), 0.5);
+            if (isTitle) bump("case:title".AsSpan(), 0.5);
 
             // Unicode category distribution across label characters
             foreach (var ch in label)
             {
-                var cat = char.GetUnicodeCategory(ch);
-                var key = "uc:" + (int)cat;
-                var d = HashToIndex(key, _numOfDimensions);
-                word[d] += 0.25;
+                // Build small key without allocating using stackalloc
+                Span<char> small = stackalloc char[3]; // "uc:" + number (we'll hash 'uc:' and cat value separately)
+                // Hash prefix
+                int dPrefix = HashToIndex("uc:".AsSpan(), _numOfDimensions);
+                var cat = (int)char.GetUnicodeCategory(ch);
+                // Combine by hashing cat as two chars to vary dimension
+                Span<char> catSpan = stackalloc char[2];
+                catSpan[0] = (char)('0' + (cat % 10));
+                catSpan[1] = (char)('0' + ((cat / 10) % 10));
+                var d = HashToIndex(catSpan, _numOfDimensions);
+                word[(d + dPrefix) % _numOfDimensions] += 0.25;
             }
         }
 
@@ -255,11 +265,6 @@ namespace Resin.TextAnalysis
                 {
                     buf.Add(c);
                 }
-                //else if (c == '’')
-                //{
-                //    // special apostrophe ignored.
-                //    var _ = char.GetUnicodeCategory(c);
-                //}
                 else
                 {
                     if (buf.Count > 0)
@@ -279,40 +284,67 @@ namespace Resin.TextAnalysis
             return words;
         }
 
-        // Position-aware bigrams and skip-grams (deterministic, low-cost).
-        private static IEnumerable<string> GetPositionalBigrams(string s)
+        // Position-aware bigrams and skip-grams without string allocations.
+        private static void AddPositionalBigrams(ReadOnlySpan<char> s, int dims, Vector<double> word)
         {
             for (int i = 0; i + 1 < s.Length; i++)
             {
-                yield return $"bg:{i}:{s[i]}{s[i + 1]}";
+                // Hash prefix and content
+                int p = HashToIndex("bg:".AsSpan(), dims);
+                Span<char> span = stackalloc char[4];
+                span[0] = s[i];
+                span[1] = s[i + 1];
+                // encode position low byte to vary index slightly
+                span[2] = (char)(i & 0xFF);
+                span[3] = (char)((i >> 8) & 0xFF);
+                int d = (p + HashToIndex(span, dims)) % dims;
+                word[d] += 0.75;
             }
         }
 
-        private static IEnumerable<string> GetSkipGrams1(string s)
+        private static void AddSkipGrams1(ReadOnlySpan<char> s, int dims, Vector<double> word)
         {
             for (int i = 0; i + 2 < s.Length; i++)
             {
-                yield return $"sg1:{i}:{s[i]}{s[i + 2]}";
+                int p = HashToIndex("sg1:".AsSpan(), dims);
+                Span<char> span = stackalloc char[4];
+                span[0] = s[i];
+                span[1] = s[i + 2];
+                span[2] = (char)(i & 0xFF);
+                span[3] = (char)((i >> 8) & 0xFF);
+                int d = (p + HashToIndex(span, dims)) % dims;
+                word[d] += 0.5;
             }
         }
 
-        // Light trigram around boundaries to help tiny words and prefixes/suffixes.
-        private static IEnumerable<string> GetBoundaryTrigrams(string s)
+        // Light trigram around boundaries without allocations.
+        private static void AddBoundaryTrigrams(ReadOnlySpan<char> s, int dims, Vector<double> word)
         {
+            int pStart = HashToIndex("tri:start:".AsSpan(), dims);
+            int pEnd = HashToIndex("tri:end:".AsSpan(), dims);
             if (s.Length >= 3)
             {
-                yield return $"tri:start:{s[0]}{s[1]}{s[2]}";
-                yield return $"tri:end:{s[^3]}{s[^2]}{s[^1]}";
+                Span<char> span = stackalloc char[3];
+                span[0] = s[0]; span[1] = s[1]; span[2] = s[2];
+                word[(pStart + HashToIndex(span, dims)) % dims] += 0.65;
+                span[0] = s[s.Length - 3]; span[1] = s[s.Length - 2]; span[2] = s[s.Length - 1];
+                word[(pEnd + HashToIndex(span, dims)) % dims] += 0.65;
             }
             else if (s.Length == 2)
             {
-                yield return $"tri:start:{s[0]}{s[1]}_";
-                yield return $"tri:end:_{s[0]}{s[1]}";
+                Span<char> span = stackalloc char[3];
+                span[0] = s[0]; span[1] = s[1]; span[2] = '_';
+                word[(pStart + HashToIndex(span, dims)) % dims] += 0.65;
+                span[0] = '_'; span[1] = s[0]; span[2] = s[1];
+                word[(pEnd + HashToIndex(span, dims)) % dims] += 0.65;
             }
             else if (s.Length == 1)
             {
-                yield return $"tri:start:{s[0]}__";
-                yield return $"tri:end:__{s[0]}";
+                Span<char> span = stackalloc char[3];
+                span[0] = s[0]; span[1] = '_'; span[2] = '_';
+                word[(pStart + HashToIndex(span, dims)) % dims] += 0.65;
+                span[0] = '_'; span[1] = '_'; span[2] = s[0];
+                word[(pEnd + HashToIndex(span, dims)) % dims] += 0.65;
             }
         }
 
@@ -332,24 +364,27 @@ namespace Resin.TextAnalysis
             }
         }
 
-        private static string VcPattern(string s)
+        private static void AddVcPattern(ReadOnlySpan<char> s, int dims, Vector<double> word)
         {
+            if (s.Length == 0) return;
             Span<char> buf = s.Length <= 64 ? stackalloc char[s.Length] : new char[s.Length];
             for (int i = 0; i < s.Length; i++)
             {
                 buf[i] = char.IsLetter(s[i]) ? (IsVowel(s[i]) ? 'V' : 'C') : 'X';
             }
-            return new string(buf);
+            int p = HashToIndex("vc:".AsSpan(), dims);
+            int d = (p + HashToIndex(buf, dims)) % dims;
+            word[d] += 0.5;
         }
 
         // Rolling hash feature to stabilize very small tokens.
-        private static ulong RollingHash64(string s)
+        private static ulong RollingHash64(ReadOnlySpan<char> s)
         {
             const ulong seed = 11400714819323198485UL; // Knuth multiplicative
             ulong h = 0;
-            foreach (var ch in s)
+            for (int i = 0; i < s.Length; i++)
             {
-                h = (h ^ ch) * seed;
+                h = (h ^ s[i]) * seed;
             }
             return h;
         }
@@ -360,74 +395,61 @@ namespace Resin.TextAnalysis
             foreach (var label in words)
             {
                 var word = CreateVector.Sparse<double>(_numOfDimensions);
+                ReadOnlySpan<char> labelSpan = label.AsSpan();
 
                 // Base character contribution using position (kept for backward compatibility)
                 int index = 0;
-                foreach (var c in label)
+                foreach (var c in labelSpan)
                 {
                     if (index >= _numOfDimensions) break;
                     word[index] = c;
                     index++;
                 }
 
-                // Deterministic char n-gram features to stabilize the word vector.
-                foreach (var ng in GetCharNGrams(label))
-                {
-                    var dim = HashToIndex(ng, _numOfDimensions);
-                    word[dim] += 1.0;
-                }
+                // Deterministic char n-gram features without allocations
+                AddCharNGramFeatures(labelSpan, _numOfDimensions, word);
 
                 // Position-aware bigrams and skip-grams
-                foreach (var k in GetPositionalBigrams(label))
-                {
-                    var d = HashToIndex(k, _numOfDimensions);
-                    word[d] += 0.75;
-                }
-                foreach (var k in GetSkipGrams1(label))
-                {
-                    var d = HashToIndex(k, _numOfDimensions);
-                    word[d] += 0.5;
-                }
+                AddPositionalBigrams(labelSpan, _numOfDimensions, word);
+                AddSkipGrams1(labelSpan, _numOfDimensions, word);
 
                 // Boundary trigrams to help short words
-                foreach (var k in GetBoundaryTrigrams(label))
-                {
-                    var d = HashToIndex(k, _numOfDimensions);
-                    word[d] += 0.65;
-                }
+                AddBoundaryTrigrams(labelSpan, _numOfDimensions, word);
 
                 // First/last character emphasis
-                if (label.Length > 0)
+                if (labelSpan.Length > 0)
                 {
-                    var firstKey = $"first:{label[0]}";
-                    var lastKey = $"last:{label[^1]}";
-                    word[HashToIndex(firstKey, _numOfDimensions)] += 0.75;
-                    word[HashToIndex(lastKey, _numOfDimensions)] += 0.75;
+                    int pFirst = HashToIndex("first:".AsSpan(), _numOfDimensions);
+                    int pLast = HashToIndex("last:".AsSpan(), _numOfDimensions);
+                    Span<char> cbuf = stackalloc char[1];
+                    cbuf[0] = labelSpan[0];
+                    word[(pFirst + HashToIndex(cbuf, _numOfDimensions)) % _numOfDimensions] += 0.75;
+                    cbuf[0] = labelSpan[labelSpan.Length - 1];
+                    word[(pLast + HashToIndex(cbuf, _numOfDimensions)) % _numOfDimensions] += 0.75;
                 }
 
                 // Token length buckets
-                int len = label.Length;
-                string bucket = len switch
+                int len = labelSpan.Length;
+                ReadOnlySpan<char> bucket = len switch
                 {
-                    0 => "len:0",
-                    1 => "len:1",
-                    2 => "len:2",
-                    3 => "len:3",
-                    4 => "len:4",
-                    <= 8 => "len:5-8",
-                    <= 16 => "len:9-16",
-                    _ => "len:17+"
+                    0 => "len:0".AsSpan(),
+                    1 => "len:1".AsSpan(),
+                    2 => "len:2".AsSpan(),
+                    3 => "len:3".AsSpan(),
+                    4 => "len:4".AsSpan(),
+                    <= 8 => "len:5-8".AsSpan(),
+                    <= 16 => "len:9-16".AsSpan(),
+                    _ => "len:17+".AsSpan()
                 };
                 word[HashToIndex(bucket, _numOfDimensions)] += 0.5;
 
                 // Vowel/consonant pattern
-                var pattern = VcPattern(label);
-                word[HashToIndex("vc:" + pattern, _numOfDimensions)] += 0.5;
+                AddVcPattern(labelSpan, _numOfDimensions, word);
 
                 // Rolling-hash anchored feature for tiny tokens
                 if (len <= 3)
                 {
-                    var rh = RollingHash64(label);
+                    var rh = RollingHash64(labelSpan);
                     var d = (int)(rh % (ulong)_numOfDimensions);
                     word[d] += 0.8;
                 }
