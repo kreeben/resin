@@ -35,16 +35,16 @@
             PageSize = pageSize;
         }
 
-        public ReadSession(DirectoryInfo workingDir, ulong collectionId, int pageSize = 4096)
+        public ReadSession(DirectoryInfo workingDir, ulong columnId, int pageSize = 4096)
         {
             if (workingDir is null)
                 throw new ArgumentNullException(nameof(workingDir));
 
             var streamFactory = new StreamFactory(workingDir);
 
-            _keyStream = streamFactory.CreateReadStream(collectionId, FileExtensions.Key);
-            _valueStream = streamFactory.CreateReadStream(collectionId, FileExtensions.Value);
-            _addressStream = streamFactory.CreateReadStream(collectionId, FileExtensions.Address);
+            _keyStream = streamFactory.CreateReadStream(columnId, FileExtensions.Key);
+            _valueStream = streamFactory.CreateReadStream(columnId, FileExtensions.Value);
+            _addressStream = streamFactory.CreateReadStream(columnId, FileExtensions.Address);
             PageSize = pageSize;
         }
 

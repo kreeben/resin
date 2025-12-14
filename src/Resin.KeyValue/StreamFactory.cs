@@ -16,9 +16,9 @@
             }
         }
 
-        public void Truncate(ulong collectionId)
+        public void Truncate(ulong columnId)
         {
-            var label = collectionId.ToString();
+            var label = columnId.ToString();
             foreach (var file in Directory.GetFiles(_directory.FullName))
             {
                 if (file.Contains(label))
@@ -26,9 +26,9 @@
             }
         }
 
-        public Stream CreateReadWriteStream(ulong collectionId, string fileExtension)
+        public Stream CreateReadWriteStream(ulong columnId, string fileExtension)
         {
-            var fileName = Path.Combine(_directory.FullName, $"{collectionId}.{fileExtension}");
+            var fileName = Path.Combine(_directory.FullName, $"{columnId}.{fileExtension}");
             if (!File.Exists(fileName))
             {
                 return new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite, 4096, FileOptions.RandomAccess);
@@ -37,9 +37,9 @@
             return new FileStream(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, 4096, FileOptions.RandomAccess);
         }
 
-        public Stream CreateReadStream(ulong collectionId, string fileExtension)
+        public Stream CreateReadStream(ulong columnId, string fileExtension)
         {
-            var fileName = Path.Combine(_directory.FullName, $"{collectionId}.{fileExtension}");
+            var fileName = Path.Combine(_directory.FullName, $"{columnId}.{fileExtension}");
             if (!File.Exists(fileName))
             {
                 return new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite, 4096, FileOptions.SequentialScan);
@@ -53,9 +53,9 @@
             return new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, FileOptions.SequentialScan);
         }
 
-        public Stream CreateAppendStream(ulong collectionId, string fileExtension)
+        public Stream CreateAppendStream(ulong columnId, string fileExtension)
         {
-            var fileName = Path.Combine(_directory.FullName, $"{collectionId}.{fileExtension}");
+            var fileName = Path.Combine(_directory.FullName, $"{columnId}.{fileExtension}");
 
             if (!File.Exists(fileName))
             {
@@ -65,9 +65,9 @@
             return new FileStream(fileName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
         }
 
-        public Stream CreateOverwriteStream(ulong collectionId, string fileExtension)
+        public Stream CreateOverwriteStream(ulong columnId, string fileExtension)
         {
-            var fileName = Path.Combine(_directory.FullName, $"{collectionId}.{fileExtension}");
+            var fileName = Path.Combine(_directory.FullName, $"{columnId}.{fileExtension}");
 
             if (!File.Exists(fileName))
             {
@@ -77,9 +77,9 @@
             return new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
         }
 
-        public Stream CreateSeekableWriteStream(ulong collectionId, string fileExtension)
+        public Stream CreateSeekableWriteStream(ulong columnId, string fileExtension)
         {
-            var fileName = Path.Combine(_directory.FullName, $"{collectionId}.{fileExtension}");
+            var fileName = Path.Combine(_directory.FullName, $"{columnId}.{fileExtension}");
 
             if (!File.Exists(fileName))
             {
