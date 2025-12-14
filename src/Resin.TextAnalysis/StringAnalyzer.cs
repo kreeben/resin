@@ -237,15 +237,12 @@ namespace Resin.TextAnalysis
             if (isTitle) bump("case:title".AsSpan(), 0.5);
 
             // Unicode category distribution across label characters
+            int dPrefix = HashToIndex("uc:".AsSpan(), _numOfDimensions);
+            Span<char> catSpan = stackalloc char[2];
             foreach (var ch in label)
             {
-                // Build small key without allocating using stackalloc
-                Span<char> small = stackalloc char[3]; // "uc:" + number (we'll hash 'uc:' and cat value separately)
-                // Hash prefix
-                int dPrefix = HashToIndex("uc:".AsSpan(), _numOfDimensions);
                 var cat = (int)char.GetUnicodeCategory(ch);
-                // Combine by hashing cat as two chars to vary dimension
-                Span<char> catSpan = stackalloc char[2];
+                // Encode category as two chars and reuse the same buffer
                 catSpan[0] = (char)('0' + (cat % 10));
                 catSpan[1] = (char)('0' + ((cat / 10) % 10));
                 var d = HashToIndex(catSpan, _numOfDimensions);
@@ -287,14 +284,13 @@ namespace Resin.TextAnalysis
         // Position-aware bigrams and skip-grams without string allocations.
         private static void AddPositionalBigrams(ReadOnlySpan<char> s, int dims, Vector<double> word)
         {
+            int p = HashToIndex("bg:".AsSpan(), dims);
+            Span<char> span = stackalloc char[4];
             for (int i = 0; i + 1 < s.Length; i++)
             {
-                // Hash prefix and content
-                int p = HashToIndex("bg:".AsSpan(), dims);
-                Span<char> span = stackalloc char[4];
+                // Reuse buffer for all iterations
                 span[0] = s[i];
                 span[1] = s[i + 1];
-                // encode position low byte to vary index slightly
                 span[2] = (char)(i & 0xFF);
                 span[3] = (char)((i >> 8) & 0xFF);
                 int d = (p + HashToIndex(span, dims)) % dims;
@@ -304,10 +300,10 @@ namespace Resin.TextAnalysis
 
         private static void AddSkipGrams1(ReadOnlySpan<char> s, int dims, Vector<double> word)
         {
+            int p = HashToIndex("sg1:".AsSpan(), dims);
+            Span<char> span = stackalloc char[4];
             for (int i = 0; i + 2 < s.Length; i++)
             {
-                int p = HashToIndex("sg1:".AsSpan(), dims);
-                Span<char> span = stackalloc char[4];
                 span[0] = s[i];
                 span[1] = s[i + 2];
                 span[2] = (char)(i & 0xFF);
@@ -322,9 +318,9 @@ namespace Resin.TextAnalysis
         {
             int pStart = HashToIndex("tri:start:".AsSpan(), dims);
             int pEnd = HashToIndex("tri:end:".AsSpan(), dims);
+            Span<char> span = stackalloc char[3];
             if (s.Length >= 3)
             {
-                Span<char> span = stackalloc char[3];
                 span[0] = s[0]; span[1] = s[1]; span[2] = s[2];
                 word[(pStart + HashToIndex(span, dims)) % dims] += 0.65;
                 span[0] = s[s.Length - 3]; span[1] = s[s.Length - 2]; span[2] = s[s.Length - 1];
@@ -332,7 +328,6 @@ namespace Resin.TextAnalysis
             }
             else if (s.Length == 2)
             {
-                Span<char> span = stackalloc char[3];
                 span[0] = s[0]; span[1] = s[1]; span[2] = '_';
                 word[(pStart + HashToIndex(span, dims)) % dims] += 0.65;
                 span[0] = '_'; span[1] = s[0]; span[2] = s[1];
@@ -340,7 +335,6 @@ namespace Resin.TextAnalysis
             }
             else if (s.Length == 1)
             {
-                Span<char> span = stackalloc char[3];
                 span[0] = s[0]; span[1] = '_'; span[2] = '_';
                 word[(pStart + HashToIndex(span, dims)) % dims] += 0.65;
                 span[0] = '_'; span[1] = '_'; span[2] = s[0];
