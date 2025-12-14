@@ -1,5 +1,8 @@
 ﻿namespace Resin.KeyValue.Test
 {
+    /// <summary>
+    /// Tests where key is of the double type.
+    /// </summary>
     [TestClass]
     public sealed class DoubleTests
     {

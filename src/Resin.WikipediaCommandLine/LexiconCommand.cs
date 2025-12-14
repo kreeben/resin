@@ -7,7 +7,7 @@ using Resin.TextAnalysis;
 namespace Resin.WikipediaCommandLine
 {
     /// <summary>
-    /// lexicon --dir "c:\data" --source "d:\enwiki-20211122-cirrussearch-content.json.gz" --take 100 --debug true
+    /// lexicon --dir "c:\data" --source "d:\enwiki-20211122-cirrussearch-content.json.gz" --truncate true --take 100 --debug true
     /// </summary>
     public class LexiconCommand : ICommand
     {

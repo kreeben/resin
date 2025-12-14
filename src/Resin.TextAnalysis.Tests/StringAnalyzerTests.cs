@@ -109,7 +109,7 @@ namespace Resin.TextAnalysis.Tests
                 "A lovely sunset"
             };
 
-            var tokens = analyzer.TokenizeIntoDouble(input).ToArray();
+            var tokens = analyzer.Tokenize(input).ToArray();
 
             // Positive: we should get tokens from the valid text parts
             Assert.IsTrue(tokens.Any(), "Expected at least one token from valid input.");
@@ -117,7 +117,7 @@ namespace Resin.TextAnalysis.Tests
             // Negative: ensure noisy entries (empty/whitespace/control/punctuation-only)
             // only produce tokens for punctuation, not for empty/whitespace/control.
             var noiseOnly = new[] { string.Empty, "   ", "\0\0", "!!!" };
-            var noiseTokens = analyzer.TokenizeIntoDouble(noiseOnly).ToArray();
+            var noiseTokens = analyzer.Tokenize(noiseOnly).ToArray();
 
             // Expect only the punctuation token to be produced.
             Assert.AreEqual(1, noiseTokens.Length, "Only punctuation should produce a token among noise inputs.");
@@ -146,7 +146,7 @@ namespace Resin.TextAnalysis.Tests
 
             // Consistency: tokenization of pure valid input should yield expected minimum count
             var validOnly = new[] { "Resin resin RESIN", "A lovely sunset" };
-            var validTokens = analyzer.TokenizeIntoDouble(validOnly).ToArray();
+            var validTokens = analyzer.Tokenize(validOnly).ToArray();
             Assert.IsTrue(validTokens.Length >= 5, "Expected at least five tokens from valid input sample.");
 
             // Similarity sanity: vectors should have a defined cosine with a unit basis vector
@@ -159,35 +159,6 @@ namespace Resin.TextAnalysis.Tests
         }
 
         [TestMethod]
-        public void CanSerializeAndDeserializeVectorFloatValues()
-        {
-            const int pageSize = 4096;
-            const int numOfDimensions = 512;
-            using (var tx = new WriteSession(pageSize))
-            using (var pageWriter = new ColumnWriter<double>(new PageWriter<double>(tx)))
-            {
-                var analyzer = new StringAnalyzer();
-                var tokens = analyzer.TokenizeIntoFloat(new[] { "Resin" });
-                var vector = tokens.First().vector;
-                var unitVector = CreateVector.Sparse<float>(numOfDimensions, (float)1);
-                var angle = unitVector.CosAngle(vector);
-                var vectorBuf = vector.GetBytes(x => BitConverter.GetBytes(x), sizeof(float));
-                pageWriter.TryPut(angle, vectorBuf);
-                pageWriter.Serialize();
-
-                using (var readSession = new ReadSession(tx))
-                {
-                    var tokenReader = new ColumnReader<double>(readSession);
-                    var buf = tokenReader.Get(angle);
-                    var storedVector = buf.ToArray().ToVectorFloat(numOfDimensions);
-                    var a = vector.CosAngle(storedVector);
-
-                    Assert.IsTrue(a > 0.99);
-                }
-            }
-        }
-
-        [TestMethod]
         public void CanSerializeAndDeserializeVectorDoubleValues()
         {
             const int pageSize = 4096;
@@ -196,7 +167,7 @@ namespace Resin.TextAnalysis.Tests
             using (var pageWriter = new ColumnWriter<double>(new PageWriter<double>(tx)))
             {
                 var analyzer = new StringAnalyzer();
-                var tokens = analyzer.TokenizeIntoDouble(new[] { "Resin" });
+                var tokens = analyzer.Tokenize(new[] { "Resin" });
                 var vector = tokens.First().vector;
                 var unitVector = CreateVector.Sparse<double>(numOfDimensions, (double)1);
                 var angle = unitVector.CosAngle(vector);
@@ -208,7 +179,7 @@ namespace Resin.TextAnalysis.Tests
                 {
                     var tokenReader = new ColumnReader<double>(readSession);
                     var buf = tokenReader.Get(angle);
-                    var storedVector = buf.ToArray().ToVectorDouble(numOfDimensions);
+                    var storedVector = buf.ToVectorDouble(numOfDimensions);
                     var a = vector.CosAngle(storedVector);
 
                     Assert.IsTrue(a > 0.99);

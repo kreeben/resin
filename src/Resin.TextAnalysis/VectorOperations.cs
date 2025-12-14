@@ -155,27 +155,6 @@ namespace Resin.TextAnalysis
             }
         }
 
-        public static Vector<float> ToVectorFloat(this byte[] bufferWithHeader, int numOfDimensions)
-        {
-            var componentCount = BitConverter.ToInt32(bufferWithHeader);
-            var len = componentCount * sizeof(float);
-            var indices = MemoryMarshal.Cast<byte, int>(bufferWithHeader.AsSpan(sizeof(int), componentCount * sizeof(int))).ToArray();
-            var values = MemoryMarshal.Cast<byte, float>(bufferWithHeader.AsSpan(sizeof(int) + componentCount * sizeof(int), len)).ToArray();
-            int i = 0;
-            return CreateVector.SparseOfIndexed(numOfDimensions, indices.Select(index => (index, values[i++])));
-        }
-
-        public static Vector<double> ToVectorDouble(this byte[] bufferWithHeader, int numOfDimensions)
-        {
-            var componentCount = BitConverter.ToInt32(bufferWithHeader);
-            var ixLen = componentCount * sizeof(int);
-            var valLen = componentCount * sizeof(double);
-            var indices = MemoryMarshal.Cast<byte, int>(bufferWithHeader.AsSpan(sizeof(int), ixLen)).ToArray();
-            var values = MemoryMarshal.Cast<byte, double>(bufferWithHeader.AsSpan(sizeof(int) + ixLen, valLen)).ToArray();
-            int i = 0;
-            return CreateVector.SparseOfIndexed(numOfDimensions, indices.Select(index => (index, values[i++])));
-        }
-
         public static Vector<double> ToVectorDouble(this ReadOnlySpan<byte> bufferWithHeader, int numOfDimensions)
         {
             var componentCount = BitConverter.ToInt32(bufferWithHeader);
@@ -185,19 +164,12 @@ namespace Resin.TextAnalysis
             var indices = MemoryMarshal.Cast<byte, int>(bufferWithHeader.Slice(sizeof(int), ixLen)).ToArray();
             var values = MemoryMarshal.Cast<byte, double>(bufferWithHeader.Slice(sizeof(int) + ixLen, valLen)).ToArray();
 
-            int i = 0;
-            return CreateVector.SparseOfIndexed(numOfDimensions, indices.Select(index => (index, values[i++])));
-        }
-
-        public static double CosAngle(this Vector<float> first, Vector<float> second)
-        {
-            var dotProduct = first.DotProduct(second);
-            var dotSelf1 = first.Norm(2);
-            var dotSelf2 = second.Norm(2);
-
-            var cosineDistance = dotProduct / (dotSelf1 * dotSelf2);
-
-            return cosineDistance;
+            var pairs = new (int, double)[componentCount];
+            for (int i = 0; i < componentCount; i++)
+            {
+                pairs[i] = (indices[i], values[i]);
+            }
+            return CreateVector.SparseOfIndexed(numOfDimensions, pairs);
         }
 
         public static double CosAngle(this Vector<double> first, Vector<double> second)
@@ -213,7 +185,6 @@ namespace Resin.TextAnalysis
 
         public static Vector<double> Analyze(this Vector<double> first, Vector<double> second)
         {
-            //var numOfDimensions = first.
             // Core metrics
             var dot = first.DotProduct(second);
 
@@ -258,23 +229,27 @@ namespace Resin.TextAnalysis
             var unionCount = firstIndices.Count + secondIndices.Count - overlapCount;
             var jaccard = unionCount > 0 ? (double)overlapCount / unionCount : 0d;
 
-            // Assemble a dense signature vector that is stable and informative
+            // Assemble a dense signature vector without LINQ allocations
             // [cos, angle (rad), dot, ||first||, ||second||, euclidean, manhattan, projLenOnSecond, overlapCount, jaccard]
-            var components = new[]
-            {
-                cos,
-                angleRad,
-                dot,
-                norm1,
-                norm2,
-                euclidean,
-                manhattan,
-                projLenOnSecond,
-                (double)overlapCount,
-                jaccard
-            };
+            var components = new double[10];
+            components[0] = cos;
+            components[1] = angleRad;
+            components[2] = dot;
+            components[3] = norm1;
+            components[4] = norm2;
+            components[5] = euclidean;
+            components[6] = manhattan;
+            components[7] = projLenOnSecond;
+            components[8] = (double)overlapCount;
+            components[9] = jaccard;
 
-            return CreateVector.SparseOfIndexed(first.Count, components.Select((v, i) => (i, v)));
+            var pairs = new (int, double)[components.Length];
+            for (int i = 0; i < components.Length; i++)
+            {
+                pairs[i] = (i, components[i]);
+            }
+
+            return CreateVector.SparseOfIndexed(first.Count, pairs);
         }
 
         public static string AsString(this Vector<float> vector)

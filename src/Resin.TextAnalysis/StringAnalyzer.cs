@@ -51,7 +51,7 @@ namespace Resin.TextAnalysis
 
                 foreach (var str in source)
                 {
-                    foreach (var token in TokenizeIntoDouble(str))
+                    foreach (var token in TokenizeIntoVectors(str))
                     {
                         var idVec = token.vector.Analyze(_unitVector);
                         var angleOfId = idVec.CosAngle(_unitVector);
@@ -107,7 +107,7 @@ namespace Resin.TextAnalysis
                 string leastEntropicToken = string.Empty;
                 int docTokenCount = 0;
                 int collisionCount = 0;
-                foreach (var token in TokenizeIntoDouble(str))
+                foreach (var token in TokenizeIntoVectors(str))
                 {
                     docTokenCount++;
                     totalTokens++;
@@ -279,33 +279,82 @@ namespace Resin.TextAnalysis
             return words;
         }
 
-        public IEnumerable<(string label, Vector<float> vector)> TokenizeIntoFloat(string source, bool labelVectors = true)
+        // Position-aware bigrams and skip-grams (deterministic, low-cost).
+        private static IEnumerable<string> GetPositionalBigrams(string s)
         {
-            var words = SplitWords(source, IsData);
-            foreach (var label in words)
+            for (int i = 0; i + 1 < s.Length; i++)
             {
-                // Build vector from the word label using original positional scheme.
-                var word = CreateVector.Sparse<float>(_numOfDimensions);
-
-                int index = 0;
-                foreach (var c in label)
-                {
-                    if (index >= _numOfDimensions) break;
-                    word[index] = c;
-                    index++;
-                }
-
-                if (((SparseVectorStorage<float>)word.Storage).Values.Length > 0 && label.Length > 0)
-                {
-                    if (labelVectors)
-                        yield return (label, word);
-                    else
-                        yield return (string.Empty, word);
-                }
+                yield return $"bg:{i}:{s[i]}{s[i + 1]}";
             }
         }
 
-        public IEnumerable<(string label, Vector<double> vector)> TokenizeIntoDouble(string source, bool labelVectors = true)
+        private static IEnumerable<string> GetSkipGrams1(string s)
+        {
+            for (int i = 0; i + 2 < s.Length; i++)
+            {
+                yield return $"sg1:{i}:{s[i]}{s[i + 2]}";
+            }
+        }
+
+        // Light trigram around boundaries to help tiny words and prefixes/suffixes.
+        private static IEnumerable<string> GetBoundaryTrigrams(string s)
+        {
+            if (s.Length >= 3)
+            {
+                yield return $"tri:start:{s[0]}{s[1]}{s[2]}";
+                yield return $"tri:end:{s[^3]}{s[^2]}{s[^1]}";
+            }
+            else if (s.Length == 2)
+            {
+                yield return $"tri:start:{s[0]}{s[1]}_";
+                yield return $"tri:end:_{s[0]}{s[1]}";
+            }
+            else if (s.Length == 1)
+            {
+                yield return $"tri:start:{s[0]}__";
+                yield return $"tri:end:__{s[0]}";
+            }
+        }
+
+        private static bool IsVowel(char c)
+        {
+            switch (char.ToLowerInvariant(c))
+            {
+                case 'a':
+                case 'e':
+                case 'i':
+                case 'o':
+                case 'u':
+                case 'y':
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static string VcPattern(string s)
+        {
+            Span<char> buf = s.Length <= 64 ? stackalloc char[s.Length] : new char[s.Length];
+            for (int i = 0; i < s.Length; i++)
+            {
+                buf[i] = char.IsLetter(s[i]) ? (IsVowel(s[i]) ? 'V' : 'C') : 'X';
+            }
+            return new string(buf);
+        }
+
+        // Rolling hash feature to stabilize very small tokens.
+        private static ulong RollingHash64(string s)
+        {
+            const ulong seed = 11400714819323198485UL; // Knuth multiplicative
+            ulong h = 0;
+            foreach (var ch in s)
+            {
+                h = (h ^ ch) * seed;
+            }
+            return h;
+        }
+
+        public IEnumerable<(string label, Vector<double> vector)> TokenizeIntoVectors(string source, bool labelVectors = true)
         {
             var words = SplitWords(source, IsData);
             foreach (var label in words)
@@ -328,11 +377,74 @@ namespace Resin.TextAnalysis
                     word[dim] += 1.0;
                 }
 
+                // Position-aware bigrams and skip-grams
+                foreach (var k in GetPositionalBigrams(label))
+                {
+                    var d = HashToIndex(k, _numOfDimensions);
+                    word[d] += 0.75;
+                }
+                foreach (var k in GetSkipGrams1(label))
+                {
+                    var d = HashToIndex(k, _numOfDimensions);
+                    word[d] += 0.5;
+                }
+
+                // Boundary trigrams to help short words
+                foreach (var k in GetBoundaryTrigrams(label))
+                {
+                    var d = HashToIndex(k, _numOfDimensions);
+                    word[d] += 0.65;
+                }
+
+                // First/last character emphasis
+                if (label.Length > 0)
+                {
+                    var firstKey = $"first:{label[0]}";
+                    var lastKey = $"last:{label[^1]}";
+                    word[HashToIndex(firstKey, _numOfDimensions)] += 0.75;
+                    word[HashToIndex(lastKey, _numOfDimensions)] += 0.75;
+                }
+
+                // Token length buckets
+                int len = label.Length;
+                string bucket = len switch
+                {
+                    0 => "len:0",
+                    1 => "len:1",
+                    2 => "len:2",
+                    3 => "len:3",
+                    4 => "len:4",
+                    <= 8 => "len:5-8",
+                    <= 16 => "len:9-16",
+                    _ => "len:17+"
+                };
+                word[HashToIndex(bucket, _numOfDimensions)] += 0.5;
+
+                // Vowel/consonant pattern
+                var pattern = VcPattern(label);
+                word[HashToIndex("vc:" + pattern, _numOfDimensions)] += 0.5;
+
+                // Rolling-hash anchored feature for tiny tokens
+                if (len <= 3)
+                {
+                    var rh = RollingHash64(label);
+                    var d = (int)(rh % (ulong)_numOfDimensions);
+                    word[d] += 0.8;
+                }
+
                 // Case and Unicode category features
                 AddCaseAndCategoryFeatures(label, word);
 
-                if (((SparseVectorStorage<double>)word.Storage).Values.Length > 0 && label.Length > 0)
+                // Optional normalization to reduce magnitude bias
+                var storage = (SparseVectorStorage<double>)word.Storage;
+                if (storage.Values.Length > 0 && len > 0)
                 {
+                    double l2 = word.L2Norm();
+                    if (l2 > 0)
+                    {
+                        word /= l2;
+                    }
+
                     if (labelVectors)
                         yield return (label, word);
                     else
@@ -341,22 +453,11 @@ namespace Resin.TextAnalysis
             }
         }
 
-        public IEnumerable<(string label, Vector<float> vector)> TokenizeIntoFloat(IEnumerable<string> source)
+        public IEnumerable<(string label, Vector<double> vector)> Tokenize(IEnumerable<string> source)
         {
             foreach (var str in source)
             {
-                foreach (var token in TokenizeIntoFloat(str))
-                {
-                    yield return token;
-                }
-            }
-        }
-
-        public IEnumerable<(string label, Vector<double> vector)> TokenizeIntoDouble(IEnumerable<string> source)
-        {
-            foreach (var str in source)
-            {
-                foreach (var token in TokenizeIntoDouble(str))
+                foreach (var token in TokenizeIntoVectors(str))
                 {
                     yield return token;
                 }
@@ -396,14 +497,14 @@ namespace Resin.TextAnalysis
 
         public double Compare(string str1, string str2)
         {
-            var tokens = TokenizeIntoDouble(new[] { str1, str2 });
+            var tokens = Tokenize(new[] { str1, str2 });
             var angle = tokens.First().vector.CosAngle(tokens.Last().vector);
             return angle;
         }
 
         public double CompareToUnitVector(string str1)
         {
-            var tokens = TokenizeIntoDouble(new[] { str1 });
+            var tokens = Tokenize(new[] { str1 });
             var angle = tokens.First().vector.CosAngle(_unitVector);
             return angle;
         }
