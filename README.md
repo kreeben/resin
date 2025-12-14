@@ -67,7 +67,7 @@ When working with `TKey`, please adhere to the following restrictions to ensure 
   - Appending scales linearly, minimizing fragmentation and avoiding in-place mutations.
   - Historical values remain intact; multi-value chains are expressed via node headers rather than overwriting data.
 
-- ## Usage
+## Usage
 - Use `Resin.KeyValue` for fast on disk structures and efficient read/write key/value sessions.
 - Use `Resin.TextAnalysis` for `StringAnalyzer`, `VectorOperations`, and similarity tooling.
 - Use `Resin.WikipediaCommandLine` for commandline tools to build/validate lexicons. See detailed CLI usage and setup in [`Resin.WikipediaCommandLine/README.md`](src/Resin.WikipediaCommandLine/README.md).
