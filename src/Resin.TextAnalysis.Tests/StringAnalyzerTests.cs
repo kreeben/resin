@@ -31,6 +31,87 @@ namespace Resin.TextAnalysis.Tests
         };
 
         [TestMethod]
+        public void SplitWords_RemovesStandalonePunctuation()
+        {
+            var analyzer = new StringAnalyzer(128);
+
+            var input = new[]
+            {
+                "!!!",
+                "???!",
+                "... --- ...",
+                "— — —",
+                "()[]{}<>",
+                "A lovely sunset!!!"
+            };
+
+            var tokens = analyzer.Tokenize(input).ToArray();
+
+            // Standalone punctuation should not produce any tokens.
+            // Only "A lovely sunset!!!" produces words, and punctuation is stripped.
+            Assert.IsTrue(tokens.Length >= 3, "Expected tokens from the valid sentence only.");
+            CollectionAssert.DoesNotContain(tokens.Select(t => t.label).ToArray(), "!!!", "Standalone punctuation should be removed.");
+            CollectionAssert.DoesNotContain(tokens.Select(t => t.label).ToArray(), "???!", "Standalone punctuation should be removed.");
+            CollectionAssert.DoesNotContain(tokens.Select(t => t.label).ToArray(), "...", "Standalone punctuation should be removed.");
+            CollectionAssert.DoesNotContain(tokens.Select(t => t.label).ToArray(), "—", "Standalone punctuation should be removed.");
+
+            // Ensure trailing punctuation is stripped from words
+            var labels = tokens.Select(t => t.label).ToArray();
+            Assert.IsTrue(labels.Contains("A"), "Expected 'A' token.");
+            Assert.IsTrue(labels.Contains("lovely"), "Expected 'lovely' token.");
+            Assert.IsTrue(labels.Contains("sunset"), "Expected 'sunset' token.");
+        }
+
+        [TestMethod]
+        public void SplitWords_StripsInternalPunctuationFromWords()
+        {
+            var analyzer = new StringAnalyzer(128);
+
+            var input = new[]
+            {
+                "children’s minds",
+                "rock-n-roll",
+                "email@example.com",
+                "well...known",
+                "C#/.NET"
+            };
+
+            var tokens = analyzer.Tokenize(input).ToArray();
+            var labels = tokens.Select(t => t.label).ToArray();
+
+            // Apostrophes, dashes, dots, slashes and punctuation are removed within words
+            Assert.IsTrue(labels.Contains("childrens"), "Expected internal apostrophe to be removed: 'children’s' -> 'childrens'.");
+            Assert.IsTrue(labels.Contains("minds"), "Expected 'minds' token.");
+            Assert.IsTrue(labels.Contains("rocknroll"), "Expected hyphens to be removed: 'rock-n-roll' -> 'rocknroll'.");
+            Assert.IsTrue(labels.Contains("emailexamplecom"), "Expected punctuation removed: 'email@example.com' -> 'emailexamplecom'.");
+            Assert.IsTrue(labels.Contains("wellknown"), "Expected dots removed: 'well...known' -> 'wellknown'.");
+            Assert.IsTrue(labels.Contains("CNET"), "Expected 'CNET' from 'C#/.NET'.");
+        }
+
+        [TestMethod]
+        public void SplitWords_PreservesLettersDigitsAndSymbolsNonPunctuation()
+        {
+            var analyzer = new StringAnalyzer(128);
+
+            var input = new[]
+            {
+                "abc123",
+                "€money$",
+                "Math≈Science",
+                "A_b_c" // underscore is ConnectorPunctuation, should be removed
+            };
+
+            var tokens = analyzer.Tokenize(input).ToArray();
+            var labels = tokens.Select(t => t.label).ToArray();
+
+            Assert.IsTrue(labels.Contains("abc123"), "Digits and letters should remain.");
+            Assert.IsTrue(labels.Contains("€money$"), "Currency symbol and dollar sign are treated as symbols and should remain if not classified as punctuation.");
+            Assert.IsTrue(labels.Contains("Math≈Science"), "Math symbol '≈' should remain.");
+            Assert.IsFalse(labels.Contains("A_b_c"), "Connector punctuation underscore should be removed.");
+            Assert.IsTrue(labels.Contains("Abc"), "Expected 'A_b_c' -> 'Abc'.");
+        }
+
+        [TestMethod]
         public void CanBuildAndValidateLexiconWithSyntheticData()
         {
             using (var session = new WriteSession())
@@ -48,7 +129,6 @@ namespace Resin.TextAnalysis.Tests
             var dataSource = new WikipediaCirrussearchDataSource(@"d:\enwiki-20211122-cirrussearch-content.json.gz")
                 .GetData(new HashSet<string> { "text" });
 
-            // Materialize once to ensure identical input to build and validate
             var data = dataSource
                 .First().values
                 .Where(s => !string.IsNullOrWhiteSpace(s))
@@ -98,7 +178,6 @@ namespace Resin.TextAnalysis.Tests
         {
             var analyzer = new StringAnalyzer(512);
 
-            // Mixed input: valid words, empty strings, whitespace, control chars, punctuation
             var input = new[]
             {
                 "Resin resin RESIN",
@@ -106,50 +185,37 @@ namespace Resin.TextAnalysis.Tests
                 "   ",
                 "\0\0",
                 "!!!",
-                "A lovely sunset"
+                "A lovely sunset!!!"
             };
 
             var tokens = analyzer.Tokenize(input).ToArray();
 
-            // Positive: we should get tokens from the valid text parts
             Assert.IsTrue(tokens.Any(), "Expected at least one token from valid input.");
 
-            // Negative: ensure noisy entries (empty/whitespace/control/punctuation-only)
-            // only produce tokens for punctuation, not for empty/whitespace/control.
+            // Updated: punctuation-only entries should not produce tokens anymore.
             var noiseOnly = new[] { string.Empty, "   ", "\0\0", "!!!" };
             var noiseTokens = analyzer.Tokenize(noiseOnly).ToArray();
+            Assert.AreEqual(0, noiseTokens.Length, "Standalone punctuation should not produce tokens.");
 
-            // Expect only the punctuation token to be produced.
-            Assert.AreEqual(1, noiseTokens.Length, "Only punctuation should produce a token among noise inputs.");
-            Assert.AreEqual("!!!", noiseTokens[0].label, "Expected punctuation token label to be '!!!'.");
-
-            // Structural: all token vectors should have correct dimensionality and sensible values
+            // Structural checks
             foreach (var t in tokens)
             {
                 var v = t.vector;
-
-                // Dimensions must match analyzer configuration
                 Assert.AreEqual(512, v.Count, "Token vector dimensionality mismatch.");
-
-                // Values should be finite (no NaN/Infinity)
                 for (int i = 0; i < v.Count; i++)
                 {
                     var val = v[i];
                     Assert.IsFalse(double.IsNaN(val) || double.IsInfinity(val), $"Invalid value in vector at index {i}.");
                 }
-
-                // Norm should be positive and bounded (basic sanity for feature vectors)
                 var norm = v.L2Norm();
                 Assert.IsTrue(norm > 0.0, "Vector norm must be positive.");
                 Assert.IsTrue(norm < 1e6, "Vector norm is suspiciously large.");
             }
 
-            // Consistency: tokenization of pure valid input should yield expected minimum count
-            var validOnly = new[] { "Resin resin RESIN", "A lovely sunset" };
+            var validOnly = new[] { "Resin resin RESIN", "A lovely sunset!!!" };
             var validTokens = analyzer.Tokenize(validOnly).ToArray();
             Assert.IsTrue(validTokens.Length >= 5, "Expected at least five tokens from valid input sample.");
 
-            // Similarity sanity: vectors should have a defined cosine with a unit basis vector
             var unit = CreateVector.Sparse<double>(512, 1.0);
             foreach (var t in validTokens)
             {
