@@ -248,9 +248,11 @@ namespace Resin.TextAnalysis
             }
         }
 
-        // Split input into words using the same boundary rules as IsData, but remove punctuation from emitted words.
+        // Split input into words. Letters/digits/symbols form words; math symbols are emitted as standalone words.
         private static List<string> SplitWords(string source, Func<char, bool> isData)
         {
+            static bool IsMath(char ch) => char.GetUnicodeCategory(ch) == UnicodeCategory.MathSymbol;
+
             var words = new List<string>();
             var buf = new List<char>(64);
 
@@ -258,7 +260,22 @@ namespace Resin.TextAnalysis
             {
                 if (isData(c))
                 {
-                    buf.Add(c);
+                    if (IsMath(c))
+                    {
+                        // Finish any ongoing word before emitting a standalone math symbol
+                        if (buf.Count > 0)
+                        {
+                            words.Add(new string(buf.ToArray()));
+                            buf.Clear();
+                        }
+
+                        // Emit the math symbol as its own word
+                        words.Add(new string(new[] { c }));
+                    }
+                    else
+                    {
+                        buf.Add(c);
+                    }
                 }
                 else
                 {
@@ -276,7 +293,7 @@ namespace Resin.TextAnalysis
                 buf.Clear();
             }
 
-            // Remove any empty strings that could result from punctuation-only segments
+            // Remove any empty strings that could result from non-data segments
             if (words.Count > 0)
             {
                 for (int i = words.Count - 1; i >= 0; i--)

@@ -96,7 +96,7 @@ namespace Resin.TextAnalysis.Tests
         }
 
         [TestMethod]
-        public void SplitWords_PreservesLettersDigitsAndSymbolsNonPunctuation()
+        public void SplitWords_HandlesLettersDigitsAndSymbolsNonPunctuation()
         {
             var analyzer = new StringAnalyzer(128);
 
@@ -113,7 +113,9 @@ namespace Resin.TextAnalysis.Tests
 
             Assert.IsTrue(labels.Contains("abc123"), "Digits and letters should remain.");
             Assert.IsTrue(labels.Contains("€money$"), "Currency symbol and dollar sign are treated as symbols and should remain if not classified as punctuation.");
-            Assert.IsTrue(labels.Contains("Math≈Science"), "Math symbol '≈' should remain.");
+            Assert.IsTrue(labels.Contains("Math"), "Split at math symbol '≈'.");
+            Assert.IsTrue(labels.Contains("≈"), "Split at math symbol '≈'.");
+            Assert.IsTrue(labels.Contains("Science"), "Split at math symbol '≈'.");
             Assert.IsFalse(labels.Contains("A_b_c"), "Connector punctuation underscore should be removed.");
         }
 
@@ -256,6 +258,80 @@ namespace Resin.TextAnalysis.Tests
 
                     Assert.IsTrue(a > 0.99);
                 }
+            }
+        }
+
+        [TestMethod]
+        public void SplitWords_EmitsStandaloneMathSymbols()
+        {
+            var analyzer = new StringAnalyzer(128);
+
+            var input = new[]
+            {
+                "≈",
+                "∑",
+                "∞",
+                "√"
+            };
+
+            var tokens = analyzer.Tokenize(input).ToArray();
+            var labels = tokens.Select(t => t.label).ToArray();
+
+            Assert.AreEqual(input.Length, tokens.Length, "Each standalone math symbol should produce exactly one token.");
+            CollectionAssert.AreEquivalent(input, labels, "Standalone math symbols should be emitted as-is.");
+        }
+
+        [TestMethod]
+        public void SplitWords_SplitsAroundMathSymbolsWithinText()
+        {
+            var analyzer = new StringAnalyzer(128);
+
+            var input = new[]
+            {
+                "Math≈Science",
+                "E=mc² √energy",
+                "Δx≈0"
+            };
+
+            var tokens = analyzer.Tokenize(input).ToArray();
+            var labels = tokens.Select(t => t.label).ToArray();
+
+            // "Math≈Science" -> "Math", "≈", "Science"
+            Assert.IsTrue(labels.Contains("Math"), "Expected 'Math' token.");
+            Assert.IsTrue(labels.Contains("≈"), "Expected '≈' token.");
+            Assert.IsTrue(labels.Contains("Science"), "Expected 'Science' token.");
+
+            // "E=mc² √energy" -> "E", "mc²", "√", "energy"
+            Assert.IsTrue(labels.Contains("E"), "Expected 'E' token.");
+            Assert.IsTrue(labels.Contains("mc²"), "Expected 'mc²' token to remain a word.");
+            Assert.IsTrue(labels.Contains("√"), "Expected '√' token.");
+            Assert.IsTrue(labels.Contains("energy"), "Expected 'energy' token.");
+
+            // "Δx≈0" -> "Δx", "≈", "0"
+            Assert.IsTrue(labels.Contains("Δx"), "Expected 'Δx' token.");
+            Assert.IsTrue(labels.Contains("0"), "Expected '0' token.");
+        }
+
+        [TestMethod]
+        public void MathSymbolTokens_AreFiniteAndWellFormed()
+        {
+            var analyzer = new StringAnalyzer(256);
+
+            var tokens = analyzer.Tokenize(new[] { "≈", "∑", "∞", "√" }).ToArray();
+            Assert.IsTrue(tokens.Length >= 4);
+
+            foreach (var t in tokens)
+            {
+                var v = t.vector;
+                Assert.AreEqual(256, v.Count, "Vector dimensionality mismatch.");
+                for (int i = 0; i < v.Count; i++)
+                {
+                    var val = v[i];
+                    Assert.IsFalse(double.IsNaN(val) || double.IsInfinity(val), $"Invalid value at index {i}.");
+                }
+                var norm = v.L2Norm();
+                Assert.IsTrue(norm > 0.0, "Vector norm must be positive.");
+                Assert.IsTrue(norm < 1e6, "Vector norm is suspiciously large.");
             }
         }
     }
