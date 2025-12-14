@@ -162,7 +162,7 @@ namespace Resin.TextAnalysis
                 }
             }
 
-            log?.LogInformation("ValidateLexicon: completed. docs={DocCount}, tokens={TokenCount}, minCollisionAngle={MinAngle} ({Token}), totalElapsed={Elapsed}",
+            log?.LogWarning("ValidateLexicon: completed. docs={DocCount}, tokens={TokenCount}, minCollisionAngle={MinAngle}, token={Token}, totalElapsed={Elapsed}",
                 docCount,
                 totalTokens,
                 globalLowestAngle,
