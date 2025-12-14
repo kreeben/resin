@@ -78,5 +78,5 @@ Contributions are welcome! Please open an issue or pull request with clear motiv
 ## License
 This project is licensed under the MIT License.
 
-## Learn More
-- **Issues**: [Report Issues](https://github.com/kreeben/resin/issues)
+## Get help or report issues
+[Report Issues](https://github.com/kreeben/resin/issues)
