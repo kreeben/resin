@@ -334,5 +334,36 @@ namespace Resin.TextAnalysis.Tests
                 Assert.IsTrue(norm < 1e6, "Vector norm is suspiciously large.");
             }
         }
+
+        [TestMethod]
+        public void ValidateLexicon_Fails_ForSyntheticNegativeDataset()
+        {
+            // Build a small lexicon from synthetic data, then probe for missing angles and synthesize negatives.
+            using (var tx = new WriteSession())
+            using (var readSession = new ReadSession(tx))
+            {
+                var analyzer = new StringAnalyzer();
+
+                // Build the lexicon using a small stable payload (reuse SyntheticData first 10 items)
+                var payload = SyntheticData.Take(10).ToArray();
+                analyzer.BuildLexicon(payload, tx);
+
+                // Inspect lexicon to find missing angles
+                var inspector = new LexiconInspector(readSession);
+                var candidates = inspector.SampleAngles(count: 32);
+                var missingAngles = inspector.FindMissingAngles(candidates).ToList();
+
+                // Ensure we have at least a few candidates to synthesize
+                Assert.IsTrue(missingAngles.Count >= 1, "Expected at least one missing angle to synthesize negatives.");
+
+                // Synthesize negative tokens, matching the ValidateLexiconCommand approach
+                var synthesizer = new TokenSynthesizer(dims: 512, seed: 12345);
+                var synthetic = synthesizer.Synthesize(Math.Max(8, missingAngles.Count)).ToArray();
+
+                // Validate against the built lexicon; should fail
+                var result = analyzer.ValidateLexicon(synthetic, readSession);
+                Assert.IsFalse(result, "Validation should fail for synthetic tokens targeting missing angles.");
+            }
+        }
     }
 }
