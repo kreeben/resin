@@ -285,7 +285,7 @@ namespace Resin.TextAnalysis
             }
         }
 
-        public static MathNet.Numerics.LinearAlgebra.Vector<double> ToVectorDouble(this ReadOnlySpan<byte> bufferWithHeader, int numOfDimensions)
+        public static Vector<double> ToVectorDouble(this ReadOnlySpan<byte> bufferWithHeader, int numOfDimensions)
         {
             var componentCount = BitConverter.ToInt32(bufferWithHeader);
             var ixLen = componentCount * sizeof(int);
@@ -313,7 +313,7 @@ namespace Resin.TextAnalysis
             return cosineDistance;
         }
 
-        public static MathNet.Numerics.LinearAlgebra.Vector<double> Analyze(this MathNet.Numerics.LinearAlgebra.Vector<double> first, MathNet.Numerics.LinearAlgebra.Vector<double> second)
+        public static Vector<double> Analyze(this Vector<double> first, Vector<double> second)
         {
             // Core metrics
             var dot = first.DotSimd(second);
