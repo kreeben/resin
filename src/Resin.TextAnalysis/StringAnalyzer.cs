@@ -53,11 +53,11 @@ namespace Resin.TextAnalysis
                 {
                     foreach (var token in TokenizeIntoVectors(str))
                     {
-                        var idVec = token.vector.Analyze(_unitVector);
-                        var angleOfId = idVec.CosAngle(_unitVector);
+                        var idVec = VectorOperations.Analyze(token.vector, _unitVector);
+                        var angleOfId = VectorOperations.CosAngle(idVec, _unitVector);
 
                         // Use ArrayPool to avoid repeated temporary allocations when preparing buffers.
-                        var tmp = token.vector.GetBytes((double d) => BitConverter.GetBytes(d), sizeof(double));
+                        var tmp = VectorOperations.GetBytes(token.vector, (double d) => BitConverter.GetBytes(d), sizeof(double));
                         var rented = System.Buffers.ArrayPool<byte>.Shared.Rent(tmp.Length);
                         Buffer.BlockCopy(tmp, 0, rented, 0, tmp.Length);
 
@@ -112,8 +112,8 @@ namespace Resin.TextAnalysis
                     docTokenCount++;
                     totalTokens++;
 
-                    var idVec = token.vector.Analyze(_unitVector);
-                    var angleOfId = idVec.CosAngle(_unitVector);
+                    var idVec = VectorOperations.Analyze(token.vector, _unitVector);
+                    var angleOfId = VectorOperations.CosAngle(idVec, _unitVector);
                     var tokenBuf = tokenReader.Get(angleOfId);
 
                     if (tokenBuf.IsEmpty)
@@ -122,8 +122,8 @@ namespace Resin.TextAnalysis
                         return false;
                     }
 
-                    var tokenVec = tokenBuf.ToVectorDouble(_numOfDimensions);
-                    double mutualAngle = tokenVec.CosAngle(token.vector);
+                    var tokenVec = VectorOperations.ToVectorDouble(tokenBuf, _numOfDimensions);
+                    double mutualAngle = VectorOperations.CosAngle(tokenVec, token.vector);
                     if (mutualAngle < lowestAngleCollision)
                     {
                         lowestAngleCollision = mutualAngle;
@@ -514,14 +514,14 @@ namespace Resin.TextAnalysis
         public double Compare(string str1, string str2)
         {
             var tokens = Tokenize(new[] { str1, str2 });
-            var angle = tokens.First().vector.CosAngle(tokens.Last().vector);
+            var angle = VectorOperations.CosAngle(tokens.First().vector, tokens.Last().vector);
             return angle;
         }
 
         public double CompareToUnitVector(string str1)
         {
             var tokens = Tokenize(new[] { str1 });
-            var angle = tokens.First().vector.CosAngle(_unitVector);
+            var angle = VectorOperations.CosAngle(tokens.First().vector, _unitVector);
             return angle;
         }
     }
