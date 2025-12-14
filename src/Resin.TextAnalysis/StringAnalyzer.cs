@@ -416,6 +416,158 @@ namespace Resin.TextAnalysis
             return h;
         }
 
+        // Determines if a token is a number using invariant culture, tolerant of leading/trailing spaces and sign.
+        private static bool IsNumberToken(ReadOnlySpan<char> s)
+        {
+            if (s.IsEmpty) return false;
+
+            // Trim spaces
+            int start = 0, end = s.Length - 1;
+            while (start <= end && char.IsWhiteSpace(s[start])) start++;
+            while (end >= start && char.IsWhiteSpace(s[end])) end--;
+            if (start > end) return false;
+
+            s = s.Slice(start, end - start + 1);
+
+            // Allow sign, decimal point, thousands separators and exponent (basic double pattern)
+            // We avoid regex; rely on double.TryParse invariant culture.
+            return double.TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out _);
+        }
+
+        // Detects longitude/latitude in common forms:
+        // - Decimal degrees: "40.7128,-74.0060" or "40.7128 -74.0060"
+        // - Single coordinate token like "40.7128N" or "74.0060W"
+        // - Degrees/minutes/seconds (DMS) like "40°42'51\"N" or "74°0'21\"W"
+        // Returns true if the token itself represents lat or lon, or if the token contains both separated by comma/space.
+        private static bool IsLongitudeLatitudeToken(ReadOnlySpan<char> s)
+        {
+            if (s.IsEmpty) return false;
+
+            // Helper: parse decimal with optional trailing hemisphere letter
+            static bool TryParseDecimalWithHemisphere(ReadOnlySpan<char> span, out double value, out char hemi)
+            {
+                hemi = '\0';
+                value = 0.0;
+
+                // Trim
+                int start = 0, end = span.Length - 1;
+                while (start <= end && char.IsWhiteSpace(span[start])) start++;
+                while (end >= start && char.IsWhiteSpace(span[end])) end--;
+                if (start > end) return false;
+                span = span.Slice(start, end - start + 1);
+
+                // Optional trailing hemisphere letter (N,S,E,W)
+                char last = span[span.Length - 1];
+                if (last is 'N' or 'n' or 'S' or 's' or 'E' or 'e' or 'W' or 'w')
+                {
+                    hemi = char.ToUpperInvariant(last);
+                    span = span.Slice(0, span.Length - 1);
+                    // Trim again
+                    while (span.Length > 0 && char.IsWhiteSpace(span[span.Length - 1])) span = span.Slice(0, span.Length - 1);
+                }
+
+                if (!double.TryParse(span, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out value))
+                    return false;
+
+                return true;
+            }
+
+            // Validate lat range [-90, +90], lon range [-180, +180]
+            static bool InLatRange(double v) => v >= -90.0 && v <= 90.0;
+            static bool InLonRange(double v) => v >= -180.0 && v <= 180.0;
+
+            // Case 1: coordinate pair like "lat,lon" or "lat lon"
+            int commaIdx = s.IndexOf(',');
+            if (commaIdx >= 0)
+            {
+                var left = s.Slice(0, commaIdx);
+                var right = s.Slice(commaIdx + 1);
+                if (TryParseDecimalWithHemisphere(left, out var lat, out var lh) &&
+                    TryParseDecimalWithHemisphere(right, out var lon, out var rh))
+                {
+                    // Hemisphere letters, if present, should match ranges (N/S => latitude, E/W => longitude)
+                    bool latOk = InLatRange(lat) && (lh is '\0' or 'N' or 'S');
+                    bool lonOk = InLonRange(lon) && (rh is '\0' or 'E' or 'W');
+                    if (latOk && lonOk) return true;
+                }
+            }
+            else
+            {
+                // Try splitting by whitespace into two decimals (e.g., "40.7 -74.0")
+                int spaceIdx = s.IndexOf(' ');
+                if (spaceIdx > 0)
+                {
+                    var left = s.Slice(0, spaceIdx);
+                    var right = s.Slice(spaceIdx + 1);
+                    if (TryParseDecimalWithHemisphere(left, out var lat, out var lh) &&
+                        TryParseDecimalWithHemisphere(right, out var lon, out var rh))
+                    {
+                        bool latOk = InLatRange(lat) && (lh is '\0' or 'N' or 'S');
+                        bool lonOk = InLonRange(lon) && (rh is '\0' or 'E' or 'W');
+                        if (latOk && lonOk) return true;
+                    }
+                }
+            }
+
+            // Case 2: single coordinate with hemisphere, e.g., "40.7128N" or "74.0060W"
+            if (TryParseDecimalWithHemisphere(s, out var single, out var hemi))
+            {
+                if (hemi is 'N' or 'S') return InLatRange(single);
+                if (hemi is 'E' or 'W') return InLonRange(single);
+                // No hemisphere: cannot decide which, but if it fits either range it's likely a coordinate component.
+                if (InLatRange(single) || InLonRange(single)) return true;
+            }
+
+            // Case 3: rudimentary DMS detection (e.g., 40°42'51"N)
+            // Look for the degree symbol and at least minutes or seconds markers.
+            int degIdx = s.IndexOf('°');
+            if (degIdx > 0)
+            {
+                // Extract degree value on the left of '°'
+                var degPart = s.Slice(0, degIdx);
+                if (double.TryParse(degPart, NumberStyles.Float, CultureInfo.InvariantCulture, out var deg))
+                {
+                    bool likelyLat = deg >= 0 && deg <= 90;
+                    bool likelyLon = deg >= 0 && deg <= 180;
+                    // At least one of minute/second symbols
+                    bool hasMin = s.IndexOf('\'') > degIdx;
+                    bool hasSec = s.IndexOf('\"') > degIdx;
+                    if ((hasMin || hasSec) && (likelyLat || likelyLon))
+                    {
+                        // Optional trailing hemisphere enforces lat/lon
+                        char last = s[s.Length - 1];
+                        if (last is 'N' or 'n' or 'S' or 's') return likelyLat;
+                        if (last is 'E' or 'e' or 'W' or 'w') return likelyLon;
+                        // Otherwise accept as coordinate-like
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        // Adds a categorical feature to the vector that encodes:
+        // 1) number / not-number
+        // 2) lat/lon / not-lat/lon
+        private void AddNumericAndGeoFeatures(ReadOnlySpan<char> labelSpan, Vector<double> word)
+        {
+            // Base feature groups
+            int pNum = HashToIndex("feat:number:".AsSpan(), _numOfDimensions);
+            int pGeo = HashToIndex("feat:geo:".AsSpan(), _numOfDimensions);
+
+            bool isNumber = IsNumberToken(labelSpan);
+            bool isGeo = IsLongitudeLatitudeToken(labelSpan);
+
+            // Encode as single hashed buckets to keep sparsity and reproducibility
+            int dNum = (pNum + HashToIndex((isNumber ? "is" : "not").AsSpan(), _numOfDimensions)) % _numOfDimensions;
+            int dGeo = (pGeo + HashToIndex((isGeo ? "is" : "not").AsSpan(), _numOfDimensions)) % _numOfDimensions;
+
+            // Small weights so they act as hints rather than dominating other features
+            word[dNum] += 0.6;
+            word[dGeo] += 0.6;
+        }
+
         public IEnumerable<(string label, Vector<double> vector)> TokenizeIntoVectors(string source, bool labelVectors = true)
         {
             var words = SplitWords(source, IsData);
@@ -483,6 +635,9 @@ namespace Resin.TextAnalysis
 
                 // Case and Unicode category features
                 AddCaseAndCategoryFeatures(label, word);
+
+                // Numeric and geographic features
+                AddNumericAndGeoFeatures(labelSpan, word);
 
                 // Optional normalization to reduce magnitude bias
                 var storage = (SparseVectorStorage<double>)word.Storage;
