@@ -437,7 +437,7 @@ namespace Resin.TextAnalysis
         // Detects longitude/latitude in common forms:
         // - Decimal degrees: "40.7128,-74.0060" or "40.7128 -74.0060"
         // - Single coordinate token like "40.7128N" or "74.0060W"
-        // - Degrees/minutes/seconds (DMS) like "40°42'51\"N" or "74°0'21\"W"
+        // - Degrees/minutes/seconds (DMS) like "40°42'51\"N" or packed DMS like "404251°N" (40°42'51"N)
         // Returns true if the token itself represents lat or lon, or if the token contains both separated by comma/space.
         private static bool IsLongitudeLatitudeToken(ReadOnlySpan<char> s)
         {
@@ -462,7 +462,6 @@ namespace Resin.TextAnalysis
                 {
                     hemi = char.ToUpperInvariant(last);
                     span = span.Slice(0, span.Length - 1);
-                    // Trim again
                     while (span.Length > 0 && char.IsWhiteSpace(span[span.Length - 1])) span = span.Slice(0, span.Length - 1);
                 }
 
@@ -485,7 +484,6 @@ namespace Resin.TextAnalysis
                 if (TryParseDecimalWithHemisphere(left, out var lat, out var lh) &&
                     TryParseDecimalWithHemisphere(right, out var lon, out var rh))
                 {
-                    // Hemisphere letters, if present, should match ranges (N/S => latitude, E/W => longitude)
                     bool latOk = InLatRange(lat) && (lh is '\0' or 'N' or 'S');
                     bool lonOk = InLonRange(lon) && (rh is '\0' or 'E' or 'W');
                     if (latOk && lonOk) return true;
@@ -493,7 +491,6 @@ namespace Resin.TextAnalysis
             }
             else
             {
-                // Try splitting by whitespace into two decimals (e.g., "40.7 -74.0")
                 int spaceIdx = s.IndexOf(' ');
                 if (spaceIdx > 0)
                 {
@@ -514,32 +511,84 @@ namespace Resin.TextAnalysis
             {
                 if (hemi is 'N' or 'S') return InLatRange(single);
                 if (hemi is 'E' or 'W') return InLonRange(single);
-                // No hemisphere: cannot decide which, but if it fits either range it's likely a coordinate component.
                 if (InLatRange(single) || InLonRange(single)) return true;
             }
 
-            // Case 3: rudimentary DMS detection (e.g., 40°42'51"N)
-            // Look for the degree symbol and at least minutes or seconds markers.
+            // Case 3a: standard DMS with delimiters (e.g., 40°42'51"N)
             int degIdx = s.IndexOf('°');
             if (degIdx > 0)
             {
-                // Extract degree value on the left of '°'
                 var degPart = s.Slice(0, degIdx);
                 if (double.TryParse(degPart, NumberStyles.Float, CultureInfo.InvariantCulture, out var deg))
                 {
                     bool likelyLat = deg >= 0 && deg <= 90;
                     bool likelyLon = deg >= 0 && deg <= 180;
-                    // At least one of minute/second symbols
                     bool hasMin = s.IndexOf('\'') > degIdx;
                     bool hasSec = s.IndexOf('\"') > degIdx;
                     if ((hasMin || hasSec) && (likelyLat || likelyLon))
                     {
-                        // Optional trailing hemisphere enforces lat/lon
                         char last = s[s.Length - 1];
                         if (last is 'N' or 'n' or 'S' or 's') return likelyLat;
                         if (last is 'E' or 'e' or 'W' or 'w') return likelyLon;
-                        // Otherwise accept as coordinate-like
                         return true;
+                    }
+                }
+
+                // Case 3b: packed DMS before '°', e.g., "404156°N" => 40°41'56"N
+                // Accept 5-6 digits: DDMMSS or DDDMMSS (lon can have 3 digit degrees)
+                // After '°' we may have hemisphere letter; minutes/seconds are implied by packing.
+                var packed = s.Slice(0, degIdx);
+                // Count digits
+                int digitCount = 0;
+                for (int i = 0; i < packed.Length; i++)
+                {
+                    if (char.IsDigit(packed[i])) digitCount++;
+                    else return false; // non-digit found in packed segment
+                }
+
+                if (digitCount is 5 or 6 or 7) // 5/6 for lat, 6/7 for lon (e.g., 1234045 => 123°40'45")
+                {
+                    // Parse degrees/minutes/seconds by splitting from the end: SS (2), MM (2), rest degrees
+                    int ss = 0, mm = 0, dd = 0;
+                    // Extract integers without allocations
+                    ReadOnlySpan<char> span = packed;
+                    // seconds
+                    if (!int.TryParse(span.Slice(span.Length - 2), NumberStyles.None, CultureInfo.InvariantCulture, out ss)) return false;
+                    // minutes
+                    if (!int.TryParse(span.Slice(span.Length - 4, 2), NumberStyles.None, CultureInfo.InvariantCulture, out mm)) return false;
+                    // degrees
+                    if (!int.TryParse(span.Slice(0, span.Length - 4), NumberStyles.None, CultureInfo.InvariantCulture, out dd)) return false;
+
+                    // Validate minutes/seconds
+                    if (mm < 0 || mm >= 60 || ss < 0 || ss >= 60) return false;
+
+                    // Build decimal degrees
+                    double decimalDegrees = dd + (mm / 60.0) + (ss / 3600.0);
+
+                    // Hemisphere letter if any (last character)
+                    char last = s[s.Length - 1];
+                    bool hasHemi = last is 'N' or 'n' or 'S' or 's' or 'E' or 'e' or 'W' or 'w';
+
+                    if (hasHemi)
+                    {
+                        last = char.ToUpperInvariant(last);
+                        if (last is 'N' or 'S')
+                        {
+                            // Latitude: degrees must be within [0,90]
+                            if (decimalDegrees <= 90.0) return true;
+                            return false;
+                        }
+                        else
+                        {
+                            // Longitude: degrees must be within [0,180]
+                            if (decimalDegrees <= 180.0) return true;
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        // No hemisphere: accept if value fits either range
+                        if (decimalDegrees <= 90.0 || decimalDegrees <= 180.0) return true;
                     }
                 }
             }

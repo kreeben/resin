@@ -84,5 +84,20 @@ namespace Resin.TextAnalysis.Tests
 
             Assert.IsTrue(geoSim > geoToRnd, "DMS geo tokens should be more similar to each other than to random words.");
         }
+
+        [TestMethod]
+        public void GeoFeature_PackedDms_IsRecognized()
+        {
+            var analyzer = new StringAnalyzer(numOfDimensions: 256);
+
+            var packedLat = ComposeDocumentVector(analyzer, "404156°N");   // 40°41'56"N
+            var normalLat = ComposeDocumentVector(analyzer, "40°41'56\"N");
+            var word = ComposeDocumentVector(analyzer, "random");
+
+            var simPackedNormal = packedLat.CosAngle(normalLat);
+            var simPackedWord = packedLat.CosAngle(word);
+
+            Assert.IsTrue(simPackedNormal > simPackedWord, "Packed DMS latitude should be more similar to normal DMS latitude than to a random word.");
+        }
     }
 }
