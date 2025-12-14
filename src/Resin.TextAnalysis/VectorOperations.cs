@@ -313,7 +313,7 @@ namespace Resin.TextAnalysis
             return cosineDistance;
         }
 
-        public static MathNet.Numerics.LinearAlgebra.Vector<double> Analyze(this Vector<double> first, Vector<double> second)
+        public static MathNet.Numerics.LinearAlgebra.Vector<double> Analyze(this MathNet.Numerics.LinearAlgebra.Vector<double> first, MathNet.Numerics.LinearAlgebra.Vector<double> second)
         {
             // Core metrics
             var dot = first.DotSimd(second);
@@ -337,26 +337,92 @@ namespace Resin.TextAnalysis
             var euclidean = diff.L2NormSimd();
             var manhattan = diff.L1Norm();
 
-            // Projection of first onto second (scalar length along second)
+            // Projection length
             var projLenOnSecond = norm2 > 0d ? dot / norm2 : 0d;
 
-            // Overlap/Jaccard over non-zero indices to capture sparsity structure
-            var firstIndices = new HashSet<int>();
-            foreach (var pair in first.EnumerateIndexed(Zeros.AllowSkip))
+            // Overlap/Jaccard without HashSet
+            int overlapCount = 0;
+            int countA = 0;
+            int countB = 0;
+
+            var sa = first.Storage;
+            var sb = second.Storage;
+
+            if (sa is SparseVectorStorage<double> aSp && sb is SparseVectorStorage<double> bSp)
             {
-                firstIndices.Add(pair.Item1);
+                var ia = aSp.Indices;
+                var ib = bSp.Indices;
+                countA = ia.Length;
+                countB = ib.Length;
+                int i = 0, j = 0;
+                while (i < ia.Length && j < ib.Length)
+                {
+                    int ai = ia[i];
+                    int bj = ib[j];
+                    if (ai == bj)
+                    {
+                        overlapCount++;
+                        i++; j++;
+                    }
+                    else if (ai < bj) i++; else j++;
+                }
+            }
+            else if (sa is SparseVectorStorage<double> aSp2 && sb is DenseVectorStorage<double> bDn)
+            {
+                var ia = aSp2.Indices;
+                var vb = bDn.Data;
+                countA = ia.Length;
+                // count non-zero in dense B
+                for (int k = 0; k < vb.Length; k++) if (vb[k] != 0d) countB++;
+                for (int k = 0; k < ia.Length; k++)
+                {
+                    int idx = ia[k];
+                    if ((uint)idx < (uint)vb.Length && vb[idx] != 0d) overlapCount++;
+                }
+            }
+            else if (sa is DenseVectorStorage<double> aDn && sb is SparseVectorStorage<double> bSp2)
+            {
+                var ia = bSp2.Indices;
+                var va = aDn.Data;
+                countB = ia.Length;
+                // count non-zero in dense A
+                for (int k = 0; k < va.Length; k++) if (va[k] != 0d) countA++;
+                for (int k = 0; k < ia.Length; k++)
+                {
+                    int idx = ia[k];
+                    if ((uint)idx < (uint)va.Length && va[idx] != 0d) overlapCount++;
+                }
+            }
+            else if (sa is DenseVectorStorage<double> aDn2 && sb is DenseVectorStorage<double> bDn2)
+            {
+                var va = aDn2.Data;
+                var vb = bDn2.Data;
+                int n = Math.Min(va.Length, vb.Length);
+                for (int i = 0; i < n; i++)
+                {
+                    bool aNonZero = va[i] != 0d;
+                    bool bNonZero = vb[i] != 0d;
+                    if (aNonZero) countA++;
+                    if (bNonZero) countB++;
+                    if (aNonZero && bNonZero) overlapCount++;
+                }
+            }
+            else
+            {
+                // Fallback: enumerate indexed values (works for mixed storages)
+                foreach (var p in first.EnumerateIndexed(Zeros.AllowSkip)) countA++;
+                // Build a temporary BitArray-like bitmap for second's indices using pooled array
+                var indicesB = new List<int>();
+                foreach (var p in second.EnumerateIndexed(Zeros.AllowSkip)) { indicesB.Add(p.Item1); countB++; }
+                // Intersect by searching (indicesB small in typical sparse cases)
+                foreach (var p in first.EnumerateIndexed(Zeros.AllowSkip))
+                {
+                    int idx = p.Item1;
+                    if (indicesB.BinarySearch(idx) >= 0) overlapCount++;
+                }
             }
 
-            var overlapCount = 0;
-            var secondIndices = new HashSet<int>();
-            foreach (var pair in second.EnumerateIndexed(Zeros.AllowSkip))
-            {
-                var index = pair.Item1;
-                secondIndices.Add(index);
-                if (firstIndices.Contains(index)) overlapCount++;
-            }
-
-            var unionCount = firstIndices.Count + secondIndices.Count - overlapCount;
+            int unionCount = countA + countB - overlapCount;
             var jaccard = unionCount > 0 ? (double)overlapCount / unionCount : 0d;
 
             // Assemble dense signature vector
