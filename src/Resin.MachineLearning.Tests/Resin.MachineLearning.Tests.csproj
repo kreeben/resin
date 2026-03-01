@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnableMSTestRunner>true</EnableMSTestRunner>
+    <OutputType>Exe</OutputType>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+    <!--
+      Displays error on console in addition to the log file. Note that this feature comes with a performance impact.
+      For more information, visit https://learn.microsoft.com/dotnet/core/testing/unit-testing-platform-integration-dotnet-test#show-failure-per-test
+      -->
+    <TestingPlatformShowTestsFailure>true</TestingPlatformShowTestsFailure>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="17.12.6" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" Version="1.4.0" />
+    <PackageReference Include="MSTest" Version="3.6.4" />
+    <PackageReference Include="MathNet.Numerics" Version="6.0.0-beta2" />
+    <PackageReference Include="MessagePack" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Resin.MachineLearning\Resin.MachineLearning.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+  </ItemGroup>
+
+</Project>
