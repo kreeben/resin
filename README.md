@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This is a reboot of the [old Resin search engine/machine learning project](https://github.com/kreeben/resin/tree/d20b73d1baaef82f2eaeeb4de739876e23d94a26) with a more sane architecture but not yet as feature complete.
+This is a reboot of the [old Resin search engine/machine learning project](https://github.com/kreeben/resin/tree/d20b73d1baaef82f2eaeeb4de739876e23d94a26), not yet as feature complete.
 
 Resin is a vector space search engine, a vector database and an anything key/value store. It powers efficient string processing, vector operations, and custom storage primitives designed for speed and simplicity. It can produce large language models out of strings and large anything models out of byte arrays.
 
