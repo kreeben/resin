@@ -98,5 +98,24 @@ namespace Resin.MachineLearning
         {
             return Math.Abs(left - right) < precision;
         }
+
+        public static int GetDepth(this VectorNode root)
+        {
+            if (root == null) return 0;
+
+            int maxDepth = 0;
+            var stack = new Stack<(VectorNode Node, int Depth)>();
+            stack.Push((root, 1));
+
+            while (stack.Count > 0)
+            {
+                var (node, depth) = stack.Pop();
+                if (depth > maxDepth) maxDepth = depth;
+                if (node.Left != null) stack.Push((node.Left, depth + 1));
+                if (node.Right != null) stack.Push((node.Right, depth + 1));
+            }
+
+            return maxDepth;
+        }
     }
 }
